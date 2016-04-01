@@ -1,0 +1,29 @@
+- name: Configure openshift common parts
+  hosts:
+    - masters
+    - nodes
+  become: yes
+  roles:
+    - base
+
+    - role: persistent_lvm_storage
+      pv_path: '/dev/vdc'
+      vg_name: 'vg_data'
+      configure_swap: yes
+
+    - cluster_common
+
+    - role: docker_host
+      docker_lvol_size: "100%FREE"
+
+- name: Configure openshift master parts
+  hosts:
+    - masters
+  become: yes
+  roles:
+    - cluster_master
+    - openshift_master
+    - role: persistent_lvm_storage
+      pv_path: '/dev/vdd'
+      vg_name: 'vg_pvol'
+      configure_swap: no

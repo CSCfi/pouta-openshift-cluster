@@ -1,0 +1,169 @@
+---
+- name: Deploy base infra for OpenShift Origin in cPouta
+  hosts: localhost
+  connection: local
+  vars:
+    ssh_key: "my_key"
+    num_nodes: 2
+    cluster_name: "my-oso"
+    master_floating_ips: None
+    master_auto_ip: yes
+    boot_from_volume: yes
+    master_flavor: "mini"
+    node_flavor: "mini"
+    network_name: ""
+    bastion_secgroup: "bastion"
+    master_data_volume_size: 50
+    pvol_volume_size: 50
+    node_data_volume_size: 50
+  tasks:
+    - name: bastion security group - create
+      register: sg_bastion
+      os_security_group:
+        name: "{{ bastion_secgroup }}"
+        description: "Ansible generated security group for bastion"
+
+    - name: master SG - create
+      os_security_group:
+        name: "{{ cluster_name }}-master"
+        description: "Ansible generated security group for {{ cluster_name }}-master"
+
+    - name: common SG - create
+      register: sg_common
+      os_security_group:
+        name: "{{ cluster_name }}-common"
+        description: "Ansible generated common security group for {{ cluster_name }}"
+
+    # remote_group workaround for https://github.com/ansible/ansible-modules-core/issues/2855
+    - name: common SG - open cluster internal access
+      os_security_group_rule:
+        security_group: "{{ cluster_name }}-common"
+        remote_group: "{{ item }}"
+      with_items:
+        - ["{{ sg_common.secgroup.id }}", "{{ sg_bastion.secgroup.id }}" ]
+
+    - name: create data volume for master
+      os_volume:
+        display_name: "{{ cluster_name }}-master-data"
+        size: "{{ master_data_volume_size }}"
+        volume_type: standard
+        state: present
+
+    - name: create volume for OpenShift persistent volumes
+      os_volume:
+        display_name: "{{ cluster_name }}-pvol"
+        size: "{{ pvol_volume_size }}"
+        volume_type: standard
+        state: present
+
+    - name: create openshift master VM
+      register: master_vm
+      os_server:
+        name: "{{ cluster_name }}-master"
+        flavor: "{{ master_flavor }}"
+        image: "CentOS-7.0"
+        key_name: "{{ ssh_key }}"
+        network: "{{ network_name }}"
+        security_groups:
+          - "{{ cluster_name }}-common"
+          - "{{ cluster_name }}-master"
+        floating_ips: "{{ master_floating_ips }}"
+        boot_from_volume: "{{ boot_from_volume }}"
+        terminate_volume: yes
+        volume_size: 50
+
+    - name: attach data volume
+      os_server_volume:
+        server: "{{ cluster_name }}-master"
+        volume: "{{ cluster_name }}-master-data"
+
+    - name: attach pvol volume
+      os_server_volume:
+        server: "{{ cluster_name }}-master"
+        volume: "{{ cluster_name }}-pvol"
+
+    - name: add openshift master to runtime inventory
+      add_host:
+        name: "{{ cluster_name }}-master"
+        groups: masters
+        ansible_ssh_host: "{{ master_vm.openstack.private_v4 }}"
+        ansible_ssh_user: cloud-user
+        public_ip: "{{ master_vm.openstack.public_v4 }}"
+        public_name: "{{ lookup('dig', master_vm.openstack.public_v4 + '/PTR', wantlist=True)[0] }}"
+
+    - name: create data volumes for nodes
+      os_volume:
+        display_name: "{{ cluster_name }}-node-{{ item }}-data"
+        size: "{{ node_data_volume_size }}"
+        state: present
+      with_sequence: count={{ num_nodes }}
+
+    - name: create openshift node VMs
+      register: node_vms
+      os_server:
+        name: "{{ cluster_name }}-node-{{ item }}"
+        flavor: "{{ node_flavor }}"
+        image: "CentOS-7.0"
+        key_name: "{{ ssh_key }}"
+        network: "{{ network_name }}"
+        security_groups:
+          - "{{ cluster_name }}-common"
+          - "ssh-access-from-dac-bastion"
+        auto_ip: no
+        boot_from_volume: "{{ boot_from_volume }}"
+        terminate_volume: yes
+        volume_size: 50
+      with_sequence: count={{ num_nodes }}
+
+    - name: attach node data volumes
+      os_server_volume:
+        server: "{{ cluster_name }}-node-{{ item }}"
+        volume: "{{ cluster_name }}-node-{{ item }}-data"
+      with_sequence: count={{ num_nodes }}
+
+    - name: add openshift nodes to runtime inventory
+      add_host:
+        name: "{{ item.openstack.name }}"
+        groups: nodes
+        ansible_ssh_host: "{{ item.openstack.private_v4 }}"
+        ansible_ssh_user: cloud-user
+      with_items: "{{ node_vms.results }}"
+
+    - name: wait for master to come up
+      command: >
+        ssh -o BatchMode=yes
+        cloud-user@{{ master_vm.openstack.private_v4 }} true
+      register: result
+      until: result|success
+      retries: 300
+      delay: 5
+
+    - name: wait for nodes to come up
+      command: >
+        ssh -o BatchMode=yes
+        cloud-user@{{ item.openstack.private_v4 }} true
+      register: result
+      until: result|success
+      retries: 300
+      delay: 5
+      with_items: "{{ node_vms.results }}"
+
+    - name: master SG - open access to the master itself - 8443
+      os_security_group_rule:
+        security_group: "{{ cluster_name }}-master"
+        protocol: tcp
+        port_range_min: "{{ item }}"
+        port_range_max: "{{ item }}"
+        remote_ip_prefix: "{{ master_vm.openstack.public_v4 }}/32"
+      with_items:
+        - [22, 80, 443, 8443]
+
+- name: Generate inventory
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: create inventory on disk
+      template:
+        src: templates/openshift-inventory.j2
+        dest: ./openshift-inventory
+        backup: yes
