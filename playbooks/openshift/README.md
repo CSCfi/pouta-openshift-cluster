@@ -101,7 +101,7 @@ Finally run the installer (this will take a while)
 
 Also, create the persistent volumes at this point. Edit the playbook to suit your needs, then run it
 
-    $ ~/git/openshift-ansible-tourunen/setup_lvm_nfs.yml
+    $ vi ~/git/openshift-ansible-tourunen/setup_lvm_nfs.yml
     $ /usr/bin/ansible-playbook -v -i openshift-inventory ~/git/openshift-ansible-tourunen/setup_lvm_nfs.yml
 
 ### Configure the cluster
