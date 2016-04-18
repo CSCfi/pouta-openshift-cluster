@@ -40,7 +40,7 @@ This is a log of an example installation of a proof of concept cluster with
 
 Shell environment with
 - cPouta credentials and Open
-- python virtualenvironment with ansible>=2.0.1, shade and 
+- python virtualenvironment with ansible>=2.1.0, shade and dnspython
 - ssh access to the internal network of your project
     - either run this on your bastion host
     - or set up ssh forwarding through your bastion host in your ~/.ssh/config 
@@ -87,7 +87,7 @@ Create a new directory and populate a config file
 
 ### Run provisioning
 
-First provision the VMs and assosiated resources
+First provision the VMs and associated resources
 
     $ ansible-playbook -v -e @cluster_vars.yaml ~/git/pouta-ansible-cluster/playbooks/openshift/provision.yml 
 

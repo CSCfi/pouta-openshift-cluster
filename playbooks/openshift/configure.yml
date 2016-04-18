@@ -7,7 +7,7 @@
     - base
 
     - role: persistent_lvm_storage
-      pv_path: '/dev/vdc'
+      pv_path: "{{ pv_vg_data }}"
       vg_name: 'vg_data'
       configure_swap: yes
 
@@ -24,6 +24,6 @@
     - cluster_master
     - openshift_master
     - role: persistent_lvm_storage
-      pv_path: '/dev/vdd'
+      pv_path: "{{ pv_vg_pvol }}"
       vg_name: 'vg_pvol'
       configure_swap: no
