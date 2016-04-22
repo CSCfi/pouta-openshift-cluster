@@ -1,7 +1,12 @@
-- name: Create logical volume for docker
+- name: Scan for {{ docker_lvol_vg_name }}-docker logical volume
+  command: lvdisplay {{ docker_lvol_vg_name }}/docker
+  register: test_lv
+  ignore_errors: yes
+
+- name: Create logical volume {{ docker_lvol_vg_name }}-docker for docker
   lvol:
     lv=docker vg=vg_data opts="-T" size="{{ docker_lvol_size }}"
-  when: "{{ docker_lvol_size is defined }}"
+  when: test_lv.rc==5 and {{ docker_lvol_size is defined }}
 
 - name: disable auto-updates on Pouta (these can cause container restarts)
   file: name=/etc/cron.daily/automatic_updates state=absent

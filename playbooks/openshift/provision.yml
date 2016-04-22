@@ -4,19 +4,39 @@
   connection: local
   vars:
     ssh_key: "my_key"
+    num_masters: 1
+    num_etcd: 0
     num_nodes: 2
     cluster_name: "my-oso"
-    master_floating_ips: None
-    master_auto_ip: yes
-    boot_from_volume: yes
-    master_flavor: "mini"
-    node_flavor: "mini"
     network_name: ""
+    network_cidr: "192.168.1.0/24"
+    boot_from_volume: yes
+    master_flavor: "standard.small"
+    node_flavor: "standard.small"
+    etcd_flavor: "standard.tiny"
+    lb_flavor: "standard.tiny"
     bastion_secgroup: "bastion"
     master_data_volume_size: 50
     pvol_volume_size: 50
     node_data_volume_size: 50
   tasks:
+    - name: create network
+      register: network_facts
+      os_network:
+        name: "{{ network_name }}"
+        state: present
+      when: network_name|default("") != ""
+
+    - name: create subnet
+      os_subnet:
+        network_name: "{{ network_name }}"
+        name: "{{ network_name }}-subnet-1"
+        cidr: "{{ network_cidr }}"
+        dns_nameservers:
+         - 193.166.4.24
+         - 193.166.4.25
+      when: network_name|default("") != ""
+
     - name: bastion security group - create
       register: sg_bastion
       os_security_group:
@@ -42,12 +62,13 @@
       with_items:
         - ["{{ sg_common.secgroup.id }}", "{{ sg_bastion.secgroup.id }}" ]
 
-    - name: create data volume for master
+    - name: create data volumes for masters
       os_volume:
-        display_name: "{{ cluster_name }}-master-data"
+        display_name: "{{ cluster_name }}-master-{{ item }}-data"
         size: "{{ master_data_volume_size }}"
         volume_type: standard
         state: present
+      with_sequence: count={{ num_masters }}
 
     - name: create volume for OpenShift persistent volumes
       os_volume:
@@ -56,10 +77,10 @@
         volume_type: standard
         state: present
 
-    - name: create openshift master VM
-      register: master_vm
+    - name: create openshift master VMs
+      register: master_vms
       os_server:
-        name: "{{ cluster_name }}-master"
+        name: "{{ cluster_name }}-master-{{ item }}"
         flavor: "{{ master_flavor }}"
         image: "CentOS-7.0"
         key_name: "{{ ssh_key }}"
@@ -67,29 +88,32 @@
         security_groups:
           - "{{ cluster_name }}-common"
           - "{{ cluster_name }}-master"
-        floating_ips: "{{ master_floating_ips }}"
+        auto_ip: no
         boot_from_volume: "{{ boot_from_volume }}"
         terminate_volume: yes
         volume_size: 50
+        scheduler_hints:
+          group: "{{ cluster_name }}-masters"
+      with_sequence: count={{ num_masters }}
 
-    - name: attach data volume
+    - name: attach data volumes
       os_server_volume:
-        server: "{{ cluster_name }}-master"
-        volume: "{{ cluster_name }}-master-data"
+        server: "{{ cluster_name }}-master-{{ item }}"
+        volume: "{{ cluster_name }}-master-{{ item }}-data"
+      with_sequence: count={{ num_masters }}
 
-    - name: attach pvol volume
+    - name: attach pvol volume to master-1
       os_server_volume:
-        server: "{{ cluster_name }}-master"
+        server: "{{ cluster_name }}-master-1"
         volume: "{{ cluster_name }}-pvol"
 
-    - name: add openshift master to runtime inventory
+    - name: add openshift masters to runtime inventory
       add_host:
-        name: "{{ cluster_name }}-master"
+        name: "{{ item.openstack.name }}"
         groups: masters
-        ansible_ssh_host: "{{ master_vm.openstack.private_v4 }}"
+        ansible_ssh_host: "{{ item.openstack.private_v4 }}"
         ansible_ssh_user: cloud-user
-        public_ip: "{{ master_vm.openstack.public_v4 }}"
-        public_name: "{{ lookup('dig', master_vm.openstack.public_v4 + '/PTR', wantlist=True)[0] }}"
+      with_items: "{{ master_vms.results }}"
 
     - name: create data volumes for nodes
       os_volume:
@@ -108,7 +132,6 @@
         network: "{{ network_name }}"
         security_groups:
           - "{{ cluster_name }}-common"
-          - "ssh-access-from-dac-bastion"
         auto_ip: no
         boot_from_volume: "{{ boot_from_volume }}"
         terminate_volume: yes
@@ -131,32 +154,73 @@
         ansible_ssh_user: cloud-user
       with_items: "{{ node_vms.results }}"
 
-    - name: wait for master to come up
-      command: >
-        ssh -o BatchMode=yes
-        cloud-user@{{ master_vm.openstack.private_v4 }} true
-      register: result
-      until: result|success
-      retries: 300
-      delay: 5
+    - name: create etcd VMs
+      register: etcd_vms
+      os_server:
+        name: "{{ cluster_name }}-etcd-{{ item }}"
+        flavor: "{{ etcd_flavor }}"
+        image: "CentOS-7.0"
+        key_name: "{{ ssh_key }}"
+        network: "{{ network_name }}"
+        security_groups:
+          - "{{ cluster_name }}-common"
+        auto_ip: no
+        boot_from_volume: "{{ boot_from_volume }}"
+        terminate_volume: yes
+        volume_size: 50
+        scheduler_hints:
+          group: "{{ cluster_name }}-etcd"
+      with_sequence: count={{ num_etcd }}
 
-    - name: wait for nodes to come up
-      command: >
-        ssh -o BatchMode=yes
-        cloud-user@{{ item.openstack.private_v4 }} true
-      register: result
-      until: result|success
-      retries: 300
-      delay: 5
-      with_items: "{{ node_vms.results }}"
+    - name: add etcd VMs to runtime inventory
+      add_host:
+        name: "{{ item.openstack.name }}"
+        groups: etcd
+        ansible_ssh_host: "{{ item.openstack.private_v4 }}"
+        ansible_ssh_user: cloud-user
+      with_items: "{{ etcd_vms.results }}"
 
-    - name: master SG - open access to the master itself - 8443
+    - name: create data volume for load balancer
+      os_volume:
+        display_name: "{{ cluster_name }}-lb-data"
+        size: "{{ node_data_volume_size }}"
+        state: present
+
+    - name: create load balancer VM
+      register: lb_vm
+      os_server:
+        name: "{{ cluster_name }}-lb"
+        flavor: "{{ lb_flavor }}"
+        image: "CentOS-7.0"
+        key_name: "{{ ssh_key }}"
+        network: "{{ network_name }}"
+        security_groups:
+          - "{{ cluster_name }}-common"
+          - "{{ cluster_name }}-master"
+        floating_ips: "{{ [openshift_public_ip] }}"
+        boot_from_volume: "{{ boot_from_volume }}"
+        terminate_volume: yes
+        volume_size: 50
+
+    - name: attach load balancer data volume
+      os_server_volume:
+        server: "{{ cluster_name }}-lb"
+        volume: "{{ cluster_name }}-lb-data"
+
+    - name: add load balancer VM to runtime inventory
+      add_host:
+        name: "{{ lb_vm.openstack.name }}"
+        groups: lbs
+        ansible_ssh_host: "{{ lb_vm.openstack.private_v4 }}"
+        ansible_ssh_user: cloud-user
+
+    - name: master SG - open access to the master itself
       os_security_group_rule:
         security_group: "{{ cluster_name }}-master"
         protocol: tcp
         port_range_min: "{{ item }}"
         port_range_max: "{{ item }}"
-        remote_ip_prefix: "{{ master_vm.openstack.public_v4 }}/32"
+        remote_ip_prefix: "{{ openshift_public_ip }}/32"
       with_items:
         - [22, 80, 443, 8443]
 

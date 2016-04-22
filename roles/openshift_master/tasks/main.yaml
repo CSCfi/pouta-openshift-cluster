@@ -7,3 +7,12 @@
     dest: /etc/dnsmasq.d/openshift_local_forward.conf
     force: no
   notify: restart_dnsmasq
+
+- name: open port 8053 for internal DNS
+  lineinfile:
+    line: "{{ item }}"
+    dest: /etc/sysconfig/iptables
+    insertbefore: '^-A INPUT'
+  with_items:
+    - "-A INPUT -p udp -m udp --dport 8053 -j ACCEPT"
+    - "-A INPUT -p tcp -m tcp --dport 8053 -j ACCEPT"

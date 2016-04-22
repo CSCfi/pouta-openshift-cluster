@@ -1,28 +1,43 @@
-- name: Configure openshift common parts
+- name: Configure cluster common parts
   hosts:
     - masters
     - nodes
+    - etcd
+    - lbs
   become: yes
   roles:
     - base
+    - cluster_common
 
+- name: Configure openshift VMs
+  hosts:
+    - masters
+    - nodes
+    - lbs
+  become: yes
+  roles:
     - role: persistent_lvm_storage
       pv_path: "{{ pv_vg_data }}"
       vg_name: 'vg_data'
       configure_swap: yes
 
-    - cluster_common
-
     - role: docker_host
       docker_lvol_size: "100%FREE"
+      docker_lvol_vg_name: "vg_data"
 
-- name: Configure openshift master parts
+- name: Configure openshift masters
   hosts:
     - masters
   become: yes
   roles:
     - cluster_master
     - openshift_master
+
+- name: Configure nfs server
+  hosts:
+    - nfsservers
+  become: yes
+  roles:
     - role: persistent_lvm_storage
       pv_path: "{{ pv_vg_pvol }}"
       vg_name: 'vg_pvol'

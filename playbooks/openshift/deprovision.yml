@@ -4,8 +4,10 @@
   vars:
     cluster_name: "my-oso"
     num_nodes: 2
-    remove_master: no
+    remove_masters: no
     remove_nodes: no
+    remove_etcd: no
+    remove_lb: no
     remove_master_volumes: no
     remove_node_volumes: no
     remove_pvol: no
@@ -19,11 +21,25 @@
       with_sequence: count={{ num_nodes }}
       when: remove_nodes | bool
 
-    - name: remove master VM
+    - name: remove master VMs
       os_server:
-        name: "{{ cluster_name }}-master"
+        name: "{{ cluster_name }}-master-{{ item }}"
         state: absent
-      when: remove_master | bool
+      with_sequence: count={{ num_masters }}
+      when: remove_masters | bool
+
+    - name: remove etcd VMs
+      os_server:
+        name: "{{ cluster_name }}-etcd-{{ item }}"
+        state: absent
+      with_sequence: count={{ num_etcd }}
+      when: remove_etcd | bool
+
+    - name: remove load balancer VMs
+      os_server:
+        name: "{{ cluster_name }}-lb"
+        state: absent
+      when: remove_lb | bool
 
     - name: remove node volumes
       os_volume:
@@ -34,8 +50,9 @@
 
     - name: remove master volumes
       os_volume:
-        display_name: "{{ cluster_name }}-master-data"
+        display_name: "{{ cluster_name }}-master-{{ item }}-data"
         state: absent
+      with_sequence: count={{ num_masters }}
       when: remove_master_volumes | bool
 
     - name: remove openshift persistent volume

@@ -6,15 +6,21 @@ ansible_ssh_user=cloud-user
 ansible_sudo=true
 
 # set openstack-ansible install type
-containerized=true
+containerized={{ oso_install_containerized | default(true) }}
 deployment_type=origin
+
+# cluster method
+openshift_master_cluster_method=native
 
 # move the internal DNS away from port 53, where we have dnsmasq for cluster DNS
 openshift_master_dns_port=8053
 
-openshift_public_hostname={{ openshift_public_hostname | default(hostvars[groups['masters'][0]]['public_name']) }}
-openshift_public_ip={{ hostvars[groups['masters'][0]]['public_ip'] }}
+openshift_public_hostname={{ openshift_public_hostname }}
+openshift_public_ip={{ openshift_public_ip }}
 openshift_master_api_url=https://{{ groups['masters'][0] }}.novalocal:8443
+
+# use openshift's own dnsmasq
+# openshift_node_dnsmasq=true
 
 # set authentication to htpasswd
 openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
@@ -22,9 +28,16 @@ openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 
 # as a guess, set the default subdomain to openshift_public_hostname
 osm_default_subdomain={{ openshift_public_hostname }}
 
+openshift_hosted_router_selector='region=network'
+
 [OSEv3:children]
 masters
 nodes
+etcd
+lb
+
+[masters:vars]
+pv_vg_data={{ master_pv_vg_data }}
 
 [masters]
 
@@ -32,19 +45,36 @@ nodes
 {{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }}
 {% endfor %}
 
+[nodes:vars]
+pv_vg_data={{ node_pv_vg_data }}
+
 [nodes]
 
 {% for master in groups['masters'] %}
 {{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'infra'}"
 {% endfor %}
 
-
 {% for node in groups['nodes'] %}
 {{ node }} ansible_ssh_host={{ hostvars[node]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'default'}"
 {% endfor %}
 
+{% for lb in groups['lbs'] %}
+{{ lb }} ansible_ssh_host={{ hostvars[lb]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'network'}"
+{% endfor %}
+
+[nfsservers:vars]
+pv_vg_pvol={{ pv_vg_pvol }}
+
 [nfsservers]
 
-{% for master in groups['masters'] %}
-{{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }}
+{{ groups['masters'][0] }} ansible_ssh_host={{ hostvars[groups['masters'][0]]['ansible_ssh_host'] }}
+
+[etcd]
+{% for vm in groups['etcd'] %}
+{{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }}
+{% endfor %}
+
+[lb]
+{% for vm in groups['lbs'] %}
+{{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }}
 {% endfor %}
