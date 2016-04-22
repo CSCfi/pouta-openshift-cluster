@@ -1,0 +1,17 @@
+[all:vars]
+ansible_ssh_user=cloud-user
+ansible_sudo=true
+cluster_name={{ cluster_name }}
+num_nodes={{ num_nodes }}
+
+[masters]
+
+{% for master in groups['masters'] %}
+{{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }}
+{% endfor %}
+
+[nodes]
+
+{% for node in groups['nodes'] %}
+{{ node }} ansible_ssh_host={{ hostvars[node]['ansible_ssh_host'] }}
+{% endfor %}
