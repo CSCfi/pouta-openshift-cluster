@@ -28,3 +28,7 @@
 
 - name: authorize ssh with the downloaded key
   authorized_key: user=cloud-user key="{{ lookup('file', '/tmp/id_rsa.pub') }}"
+
+- name: set SELinux state
+  selinux: state="{{ selinux_state }}"
+  when: selinux_state is defined

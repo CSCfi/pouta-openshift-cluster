@@ -1,5 +1,4 @@
 ---
-
 - name: add entries to /etc/hosts for all cluster members
   lineinfile:
     state: present
