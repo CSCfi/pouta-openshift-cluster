@@ -14,7 +14,8 @@
     node_boot_from_volume: no
     network_name: ""
     bastion_secgroup: "bastion"
-    data_volume_size: 200
+    master_volume_size: 50
+    node_volume_size: 200
     data_volume_type: "standard"
   tasks:
     - name: bastion security group - create
@@ -51,7 +52,7 @@
     - name: create persistent data volume for master
       os_volume:
         display_name: "{{ cluster_name }}-master-data"
-        size: "{{ data_volume_size }}"
+        size: "{{ master_volume_size }}"
         volume_type: "{{ data_volume_type }}"
         state: present
 
@@ -92,7 +93,7 @@
     - name: create persistent data volumes for nodes
       os_volume:
         display_name: "{{ cluster_name }}-node-{{ item }}-data"
-        size: "{{ data_volume_size }}"
+        size: "{{ node_volume_size }}"
         volume_type: "{{ data_volume_type }}"
         state: present
       with_sequence: count={{ num_nodes }}
