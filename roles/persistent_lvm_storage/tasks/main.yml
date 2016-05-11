@@ -3,6 +3,14 @@
   register: test_vg
   ignore_errors: yes
 
+# in case the volumes were there, activate them in case they are reused from a previous incarnation
+- name: activate lvs
+  command: lvchange -ay {{ vg_name }}/{{ item }}
+  with_items:
+    - data
+    - swap
+  when: test_vg.rc!=5
+
 - name: Create a physical volume on {{ pv_path }}
   command: /usr/sbin/pvcreate {{ pv_path }}
   when: test_vg.rc==5
