@@ -41,6 +41,12 @@
         state: absent
       when: remove_lb | bool
 
+    - name: remove load_balancer volumes
+      os_volume:
+        display_name: "{{ cluster_name }}-lb-data"
+        state: absent
+      when: remove_lb_volumes | bool
+
     - name: remove node volumes
       os_volume:
         display_name: "{{ cluster_name }}-node-{{ item }}-data"
