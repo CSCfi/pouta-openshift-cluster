@@ -5,10 +5,7 @@
 
 # in case the volumes were there, activate them in case they are reused from a previous incarnation
 - name: activate lvs
-  command: lvchange -ay {{ vg_name }}/{{ item }}
-  with_items:
-    - data
-    - swap
+  command: vgchange -ay {{ vg_name }}
   when: test_vg.rc!=5
 
 - name: Create a physical volume on {{ pv_path }}
