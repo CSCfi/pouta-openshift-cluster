@@ -20,7 +20,7 @@ openshift_public_ip={{ openshift_public_ip }}
 openshift_master_api_url=https://{{ groups['masters'][0] }}.novalocal:8443
 
 # use openshift's own dnsmasq
-# openshift_node_dnsmasq=true
+openshift_use_dnsmasq=false
 
 # set authentication to htpasswd
 openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
