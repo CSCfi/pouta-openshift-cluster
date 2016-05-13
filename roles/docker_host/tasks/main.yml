@@ -5,7 +5,7 @@
 
 - name: Create logical volume {{ docker_lvol_vg_name }}-docker for docker
   lvol:
-    lv=docker vg=vg_data opts="-T" size="{{ docker_lvol_size }}"
+    lv=docker vg=vg_data opts="-T --pool-metadata-size=1G" size="{{ docker_lvol_size }}"
   when: test_lv.rc==5 and {{ docker_lvol_size is defined }}
 
 - name: disable auto-updates on Pouta (these can cause container restarts)
