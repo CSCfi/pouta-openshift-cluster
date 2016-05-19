@@ -39,7 +39,7 @@
       os_server:
         name: "{{ cluster_name }}-lb"
         state: absent
-      when: remove_lb | bool
+      when: remove_lbs | bool
 
     - name: remove load_balancer volumes
       os_volume:
