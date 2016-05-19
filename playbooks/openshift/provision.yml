@@ -62,6 +62,17 @@
       with_items:
         - ["{{ sg_common.secgroup.id }}", "{{ sg_bastion.secgroup.id }}" ]
 
+    - name: open access from project router (NAT) and external ip
+      os_security_group_rule:
+        security_group: "{{ cluster_name }}-master"
+        protocol: tcp
+        port_range_min: 8443
+        port_range_max: 8443
+        remote_ip_prefix: "{{ item }}/32"
+      with_items: "{{ project_external_ips }}"
+      when: project_external_ips is defined
+
+
     - name: create data volumes for masters
       os_volume:
         display_name: "{{ cluster_name }}-master-{{ item }}-data"
@@ -233,3 +244,4 @@
         src: templates/openshift-inventory.j2
         dest: ./openshift-inventory
         backup: yes
+
