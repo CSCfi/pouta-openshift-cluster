@@ -15,9 +15,15 @@ openshift_master_cluster_method=native
 # move the internal DNS away from port 53, where we have dnsmasq for cluster DNS
 openshift_master_dns_port=8053
 
-openshift_public_hostname={{ openshift_public_hostname }}
-openshift_public_ip={{ openshift_public_ip }}
-openshift_master_api_url=https://{{ groups['masters'][0] }}.novalocal:8443
+# openshift_public_hostname={{ openshift_public_hostname }}
+# openshift_public_ip={{ openshift_public_ip }}
+
+# openshift_master_api_url=https://{{ openshift_public_hostname }}:8443
+
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname={{ groups['lbs'][0] }}
+openshift_master_cluster_public_hostname={{ openshift_public_hostname }}
+
 
 # use openshift's own dnsmasq
 openshift_use_dnsmasq=false
@@ -28,7 +34,13 @@ openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 
 # as a guess, set the default subdomain to openshift_public_hostname
 osm_default_subdomain={{ openshift_public_hostname }}
 
+# deploy the router on a node with external IP
 openshift_hosted_router_selector='region=network'
+
+{% if certificate_crt is defined %}
+openshift_master_named_certificates=[{'certfile': '{{ certificate_crt }}', 'keyfile': '{{ certificate_key }}' }]
+openshift_master_overwrite_named_certificates=true
+{% endif %}
 
 [OSEv3:children]
 masters
