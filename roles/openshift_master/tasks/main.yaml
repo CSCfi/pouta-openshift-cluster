@@ -16,3 +16,12 @@
   with_items:
     - "-A INPUT -p udp -m udp --dport 8053 -j ACCEPT"
     - "-A INPUT -p tcp -m tcp --dport 8053 -j ACCEPT"
+
+- name: copy router certificate to masters
+  copy:
+    src: "{{ router_wildcard_cert_pem }}"
+    dest: "/root/router_wildcard_cert.pem"
+    owner: root
+    group: root
+    mode: 0400
+  when: router_wildcard_cert_pem is defined
