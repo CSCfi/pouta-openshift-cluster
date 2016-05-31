@@ -1,7 +1,6 @@
 # Ansible generated inventory. Will be overwritten by provision.yml
 
 [OSEv3:vars]
-
 ansible_ssh_user=cloud-user
 ansible_sudo=true
 
@@ -28,8 +27,12 @@ openshift_master_cluster_public_hostname={{ openshift_public_hostname }}
 # use openshift's own dnsmasq
 openshift_use_dnsmasq=false
 
-# set authentication to htpasswd
+# set authentication to htpasswd and provide a htpasswd file
 openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+
+{% if openshift_master_htpasswd_file is defined %}
+openshift_master_htpasswd_file={{ openshift_master_htpasswd_file }}
+{% endif %}
 
 # as a guess, set the default subdomain to openshift_public_hostname
 osm_default_subdomain={{ openshift_public_hostname }}
@@ -37,9 +40,11 @@ osm_default_subdomain={{ openshift_public_hostname }}
 # deploy the router on a node with external IP
 openshift_hosted_router_selector='region=network'
 
+# if the wildcard cert is defined, set it for api and router
 {% if certificate_crt is defined %}
 openshift_master_named_certificates=[{'certfile': '{{ certificate_crt }}', 'keyfile': '{{ certificate_key }}' }]
 openshift_master_overwrite_named_certificates=true
+openshift_hosted_router_certificate={'certfile': '{{ certificate_crt }}', 'keyfile': '{{ certificate_key }}' }
 {% endif %}
 
 [OSEv3:children]
@@ -51,8 +56,8 @@ lb
 [masters:vars]
 pv_vg_data={{ master_pv_vg_data }}
 router_wildcard_cert_pem={{ router_wildcard_cert_pem }}
-[masters]
 
+[masters]
 {% for master in groups['masters'] %}
 {{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }}
 {% endfor %}
@@ -61,7 +66,6 @@ router_wildcard_cert_pem={{ router_wildcard_cert_pem }}
 pv_vg_data={{ node_pv_vg_data }}
 
 [nodes]
-
 {% for master in groups['masters'] %}
 {{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'infra'}"
 {% endfor %}
@@ -78,7 +82,6 @@ pv_vg_data={{ node_pv_vg_data }}
 pv_vg_pvol={{ pv_vg_pvol }}
 
 [nfsservers]
-
 {{ groups['masters'][0] }} ansible_ssh_host={{ hostvars[groups['masters'][0]]['ansible_ssh_host'] }}
 
 [etcd]
