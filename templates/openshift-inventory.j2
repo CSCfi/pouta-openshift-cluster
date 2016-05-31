@@ -23,7 +23,6 @@ openshift_master_cluster_method=native
 openshift_master_cluster_hostname={{ groups['lbs'][0] }}
 openshift_master_cluster_public_hostname={{ openshift_public_hostname }}
 
-
 # use openshift's own dnsmasq
 openshift_use_dnsmasq=false
 
@@ -55,7 +54,6 @@ lb
 
 [masters:vars]
 pv_vg_data={{ master_pv_vg_data }}
-router_wildcard_cert_pem={{ router_wildcard_cert_pem }}
 
 [masters]
 {% for master in groups['masters'] %}
