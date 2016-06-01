@@ -1,0 +1,49 @@
+name: status
+root: /home/cloud-user
+
+windows:
+  - overview:
+      layout: even-horizontal
+      panes:
+        - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }} watch -n 10 oc get pods --all-namespaces
+        - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }} watch -n 10 oc get routes --all-namespaces
+        - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }} watch -n 10 oc get pvc --all-namespaces
+
+  - masters-logs:
+      layout: even-vertical
+      panes:
+{% for host in groups['masters'] %}
+        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} sudo journalctl -f -u 'origin*'
+{% endfor %}
+
+  - masters-dstat:
+      layout: even-vertical
+      panes:
+{% for host in groups['masters'] %}
+        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+{% endfor %}
+
+  - nodes-dstat:
+      layout: even-vertical
+      panes:
+{% for host in groups['nodes'] %}
+        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+{% endfor %}
+
+{% if 'etcd' in groups %}
+  - etcd-dstat:
+      layout: even-vertical
+      panes:
+{% for host in groups['etcd'] %}
+        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+{% endfor %}
+{% endif %}
+
+{% if 'lbs' in groups %}
+  - lbs-dstat:
+      layout: even-vertical
+      panes:
+{% for host in groups['lbs'] %}
+        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+{% endfor %}
+{% endif %}
