@@ -37,14 +37,16 @@
 
     - name: remove load balancer VMs
       os_server:
-        name: "{{ cluster_name }}-lb"
+        name: "{{ cluster_name }}-lb-{{ item }}"
         state: absent
+      with_sequence: count={{ num_lbs }}
       when: remove_lbs | bool
 
     - name: remove load_balancer volumes
       os_volume:
-        display_name: "{{ cluster_name }}-lb-data"
+        display_name: "{{ cluster_name }}-lb-{{ item }}-data"
         state: absent
+      with_sequence: count={{ num_lbs }}
       when: remove_lb_volumes | bool
 
     - name: remove node volumes

@@ -5,8 +5,9 @@
   vars:
     ssh_key: "my_key"
     num_masters: 1
-    num_etcd: 0
     num_nodes: 2
+    num_etcd: 0
+    num_lbs: 0
     cluster_name: "my-oso"
     network_name: ""
     network_cidr: "192.168.1.0/24"
@@ -107,6 +108,12 @@
           group: "{{ cluster_name }}-masters"
       with_sequence: count={{ num_masters }}
 
+    - name: single master public ip
+      os_floating_ip:
+        server: "{{ cluster_name }}-master-1"
+        floating_ip_address: "{{ openshift_public_ip }}"
+      when: num_masters == 1
+
     - name: attach data volumes
       os_server_volume:
         server: "{{ cluster_name }}-master-{{ item }}"
@@ -193,14 +200,15 @@
 
     - name: create data volume for load balancer
       os_volume:
-        display_name: "{{ cluster_name }}-lb-data"
+        display_name: "{{ cluster_name }}-lb-{{ item }}-data"
         size: "{{ node_data_volume_size }}"
         state: present
+      with_sequence: count={{ num_lbs }}
 
-    - name: create load balancer VM
-      register: lb_vm
+    - name: create load balancer VMs
+      register: lb_vms
       os_server:
-        name: "{{ cluster_name }}-lb"
+        name: "{{ cluster_name }}-lb-{{ item }}"
         flavor: "{{ lb_flavor }}"
         image: "CentOS-7.0"
         key_name: "{{ ssh_key }}"
@@ -212,18 +220,21 @@
         boot_from_volume: "{{ boot_from_volume }}"
         terminate_volume: yes
         volume_size: 50
+      with_sequence: count={{ num_lbs }}
 
-    - name: attach load balancer data volume
+    - name: attach load balancer data volumes
       os_server_volume:
-        server: "{{ cluster_name }}-lb"
-        volume: "{{ cluster_name }}-lb-data"
+        server: "{{ cluster_name }}-lb-{{ item }}"
+        volume: "{{ cluster_name }}-lb-{{ item }}-data"
+      with_sequence: count={{ num_lbs }}
 
-    - name: add load balancer VM to runtime inventory
+    - name: add load balancer VMs to runtime inventory
       add_host:
-        name: "{{ lb_vm.openstack.name }}"
+        name: "{{ item.openstack.name }}"
         groups: lbs
-        ansible_ssh_host: "{{ lb_vm.openstack.private_v4 }}"
+        ansible_ssh_host: "{{ item.openstack.private_v4 }}"
         ansible_ssh_user: cloud-user
+      with_items: "{{ lb_vms.results }}"
 
     - name: master SG - open access to the master itself
       os_security_group_rule:
