@@ -3,11 +3,22 @@ root: /home/cloud-user
 
 windows:
   - overview:
-      layout: even-horizontal
+      layout: tiled
       panes:
-        - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }} watch -n 10 oc get pods --all-namespaces
-        - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }} watch -n 10 oc get routes --all-namespaces
-        - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }} watch -n 10 oc get pvc --all-namespaces
+        - pods:
+          - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
+          - watch -n 10 oc get pods --all-namespaces
+        - routes:
+          - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
+          - watch -n 10 oc get routes --all-namespaces
+        - pvc:
+          - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
+          - watch -n 10 oc get pvc --all-namespaces
+        - pods_per_node:
+            - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
+            {% raw %}
+            - watch -n 10 "oc get pods --all-namespaces --template='{{range .items}}{{.spec.nodeName}}~{{.status.phase}}#{{end}}' | tr '~#' '\t\n' | sort | uniq -c"
+            {% endraw %}
 
   - masters-logs:
       layout: even-vertical

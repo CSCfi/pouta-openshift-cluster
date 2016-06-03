@@ -16,7 +16,6 @@ openshift_master_dns_port=8053
 openshift_master_cluster_method=native
 openshift_master_cluster_hostname={{ groups['lbs'][0] }}
 openshift_master_cluster_public_hostname={{ openshift_public_hostname }}
-
 {% else %}
 # single "master runs all the bells and whistles" installation
 openshift_public_hostname={{ openshift_public_hostname }}
@@ -74,7 +73,6 @@ pv_vg_data={{ node_pv_vg_data }}
 {% for master in groups['masters'] %}
 {{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'infra'}"
 {% endfor %}
-
 {% for node in groups['nodes'] %}
 {{ node }} ansible_ssh_host={{ hostvars[node]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'default'}"
 {% endfor %}
