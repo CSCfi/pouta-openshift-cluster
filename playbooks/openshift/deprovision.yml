@@ -4,38 +4,55 @@
   vars:
     cluster_name: "my-oso"
     num_nodes: 2
-    remove_master: no
+    remove_masters: no
     remove_nodes: no
+    remove_etcd: no
+    remove_lb: no
     remove_master_volumes: no
     remove_node_volumes: no
     remove_pvol: no
     remove_security_groups: no
 
   tasks:
-    - name: remove node VMs
-      os_server:
-        name: "{{ cluster_name }}-node-{{ item }}"
-        state: absent
-      with_sequence: count={{ num_nodes }}
-      when: remove_nodes | bool
+    - name: deprovision node groups
+      include: tasks/deprovision_node_group.yml
+      with_items: "{{ node_groups }}"
+      loop_control:
+        loop_var: "node_group"
 
-    - name: remove master VM
+    - name: remove master VMs
       os_server:
-        name: "{{ cluster_name }}-master"
+        name: "{{ cluster_name }}-master-{{ item }}"
         state: absent
-      when: remove_master | bool
+      with_sequence: count={{ num_masters }}
+      when: remove_masters | bool
 
-    - name: remove node volumes
+    - name: remove etcd VMs
+      os_server:
+        name: "{{ cluster_name }}-etcd-{{ item }}"
+        state: absent
+      with_sequence: count={{ num_etcd }}
+      when: remove_etcd | bool
+
+    - name: remove load balancer VMs
+      os_server:
+        name: "{{ cluster_name }}-lb-{{ item }}"
+        state: absent
+      with_sequence: count={{ num_lbs }}
+      when: remove_lbs | bool
+
+    - name: remove load_balancer volumes
       os_volume:
-        display_name: "{{ cluster_name }}-node-{{ item }}-data"
+        display_name: "{{ cluster_name }}-lb-{{ item }}-data"
         state: absent
-      with_sequence: count={{ num_nodes }}
-      when: remove_node_volumes | bool
+      with_sequence: count={{ num_lbs }}
+      when: remove_lb_volumes | bool
 
     - name: remove master volumes
       os_volume:
-        display_name: "{{ cluster_name }}-master-data"
+        display_name: "{{ cluster_name }}-master-{{ item }}-data"
         state: absent
+      with_sequence: count={{ num_masters }}
       when: remove_master_volumes | bool
 
     - name: remove openshift persistent volume

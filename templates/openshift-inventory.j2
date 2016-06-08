@@ -1,50 +1,96 @@
 # Ansible generated inventory. Will be overwritten by provision.yml
 
 [OSEv3:vars]
-
 ansible_ssh_user=cloud-user
 ansible_sudo=true
 
 # set openstack-ansible install type
-containerized=true
+containerized={{ oso_install_containerized | default(false) }}
 deployment_type=origin
 
 # move the internal DNS away from port 53, where we have dnsmasq for cluster DNS
 openshift_master_dns_port=8053
 
-openshift_public_hostname={{ openshift_public_hostname | default(hostvars[groups['masters'][0]]['public_name']) }}
-openshift_public_ip={{ hostvars[groups['masters'][0]]['public_ip'] }}
+{% if num_masters > 1 %}
+# clustered installation
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname={{ groups['lbs'][0] }}
+openshift_master_cluster_public_hostname={{ openshift_public_hostname }}
+{% else %}
+# single "master runs all the bells and whistles" installation
+openshift_public_hostname={{ openshift_public_hostname }}
+openshift_public_ip={{ openshift_public_ip }}
 openshift_master_api_url=https://{{ groups['masters'][0] }}.novalocal:8443
+{% endif %}
 
-# set authentication to htpasswd
+# use openshift's own dnsmasq
+openshift_use_dnsmasq=false
+
+# set authentication to htpasswd and provide a htpasswd file
 openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+
+{% if openshift_master_htpasswd_file is defined %}
+openshift_master_htpasswd_file={{ openshift_master_htpasswd_file }}
+{% endif %}
 
 # as a guess, set the default subdomain to openshift_public_hostname
 osm_default_subdomain={{ openshift_public_hostname }}
 
+# deploy the router on a node with external IP
+{% if num_masters > 1 %}
+openshift_hosted_router_selector='region=network'
+{% else %}
+openshift_hosted_router_selector='region=infra'
+{% endif %}
+
+# if the wildcard cert is defined, set it for api and router
+{% if certificate_crt is defined %}
+openshift_master_named_certificates=[{'certfile': '{{ certificate_crt }}', 'keyfile': '{{ certificate_key }}' }]
+openshift_master_overwrite_named_certificates=true
+openshift_hosted_router_certificate={'certfile': '{{ certificate_crt }}', 'keyfile': '{{ certificate_key }}' }
+{% endif %}
+
 [OSEv3:children]
 masters
 nodes
+{% if num_masters > 1 %}
+etcd
+lb
+{% endif %}
 
 [masters]
-
 {% for master in groups['masters'] %}
-{{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }}
+{{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }} pv_vg_data={{ master_pv_vg_data }}
 {% endfor %}
 
 [nodes]
-
 {% for master in groups['masters'] %}
 {{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'infra'}"
 {% endfor %}
-
-
 {% for node in groups['nodes'] %}
-{{ node }} ansible_ssh_host={{ hostvars[node]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'default'}"
+{{ node }} ansible_ssh_host={{ hostvars[node]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'default', 'type': '{{ hostvars[node]['type'] }}' }" pv_vg_data={{ hostvars[node]['pv_vg_data'] }}
 {% endfor %}
+
+{% if num_masters > 1 %}
+{% for lb in groups['lbs'] %}
+{{ lb }} ansible_ssh_host={{ hostvars[lb]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'network'}"
+{% endfor %}
+{% endif %}
+
+[nfsservers:vars]
+pv_vg_pvol={{ pv_vg_pvol }}
 
 [nfsservers]
+{{ groups['masters'][0] }} ansible_ssh_host={{ hostvars[groups['masters'][0]]['ansible_ssh_host'] }}
 
-{% for master in groups['masters'] %}
-{{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }}
+{% if num_masters > 1 %}
+[etcd]
+{% for vm in groups['etcd'] %}
+{{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }}
 {% endfor %}
+
+[lb]
+{% for vm in groups['lbs'] %}
+{{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }}
+{% endfor %}
+{% endif %}

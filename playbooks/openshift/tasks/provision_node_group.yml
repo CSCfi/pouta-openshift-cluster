@@ -1,0 +1,43 @@
+---
+- name: create data volumes for {{ node_group.name }} nodes
+  os_volume:
+    display_name: "{{ cluster_name }}-n-{{ node_group.name }}-{{ item }}-data"
+    size: "{{ node_group.data_volume_size }}"
+    state: present
+  with_sequence: count={{ node_group.num_nodes }}
+  when: "{{ node_group.data_volume_size }} > 0"
+
+- name: create openshift {{ node_group.name }} node VMs
+  register: node_vms
+  os_server:
+    name: "{{ cluster_name }}-n-{{ node_group.name }}-{{ item }}"
+    flavor: "{{ node_group.flavor }}"
+    image: "CentOS-7.0"
+    key_name: "{{ ssh_key }}"
+    network: "{{ network_name }}"
+    security_groups:
+      - "{{ cluster_name }}-common"
+    auto_ip: no
+    boot_from_volume: "{{ boot_from_volume }}"
+    terminate_volume: yes
+    volume_size: 50
+    scheduler_hints:
+      group: "{{ cluster_name }}-nodes"
+  with_sequence: count={{ node_group.num_nodes }}
+
+- name: attach {{ node_group.name }} node data volumes
+  os_server_volume:
+    server: "{{ cluster_name }}-n-{{ node_group.name }}-{{ item }}"
+    volume: "{{ cluster_name }}-n-{{ node_group.name }}-{{ item }}-data"
+  with_sequence: count={{ node_group.num_nodes }}
+  when: "{{ node_group.data_volume_size }} > 0"
+
+- name: add openshift {{ node_group.name }} nodes to runtime inventory
+  add_host:
+    name: "{{ item.openstack.name }}"
+    groups: nodes
+    ansible_ssh_host: "{{ item.openstack.private_v4 }}"
+    ansible_ssh_user: cloud-user
+    type: "{{ node_group.name }}"
+    pv_vg_data: "{{ node_group.pv_vg_data | default('') }}"
+  with_items: "{{ node_vms.results }}"
