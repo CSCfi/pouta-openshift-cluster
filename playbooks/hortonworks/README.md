@@ -110,7 +110,7 @@ Create a new key (if don't already have one) for the cluster (adapt the name) an
 
 Clone this example repo
 
-    git clone https://github.com/tourunen/pouta-ansible-cluster.git
+    git clone https://github.com/CSC-IT-Center-for-Science/pouta-ansible-cluster.git
 
 Disable ssh host key checking (http://docs.ansible.com/ansible/intro_getting_started.html#host-key-checking).
 Add an entry for all the hosts in your cPouta subnet. Use *ip* command to figure out your network address range.
