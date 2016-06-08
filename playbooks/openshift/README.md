@@ -56,7 +56,7 @@ In general, see https://docs.openshift.org/latest/install_config/install/prerequ
 Clone the necessary playbooks from GitHub (here we assume they go under ~/git)
     
     cd ~/git
-    git clone https://github.com/tourunen/pouta-ansible-cluster
+    git clone https://github.com/CSC-IT-Center-for-Science/pouta-ansible-cluster
     git clone https://github.com/openshift/openshift-ansible.git
     
 The following is a temporary fix for creating NFS volumes
