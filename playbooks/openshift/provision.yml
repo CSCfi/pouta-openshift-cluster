@@ -133,45 +133,6 @@
         ansible_ssh_user: cloud-user
       with_items: "{{ master_vms.results }}"
 
-    - name: create data volumes for nodes
-      os_volume:
-        display_name: "{{ cluster_name }}-node-{{ item }}-data"
-        size: "{{ node_data_volume_size }}"
-        state: present
-      with_sequence: count={{ num_nodes }}
-
-    - name: create openshift node VMs
-      register: node_vms
-      os_server:
-        name: "{{ cluster_name }}-node-{{ item }}"
-        flavor: "{{ node_flavor }}"
-        image: "CentOS-7.0"
-        key_name: "{{ ssh_key }}"
-        network: "{{ network_name }}"
-        security_groups:
-          - "{{ cluster_name }}-common"
-        auto_ip: no
-        boot_from_volume: "{{ boot_from_volume }}"
-        terminate_volume: yes
-        volume_size: 50
-        scheduler_hints:
-          group: "{{ cluster_name }}-nodes"
-      with_sequence: count={{ num_nodes }}
-
-    - name: attach node data volumes
-      os_server_volume:
-        server: "{{ cluster_name }}-node-{{ item }}"
-        volume: "{{ cluster_name }}-node-{{ item }}-data"
-      with_sequence: count={{ num_nodes }}
-
-    - name: add openshift nodes to runtime inventory
-      add_host:
-        name: "{{ item.openstack.name }}"
-        groups: nodes
-        ansible_ssh_host: "{{ item.openstack.private_v4 }}"
-        ansible_ssh_user: cloud-user
-      with_items: "{{ node_vms.results }}"
-
     - name: create etcd VMs
       register: etcd_vms
       os_server:
@@ -246,6 +207,12 @@
       with_items:
         - [22, 80, 443, 8443]
 
+    - name: provision node groups
+      include: tasks/provision_node_group.yml
+      with_items: "{{ node_groups }}"
+      loop_control:
+        loop_var: "node_group"
+
 - name: Generate inventory
   hosts: localhost
   connection: local
@@ -272,4 +239,3 @@
         backup: yes
         src: templates/tmux.conf.j2
         dest: "{{ local_home }}/.tmux.conf"
-

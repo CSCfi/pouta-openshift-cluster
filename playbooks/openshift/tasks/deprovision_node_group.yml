@@ -1,0 +1,15 @@
+---
+
+- name: remove {{ node_group.name }} node VMs
+  os_server:
+    name: "{{ cluster_name }}-n-{{ node_group.name }}-{{ item }}"
+    state: absent
+  with_sequence: count={{ node_group.num_nodes }}
+  when: remove_nodes | bool
+
+- name: remove {{ node_group.name }} node volumes
+  os_volume:
+    display_name: "{{ cluster_name }}-n-{{ node_group.name }}-{{ item }}-data"
+    state: absent
+  with_sequence: count={{ node_group.num_nodes }}
+  when: remove_node_volumes | bool

@@ -14,12 +14,11 @@
     remove_security_groups: no
 
   tasks:
-    - name: remove node VMs
-      os_server:
-        name: "{{ cluster_name }}-node-{{ item }}"
-        state: absent
-      with_sequence: count={{ num_nodes }}
-      when: remove_nodes | bool
+    - name: deprovision node groups
+      include: tasks/deprovision_node_group.yml
+      with_items: "{{ node_groups }}"
+      loop_control:
+        loop_var: "node_group"
 
     - name: remove master VMs
       os_server:
@@ -48,13 +47,6 @@
         state: absent
       with_sequence: count={{ num_lbs }}
       when: remove_lb_volumes | bool
-
-    - name: remove node volumes
-      os_volume:
-        display_name: "{{ cluster_name }}-node-{{ item }}-data"
-        state: absent
-      with_sequence: count={{ num_nodes }}
-      when: remove_node_volumes | bool
 
     - name: remove master volumes
       os_volume:

@@ -58,23 +58,17 @@ etcd
 lb
 {% endif %}
 
-[masters:vars]
-pv_vg_data={{ master_pv_vg_data }}
-
 [masters]
 {% for master in groups['masters'] %}
-{{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }}
+{{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }} pv_vg_data={{ master_pv_vg_data }}
 {% endfor %}
-
-[nodes:vars]
-pv_vg_data={{ node_pv_vg_data }}
 
 [nodes]
 {% for master in groups['masters'] %}
 {{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'infra'}"
 {% endfor %}
 {% for node in groups['nodes'] %}
-{{ node }} ansible_ssh_host={{ hostvars[node]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'default'}"
+{{ node }} ansible_ssh_host={{ hostvars[node]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'default', 'type': '{{ hostvars[node]['type'] }}' }" pv_vg_data={{ hostvars[node]['pv_vg_data'] }}
 {% endfor %}
 
 {% if num_masters > 1 %}
