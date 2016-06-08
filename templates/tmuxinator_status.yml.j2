@@ -1,21 +1,20 @@
 name: status
-root: /home/cloud-user
 
 windows:
   - overview:
       layout: tiled
       panes:
         - pods:
-          - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
+          - ssh -l cloud-user -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
           - watch -n 10 oc get pods --all-namespaces
         - routes:
-          - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
+          - ssh -l cloud-user -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
           - watch -n 10 oc get routes --all-namespaces
         - pvc:
-          - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
+          - ssh -l cloud-user -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
           - watch -n 10 oc get pvc --all-namespaces
         - pods_per_node:
-            - ssh -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
+            - ssh -l cloud-user -t {{ hostvars[groups.masters.0]['ansible_ssh_host'] }}
             {% raw %}
             - watch -n 10 "oc get pods --all-namespaces --template='{{range .items}}{{.spec.nodeName}}~{{.status.phase}}#{{end}}' | tr '~#' '\t\n' | sort | uniq -c"
             {% endraw %}
@@ -24,21 +23,21 @@ windows:
       layout: even-vertical
       panes:
 {% for host in groups['masters'] %}
-        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} sudo journalctl -f -u 'origin*'
+        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} sudo journalctl -f -u 'origin*'
 {% endfor %}
 
   - masters-dstat:
       layout: even-vertical
       panes:
 {% for host in groups['masters'] %}
-        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
 {% endfor %}
 
   - nodes-dstat:
       layout: even-vertical
       panes:
 {% for host in groups['nodes'] %}
-        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
 {% endfor %}
 
 {% if 'etcd' in groups %}
@@ -46,7 +45,7 @@ windows:
       layout: even-vertical
       panes:
 {% for host in groups['etcd'] %}
-        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
 {% endfor %}
 {% endif %}
 
@@ -55,6 +54,6 @@ windows:
       layout: even-vertical
       panes:
 {% for host in groups['lbs'] %}
-        - ssh -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
 {% endfor %}
 {% endif %}
