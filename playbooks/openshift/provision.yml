@@ -3,23 +3,20 @@
   hosts: localhost
   connection: local
   vars:
+    cluster_name: "my-oso"
     ssh_key: "my_key"
     num_masters: 1
-    num_nodes: 2
     num_etcd: 0
     num_lbs: 0
-    cluster_name: "my-oso"
     network_name: ""
     network_cidr: "192.168.1.0/24"
-    boot_from_volume: yes
+    boot_from_volume: no
     master_flavor: "standard.small"
-    node_flavor: "standard.small"
     etcd_flavor: "standard.tiny"
     lb_flavor: "standard.tiny"
     bastion_secgroup: "bastion"
     master_data_volume_size: 50
     pvol_volume_size: 50
-    node_data_volume_size: 50
   tasks:
     - name: create network
       register: network_facts
@@ -162,7 +159,7 @@
     - name: create data volume for load balancer
       os_volume:
         display_name: "{{ cluster_name }}-lb-{{ item }}-data"
-        size: "{{ node_data_volume_size }}"
+        size: 50
         state: present
       with_sequence: count={{ num_lbs }}
 
@@ -195,6 +192,7 @@
         groups: lbs
         ansible_ssh_host: "{{ item.openstack.private_v4 }}"
         ansible_ssh_user: cloud-user
+        pv_vg_data:  "/dev/vdb"
       with_items: "{{ lb_vms.results }}"
 
     - name: master SG - open access to the master itself

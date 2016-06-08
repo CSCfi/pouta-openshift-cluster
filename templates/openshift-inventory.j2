@@ -73,7 +73,7 @@ lb
 
 {% if num_masters > 1 %}
 {% for lb in groups['lbs'] %}
-{{ lb }} ansible_ssh_host={{ hostvars[lb]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'network'}"
+{{ lb }} ansible_ssh_host={{ hostvars[lb]['ansible_ssh_host'] }} openshift_node_labels="{'region': 'network'}" pv_vg_data={{ hostvars[lb]['pv_vg_data'] }}
 {% endfor %}
 {% endif %}
 
