@@ -114,7 +114,7 @@ Clone this example repo
 
 Disable ssh host key checking (http://docs.ansible.com/ansible/intro_getting_started.html#host-key-checking).
 Add an entry for all the hosts in your cPouta subnet. Use *ip* command to figure out your network address range.
-Aslo adapt the IdentityFile -line to match the key you have generated.
+Also adapt the IdentityFile -line to match the key you have generated.
     
     ip a
     
