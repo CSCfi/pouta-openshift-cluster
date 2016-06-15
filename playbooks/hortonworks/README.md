@@ -253,3 +253,41 @@ To remove the nodes, master, all volumes and security groups:
         -e remove_nodes=1 -e remove_node_volumes=1 \
         -e remove_security_groups=1 \
         ~/pouta-ansible-cluster/playbooks/hortonworks/deprovision.yml
+
+### Running a Jupyter notebook on the cluster
+
+To run the Jupyter ipython notebook on the cluster. You should execute the following commands on the cluster master :
+
+    sudo yum install gcc-c++ python-virtualenvwrapper
+    source /etc/profile.d/virtualenvwrapper.sh
+    mkvirtualenv jupyter --system-site-packages
+    workon jupyter
+    pip install --upgrade setuptools pip
+    pip install jupyter
+    pip install findspark
+
+From now on, before running the notebook always run `workon jupyter` to activate the virtual environment.
+Then, export the following variables:
+
+    export SPARK_HOME='/usr/hdp/current/spark-client'
+    export PYSPARK_SUBMIT_ARGS='--master yarn pyspark-shell'
+
+Now run the notebook, using the following parameters:
+
+    mkdir ~/notebooks 
+    cd ~/notebooks
+    jupyter notebook --ip 0.0.0.0 --port 9999 --no-browser
+
+Now the notebook should be running on the cluster master on port 9999. Be sure to open the port in Openstack or setup a SOCKS proxy through your bastion host (like above)
+
+To create SparkContext, execute the following commands in a jupyter notebook:
+
+    import findspark
+    findspark.init()
+    import os
+    os.environ['PYSPARK_PYTHON'] = '/usr/bin/python'
+
+    from pyspark import SparkContext
+    sc = SparkContext()
+
+Once you have the SparkContext ready, your code will always be executed on the cluster.
