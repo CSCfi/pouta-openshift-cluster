@@ -93,9 +93,9 @@ laptop.
 
 Make a python virtualenv called 'ansible2' and populate it
 
-    mkvirtualenv --system-site-packages  ansible2
+    mkvirtualenv --system-site-packages ansible2
     pip install --upgrade pip setuptools
-    pip install -U git+https://github.com/ansible/ansible.git@stable-2.1#egg=ansible
+    pip install ansible==2.1
     pip install shade dnspython funcsigs functools32
 
 Source your OpenStack cPouta access credentials (actual filename will vary)::
@@ -114,6 +114,7 @@ Clone this example repo
 
 Disable ssh host key checking (http://docs.ansible.com/ansible/intro_getting_started.html#host-key-checking).
 Add an entry for all the hosts in your cPouta subnet. Use *ip* command to figure out your network address range.
+Aslo adapt the IdentityFile -line to match the key you have generated.
     
     ip a
     
@@ -122,6 +123,8 @@ Add an entry for all the hosts in your cPouta subnet. Use *ip* command to figure
     Host XX.XX.XX.*
 
         StrictHostKeyChecking no
+        IdentitiesOnly yes
+        IdentityFile ~/.ssh/id_rsa_mycluster
         
 Change the permissions on the config file
 
