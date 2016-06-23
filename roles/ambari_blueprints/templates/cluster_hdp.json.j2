@@ -5,23 +5,23 @@
     {
       "name" : "host_group_1", 
       "hosts" : [         
+{% for vm in groups['masters'] %}
         {
-          "fqdn" : "{{ cluster_name }}-master.novalocal"
+          "fqdn" : "{{ vm }}.novalocal"
         }
+{% if not loop.last %},{% endif %}
+{% endfor %}
       ]
     },
     {
       "name" : "host_group_2", 
       "hosts" : [
-    
-	{% for node_number in range(num_nodes|int) %}
+{% for vm in groups['nodes'] %}
         {
-          "fqdn" : "{{ cluster_name }}-node-{{ node_number + 1 }}.novalocal"
+          "fqdn" : "{{ vm }}.novalocal"
         }
-        {% if node_number + 1 != num_nodes|int %}
-        ,
-        {% endif %}
-	{% endfor %}
+{% if not loop.last %},{% endif %}
+{% endfor %}
       ]
     }
   ]

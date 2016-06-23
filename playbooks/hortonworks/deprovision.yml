@@ -4,38 +4,29 @@
   vars:
     cluster_name: "spark-cluster"
     num_nodes: 4
-    remove_master: "no"
+    remove_masters: "no"
     remove_nodes: "no"
     remove_master_volumes: "no"
     remove_node_volumes: "no"
     remove_security_groups: "no"
 
   tasks:
-    - name: remove node VMs
-      os_server:
-        name: "{{ cluster_name }}-node-{{ item }}"
-        state: absent
-      with_sequence: count={{ num_nodes }}
-      when: remove_nodes | bool
+    - set_fact: remove_vms={{ remove_nodes|default(False) }}
+    - set_fact: remove_volumes={{ remove_node_volumes|default(False) }}
+    - name: remove nodes
+      include: tasks/vm_group_deprovision.yml
+      with_items: "{{ node_groups }}"
+      loop_control:
+        loop_var: "vm_group_name"
 
+    - set_fact: remove_vms={{ remove_masters|default(False) }}
+    - set_fact: remove_volumes={{ remove_master_volumes|default(False) }}
     - name: remove master VM
-      os_server:
-        name: "{{ cluster_name }}-master"
-        state: absent
-      when: remove_master | bool
-
-    - name: remove node volumes
-      os_volume:
-        display_name: "{{ cluster_name }}-node-{{ item }}-data"
-        state: absent
-      with_sequence: count={{ num_nodes }}
-      when: remove_node_volumes | bool
-
-    - name: remove master volumes
-      os_volume:
-        display_name: "{{ cluster_name }}-master-data"
-        state: absent
-      when: remove_master_volumes | bool
+      include: tasks/vm_group_deprovision.yml
+      with_items:
+        - master
+      loop_control:
+        loop_var: "vm_group_name"
 
     - name: remove security groups
       os_security_group:

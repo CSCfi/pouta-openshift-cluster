@@ -1,157 +1,51 @@
 ---
-- name: Deploy cluster base in cPouta
+- name: Deploy base infra for HDP in cPouta
   hosts: localhost
   connection: local
   vars:
-    cluster_name: "spark-cluster"
-    master_flavor: "mini"
-    notebook_flavor: "mini"
-    node_flavor: "mini"
-    num_nodes: 2
-    ssh_key: cluster_key
-    master_boot_from_volume: no
-    notebook_boot_from_volume: no
-    node_boot_from_volume: no
+    cluster_name: "my-oso"
+    ssh_key: "my_key"
     network_name: ""
+    network_cidr: "192.168.1.0/24"
     bastion_secgroup: "bastion"
-    master_volume_size: 50
-    node_volume_size: 200
-    data_volume_type: "standard"
   tasks:
     - name: bastion security group - create
       register: sg_bastion
       os_security_group:
         name: "{{ bastion_secgroup }}"
         description: "Ansible generated security group for bastion"
-      tags: ['secgroup_creation']
 
-    - name: master security group - create
+    - name: master SG - create
       os_security_group:
         name: "{{ cluster_name }}-master"
         description: "Ansible generated security group for {{ cluster_name }}-master"
-      tags: ['secgroup_creation']
 
-    - name: common security group - create
+    - name: common SG - create
       register: sg_common
       os_security_group:
         name: "{{ cluster_name }}-common"
-        description: "Ansible generated security group for {{ cluster_name }}"
-      tags: ['secgroup_creation']
+        description: "Ansible generated common security group for {{ cluster_name }}"
 
     # remote_group workaround for https://github.com/ansible/ansible-modules-core/issues/2855
-    - name: common security group - open cluster internal access
+    - name: common SG - open cluster internal access
       os_security_group_rule:
         security_group: "{{ cluster_name }}-common"
-        remote_group: "{{ item[0] }}"
-        protocol: "{{ item[1] }}"
-      with_nested:
+        remote_group: "{{ item }}"
+      with_items:
         - ["{{ sg_common.secgroup.id }}", "{{ sg_bastion.secgroup.id }}" ]
-        - ["tcp", "udp", "icmp"]
-      tags: ['secgroup_creation']
 
-    - name: create persistent data volume for master
-      os_volume:
-        display_name: "{{ cluster_name }}-master-data"
-        size: "{{ master_volume_size }}"
-        volume_type: "{{ data_volume_type }}"
-        state: present
+    - name: provision master
+      include: tasks/vm_group_provision.yml
+      with_items:
+        - "master"
+      loop_control:
+        loop_var: "vm_group_name"
 
-    - name: create cluster master VM
-      register: master_vm
-      os_server:
-        name: "{{ cluster_name }}-master"
-        flavor: "{{ master_flavor }}"
-        image: "CentOS-7.0"
-        key_name: "{{ ssh_key }}"
-        network: "{{ network_name }}"
-        security_groups:
-          - "{{ cluster_name }}-common"
-          - "{{ cluster_name }}-master"
-        auto_ip: yes
-        boot_from_volume: "{{ master_boot_from_volume }}"
-        terminate_volume: yes
-        volume_size: 25
-        scheduler_hints:
-          group: "{{ cluster_name }}-master"
-      tags: ['vm_creation']
-
-    - name: attach master data volume
-      os_server_volume:
-        server: "{{ cluster_name }}-master"
-        volume: "{{ cluster_name }}-master-data"
-
-    - name: add master to inventory
-      add_host:
-        name: "{{ cluster_name }}-master"
-        groups: masters
-        ansible_ssh_host: "{{ master_vm.openstack.private_v4 }}"
-        ansible_ssh_user: cloud-user
-        public_ip: "{{ master_vm.openstack.public_v4 }}"
-        public_name: "{{ lookup('dig', master_vm.openstack.public_v4 + '/PTR', wantlist=True)[0] }}"
-      tags: ['vm_creation']
-
-    - name: create persistent data volumes for nodes
-      os_volume:
-        display_name: "{{ cluster_name }}-node-{{ item }}-data"
-        size: "{{ node_volume_size }}"
-        volume_type: "{{ data_volume_type }}"
-        state: present
-      with_sequence: count={{ num_nodes }}
-
-    - name: create node VMs
-      register: node_vms
-      os_server:
-        name: "{{ cluster_name }}-node-{{ item }}"
-        flavor: "{{ node_flavor }}"
-        image: "CentOS-7.0"
-        key_name: "{{ ssh_key }}"
-        network: "{{ network_name }}"
-        security_groups:
-          - "{{ cluster_name }}-common"
-        auto_ip: no
-        boot_from_volume: "{{ node_boot_from_volume }}"
-        terminate_volume: yes
-        volume_size: 25
-        scheduler_hints:
-          group: "{{ cluster_name }}-common"
-      with_sequence: count={{ num_nodes }}
-      tags: ['vm_creation']
-
-    - name: attach node data volumes
-      os_server_volume:
-        server: "{{ cluster_name }}-node-{{ item }}"
-        volume: "{{ cluster_name }}-node-{{ item }}-data"
-      with_sequence: count={{ num_nodes }}
-
-    - name: add nodes to inventory
-      add_host:
-        name: "{{ item.openstack.name }}"
-        groups: nodes
-        ansible_ssh_host: "{{ item.openstack.private_v4 }}"
-        ansible_ssh_user: cloud-user
-      with_items: "{{ node_vms.results }}"
-      tags: ['vm_creation']
-
-    - name: wait for master to come up
-      command: >
-        ssh -o BatchMode=yes
-        cloud-user@{{ master_vm.openstack.private_v4 }} true
-      register: result
-      until: result|success
-      retries: 300
-      delay: 5
-      tags: ["wait_for_ssh"]
-
-    - name: wait for nodes to come up
-      command: >
-        ssh -o BatchMode=yes
-        cloud-user@{{ item.openstack.private_v4 }} true
-      register: result
-      until: result|success
-      retries: 300
-      delay: 5
-      with_items: "{{ node_vms.results }}"
-      tags: ["wait_for_ssh"]
+    - name: provision nodes
+      include: tasks/vm_group_provision.yml
+      with_items: "{{ node_groups }}"
+      loop_control:
+        loop_var: "vm_group_name"
 
 - name: Generate inventory
   hosts: localhost
@@ -169,4 +63,4 @@
   tasks:
   - debug:
       msg: >
-        Master has private IP {{ master_vm.openstack.private_v4 }}.
+        Master has private IP {{ hostvars[cluster_name+'-master-1']['ansible_ssh_host'] }}.

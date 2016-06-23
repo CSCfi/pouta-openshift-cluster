@@ -1,6 +1,12 @@
 - name: Copy the blueprint to a temporary location
   copy: src=spark_blueprint.json dest=/tmp/spark_blueprint.json
 
+- name: Manual templating step to set HDFS directory config
+  replace:
+    dest: /tmp/spark_blueprint.json
+    regexp: "##DFS_DATANODE_DATA_DIR##"
+    replace: "{{ dfs_datanode_data_dir|default('/hadoop/disk/dfs/data') }}"
+
 - name: POST the spark blueprint to the ambari server
   script: blueprints.sh {{ master_private_ip }}
 

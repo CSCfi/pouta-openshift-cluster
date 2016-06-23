@@ -41,7 +41,7 @@
         "properties_attributes" : { },
         "properties" : {
           "autopurge.purgeInterval" : "24",
-          "dataDir" : "/hadoop/hadoop/zookeeper",
+          "dataDir" : "/hadoop/disk/zookeeper",
           "autopurge.snapRetainCount" : "30",
           "clientPort" : "2181",
           "initLimit" : "10",
@@ -370,7 +370,7 @@
         "properties" : {
           "dfs.replication" : "3",
           "dfs.namenode.audit.log.async" : "true",
-          "dfs.namenode.checkpoint.dir" : "/hadoop/hadoop/hdfs/namesecondary",
+          "dfs.namenode.checkpoint.dir" : "/hadoop/disk/hdfs/namesecondary",
           "dfs.encryption.key.provider.uri" : "",
           "dfs.namenode.avoid.read.stale.datanode" : "true",
           "dfs.journalnode.http-address" : "0.0.0.0:8480",
@@ -399,14 +399,14 @@
           "dfs.client.read.shortcircuit" : "true",
           "dfs.webhdfs.enabled" : "true",
           "dfs.namenode.http-address" : "%HOSTGROUP::host_group_1%:50070",
-          "dfs.namenode.name.dir" : "/hadoop/hadoop/hdfs/namenode",
+          "dfs.namenode.name.dir" : "/hadoop/disk/hdfs/namenode",
           "dfs.namenode.avoid.write.stale.datanode" : "true",
           "dfs.datanode.https.address" : "0.0.0.0:50475",
-          "dfs.datanode.failed.volumes.tolerated" : "0",
+          "dfs.datanode.failed.volumes.tolerated" : "1",
           "dfs.client.retry.policy.enabled" : "false",
           "dfs.namenode.startup.delay.block.deletion.sec" : "3600",
           "dfs.block.access.token.enable" : "true",
-          "dfs.datanode.data.dir" : "/hadoop/hadoop/hdfs/data",
+          "dfs.datanode.data.dir" : "##DFS_DATANODE_DATA_DIR##",
           "dfs.permissions.superusergroup" : "hdfs",
           "dfs.blocksize" : "134217728",
           "dfs.namenode.checkpoint.edits.dir" : "${dfs.namenode.checkpoint.dir}",
@@ -503,8 +503,8 @@
           "yarn.timeline-service.version" : "1.5",
           "yarn.nodemanager.linux-container-executor.resources-handler.class" : "org.apache.hadoop.yarn.server.nodemanager.util.DefaultLCEResourcesHandler",
           "yarn.timeline-service.leveldb-timeline-store.read-cache-size" : "104857600",
-          "yarn.nodemanager.local-dirs" : "/hadoop/hadoop/yarn/local",
-          "yarn.timeline-service.leveldb-timeline-store.path" : "/hadoop/hadoop/yarn/timeline",
+          "yarn.nodemanager.local-dirs" : "/hadoop/ssd/yarn/local",
+          "yarn.timeline-service.leveldb-timeline-store.path" : "/hadoop/disk/yarn/timeline",
           "yarn.nodemanager.recovery.enabled" : "true",
           "yarn.resourcemanager.zk-timeout-ms" : "10000",
           "yarn.resourcemanager.am.max-attempts" : "2",
@@ -516,7 +516,7 @@
           "yarn.log-aggregation-enable" : "true",
           "yarn.resourcemanager.work-preserving-recovery.enabled" : "true",
           "yarn.resourcemanager.store.class" : "org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore",
-          "yarn.timeline-service.leveldb-state-store.path" : "/hadoop/hadoop/yarn/timeline",
+          "yarn.timeline-service.leveldb-state-store.path" : "/hadoop/disk/yarn/timeline",
           "yarn.timeline-service.entity-group-fs-store.done-dir" : "/ats/done/",
           "yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage" : "90",
           "hadoop.registry.zk.quorum" : "%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_1%:2181",
@@ -543,7 +543,7 @@
           "yarn.nodemanager.vmem-pmem-ratio" : "2.1",
           "yarn.nodemanager.log-aggregation.compression-type" : "gz",
           "yarn.resourcemanager.work-preserving-recovery.scheduling-wait-ms" : "10000",
-          "yarn.nodemanager.log-dirs" : "/hadoop/hadoop/yarn/log"
+          "yarn.nodemanager.log-dirs" : "/hadoop/disk/yarn/log"
         }
       }
     },
@@ -805,9 +805,6 @@
         },
         {
           "name" : "METRICS_MONITOR"
-        },
-        {
-          "name" : "NFS_GATEWAY"
         },
         {
           "name" : "NAMENODE"

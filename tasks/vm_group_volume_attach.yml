@@ -1,0 +1,6 @@
+- name: attach {{volume_spec.name }} volumes for {{ vm_group_name }} VMs
+  os_server_volume:
+    server: "{{ cluster_name }}-{{ vm_group_name }}-{{ item }}"
+    volume: "{{ cluster_name }}-{{ vm_group_name }}-{{ item }}-{{ volume_spec.name }}"
+  with_sequence: count={{ vm_group.num_vms|default(1) }}
+  when: "{{ volume_spec.size }}|default(0) > 0"

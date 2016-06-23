@@ -1,0 +1,16 @@
+---
+- set_fact: vm_group={{ vars[vm_group_name] }}
+
+- name: remove {{ vm_group_name }} VMs
+  os_server:
+    name: "{{ cluster_name }}-{{ vm_group_name }}-{{ item }}"
+    state: absent
+  with_sequence: count={{ vm_group.num_vms|default(1) }}
+  when: remove_vms | bool
+
+- name: remove {{ vm_group_name }} volumes
+  include: tasks/vm_group_volume_deprovision.yml
+  with_items: "{{ vm_group.volumes }}"
+  loop_control:
+    loop_var: "volume_spec"
+  when: remove_volumes | bool
