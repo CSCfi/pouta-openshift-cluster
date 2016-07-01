@@ -11,6 +11,15 @@ cluster_name={{ cluster_name }}
 
 [nodes]
 
-{% for vm in groups['nodes'] %}
+[nodes:children]
+{% for group_name in vars['node_groups'] %}
+{{ group_name }}
+{% endfor %}
+
+{% for group_name in vars['node_groups'] %}
+[{{ group_name }}]
+{% for vm in groups[group_name] %}
 {{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }} vm_group_name={{ hostvars[vm]['vm_group_name'] }}
+{% endfor %}
+
 {% endfor %}
