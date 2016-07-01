@@ -12,7 +12,7 @@ master:
 
   # Here we list the block devices. A LVM volume group is created per device.
   volumes:
-    - name: datavol
+    - name: metadata
       size: 100
       pv_path: /dev/vdb
 
@@ -23,13 +23,13 @@ master:
   # Here we carve out filesystems and other block storage out of the volumes
   filesystems:
     - name: swap
-      volume: datavol
+      volume: metadata
       size: "2%VG"
       fstype: swap
 
     - name: hadoop
-      volume: datavol
-      mount_path: /hadoop/disk
+      volume: metadata
+      mount_path: /hadoop
       size: "97%VG"
       fstype: xfs
       mkfs_opts: ""

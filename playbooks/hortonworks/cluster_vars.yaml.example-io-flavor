@@ -9,7 +9,7 @@ master:
   auto_ip: yes
   flavor: "standard.large"
   volumes:
-    - name: datavol
+    - name: metadata
       size: 100
       pv_path: /dev/vdb
 
@@ -19,13 +19,13 @@ master:
 
   filesystems:
     - name: swap
-      volume: datavol
+      volume: metadata
       size: "2%VG"
       fstype: swap
 
     - name: hadoop
-      volume: datavol
-      mount_path: /hadoop/disk
+      volume: metadata
+      mount_path: /hadoop
       size: "97%VG"
       fstype: xfs
       mkfs_opts: ""

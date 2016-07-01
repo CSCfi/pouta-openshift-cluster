@@ -42,6 +42,7 @@ Shell environment with
 - cPouta credentials and OpenStack credentials
 - python virtualenvironment with ansible>=2.1.0, shade and dnspython
 - another python virtualenvironment with ansible==1.9.4 and pyopenssl
+- both venvs should have latest setuptools and pip (pip install --upgrade setuptools pip)
 - ssh access to the internal network of your project
     - either run this on your bastion host
     - or set up ssh forwarding through your bastion host in your ~/.ssh/config
@@ -145,15 +146,20 @@ Add the persistent volumes that were created earlier to OpenShift
 
 Deploy registry with persistent storage. Note that you need a pvol that is at least 200GB for this.
 
+    $ oc adm manage-node $HOSTNAME.novalocal --schedulable=true
     $ oc delete all --selector=docker-registry=default
     $ oc adm registry --selector=region=infra
     $ oc volume dc/docker-registry --remove --name=registry-storage 
     $ oc volume dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi 
 
-    $ oc adm manage-node $HOSTNAME.novalocal --schedulable=true
-    $ oc delete svc/router
-    $ oc delete dc/router
-    $ oc adm router --service-account=router --selector=region=infra
+Installer already creates a deployment config for router, just scale it up
+    
+    $ oc scale dc/router --replicas=1 
+
+Disable further deployments on master
+
+    $ oc adm manage-node $HOSTNAME.novalocal --schedulable=false
+
 
 Add a user
     

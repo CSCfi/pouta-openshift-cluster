@@ -14,7 +14,7 @@
     size: "{{ filesystem_spec.size|default('99%VG') }}"
   when: stat_lv_path.stat.exists == False
 
-- name: make sure {{ filesystem_spec.name }} mount_path exists
+- name: make sure {{ filesystem_spec.name }} mount path exists
   file:
     path: "{{ filesystem_spec.mount_path }}"
     state: directory
