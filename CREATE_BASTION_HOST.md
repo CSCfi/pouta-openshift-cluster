@@ -44,8 +44,7 @@ Install dependencies and otherwise useful packages
         dstat lsof bash-completion time tmux git xauth \
         screen nano vim bind-utils nmap-ncat git \
         xauth firefox \
-        centos-release-openstack python-novaclient \
-        python-devel python-setuptools python-virtualenvwrapper \
+        python-pip python-devel python-setuptools python-virtualenvwrapper \
         libffi-devel openssl-devel
 
     sudo yum groupinstall -y "Development Tools"
@@ -53,6 +52,11 @@ Install dependencies and otherwise useful packages
 update the system and reboot to bring the host up to date. Bonus: virtualenvwrapper gets activated
 
     sudo yum update -y && sudo reboot
+
+Install the openstack python libraries via pip
+
+    sudo pip install python-openstackclient
+    sudo pip install python-novaclient
 
 import your OpenStack command line access configuration
 
