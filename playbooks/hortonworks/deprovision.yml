@@ -1,15 +1,6 @@
 - name: Destroy a cluster deployed by provision.yml
   hosts: localhost
   connection: local
-  vars:
-    cluster_name: "spark-cluster"
-    num_nodes: 4
-    remove_masters: "no"
-    remove_nodes: "no"
-    remove_master_volumes: "no"
-    remove_node_volumes: "no"
-    remove_security_groups: "no"
-
   tasks:
     - set_fact: remove_vms={{ remove_nodes|default(False) }}
     - set_fact: remove_volumes={{ remove_node_volumes|default(False) }}
@@ -35,4 +26,4 @@
       with_items:
         - "{{ cluster_name }}-common"
         - "{{ cluster_name }}-master"
-      when: remove_security_groups | bool
+      when: remove_security_groups | default(False) | bool

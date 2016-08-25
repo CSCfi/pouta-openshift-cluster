@@ -68,47 +68,17 @@ The following is a temporary fix for creating NFS volumes
 
 ### Create a cluster config
 
-Create a new directory and populate a config file:
+Decide a name for your cluster, create a new directory and copy the example config file and modify that
+    $ cd
+    $ mkdir YOUR_CLUSTER_NAME
+    $ cd YOUR_CLUSTER_NAME
+    $ cp ~/git/pouta-ansible-cluster/playbooks/openshift/example_cluster_vars.yaml cluster_vars.yaml
 
-    $ cd oso-deployment
-    $ cat cluster_vars.yaml 
+Change at least the following config entries:
+    cluster_name: "YOUR_CLUSTER_NAME" 
+    ssh_key: "bastion-key"
 
-    cluster_name: "my-oso"
     
-    num_masters: 1
-    num_lbs: 0
-    num_etcd: 0
-    
-    master_auto_ip: no
-    master_flavor: "standard.medium"
-    master_data_volume_size: 100
-    master_pv_vg_data: "/dev/vdb"
-    
-    node_groups:
-      - name: oc
-        flavor: standard.large
-        num_nodes: 4
-        data_volume_size: 200
-        pv_vg_data: "/dev/vdb"
-    
-    network_name: ""
-        
-    bastion_secgroup: "bastion"
-    pvol_volume_size: 500
-    pv_vg_pvol: "/dev/vdc"
-    
-    oso_install_containerized: false
-    openshift_public_hostname: "your.master.hostname.here"
-    openshift_public_ip: "your.master.ip.here"
-    
-    project_external_ips: ["your.master.ip.here"]
-    
-    # if you have wildcard certificates, use these
-    #certificate_crt: 'path/to/your/certificate.crt'
-    #certificate_key: 'path/to/your/certificate.key'
-    
-    # if you wish to prepopulate htpasswd, use this
-    # openshift_master_htpasswd_file: "path/to/your/htpasswd"
 
 ### Run provisioning
 

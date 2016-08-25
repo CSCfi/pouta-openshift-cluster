@@ -1,5 +1,5 @@
-- set_fact: volume_specs={{ vars[vm_group_name].volumes }}
-- set_fact: filesystem_specs={{ vars[vm_group_name].filesystems }}
+- set_fact: volume_specs={{ vars[vm_group_name].volumes|default([]) }}
+- set_fact: filesystem_specs={{ vars[vm_group_name].filesystems|default([]) }}
 
 - name: configure volume
   include: configure_volume.yml

@@ -10,7 +10,7 @@
 
 - name: remove {{ vm_group_name }} volumes
   include: tasks/vm_group_volume_deprovision.yml
-  with_items: "{{ vm_group.volumes }}"
+  with_items: "{{ vm_group.volumes|default([]) }}"
   loop_control:
     loop_var: "volume_spec"
   when: remove_volumes | bool
