@@ -1,65 +1,53 @@
 - name: Destroy a cluster deployed by cluster.yml
   hosts: localhost
   connection: local
-  vars:
-    cluster_name: "my-oso"
-    num_nodes: 2
-    remove_masters: no
-    remove_nodes: no
-    remove_etcd: no
-    remove_lb: no
-    remove_master_volumes: no
-    remove_node_volumes: no
-    remove_pvol: no
-    remove_security_groups: no
-
   tasks:
-    - name: deprovision node groups
-      include: tasks/deprovision_node_group.yml
+    - set_fact: remove_vms={{ remove_lbs|default(False) }}
+    - set_fact: remove_volumes={{ remove_lb_volumes|default(False) }}
+    - name: remove lbs VMs
+      include: tasks/vm_group_deprovision.yml
+      with_items:
+        - lb
+      loop_control:
+        loop_var: "vm_group_name"
+      when: lb is defined
+
+    - set_fact: remove_vms={{ remove_nodes|default(False) }}
+    - set_fact: remove_volumes={{ remove_node_volumes|default(False) }}
+    - name: remove node VMs
+      include: tasks/vm_group_deprovision.yml
       with_items: "{{ node_groups }}"
       loop_control:
-        loop_var: "node_group"
+        loop_var: "vm_group_name"
 
-    - name: remove master VMs
-      os_server:
-        name: "{{ cluster_name }}-master-{{ item }}"
-        state: absent
-      with_sequence: count={{ num_masters }}
-      when: remove_masters | bool
+    - set_fact: remove_vms={{ remove_masters|default(False) }}
+    - set_fact: remove_volumes={{ remove_master_volumes|default(False) }}
+    - name: remove master VM
+      include: tasks/vm_group_deprovision.yml
+      with_items:
+        - master
+      loop_control:
+        loop_var: "vm_group_name"
 
+    - set_fact: remove_vms={{ remove_etcd|default(False) }}
+    - set_fact: remove_volumes={{ remove_etcd_volumes|default(False) }}
     - name: remove etcd VMs
-      os_server:
-        name: "{{ cluster_name }}-etcd-{{ item }}"
-        state: absent
-      with_sequence: count={{ num_etcd }}
-      when: remove_etcd | bool
+      include: tasks/vm_group_deprovision.yml
+      with_items:
+        - etcd
+      loop_control:
+        loop_var: "vm_group_name"
+      when: etcd is defined
 
-    - name: remove load balancer VMs
-      os_server:
-        name: "{{ cluster_name }}-lb-{{ item }}"
-        state: absent
-      with_sequence: count={{ num_lbs }}
-      when: remove_lbs | bool
-
-    - name: remove load_balancer volumes
-      os_volume:
-        display_name: "{{ cluster_name }}-lb-{{ item }}-data"
-        state: absent
-      with_sequence: count={{ num_lbs }}
-      when: remove_lb_volumes | bool
-
-    - name: remove master volumes
-      os_volume:
-        display_name: "{{ cluster_name }}-master-{{ item }}-data"
-        state: absent
-      with_sequence: count={{ num_masters }}
-      when: remove_master_volumes | bool
-
-    - name: remove openshift persistent volume
-      os_volume:
-        display_name: "{{ cluster_name }}-pvol"
-        state: absent
-      when: remove_pvol | bool
+    - set_fact: remove_vms={{ remove_nfs|default(False) }}
+    - set_fact: remove_volumes={{ remove_nfs_volumes|default(False) }}
+    - name: remove nfs VMs
+      include: tasks/vm_group_deprovision.yml
+      with_items:
+        - nfs
+      loop_control:
+        loop_var: "vm_group_name"
+      when: nfs is defined
 
     - name: remove security groups
       os_security_group:
@@ -68,4 +56,4 @@
       with_items:
         - "{{ cluster_name }}-common"
         - "{{ cluster_name }}-master"
-      when: remove_security_groups | bool
+      when: remove_security_groups | default(False) | bool

@@ -132,17 +132,15 @@ Change the permissions on the config file
 
 ### Create a cluster config
 
-In the ~/ directory, create a config file cluster\_vars.yaml with the following entries
+In the ~/ directory, create a config file cluster\_vars.yaml by copying one of the example files and modifying that.
+For example, to provision a test cluster with master and four small nodes, take a copy the 
+*cluster_vars.yaml.example-io-flavor* -file and change at least the following: 
 
     cluster_name: "spark-cluster"
-    master_flavor: "standard.large"
-    node_flavor: "standard.large"
-    num_nodes: 4
     ssh_key: <my_key>
-    bastion_secgroup: "bastion"
-    master_volume_size: 50
-    node_volume_size: 200
-    data_volume_type: "standard"
+    ssd:
+      flavor: io.160GB
+      num_nodes: 4
 
 ### Run provisioning
 
@@ -243,16 +241,16 @@ Run these on your management/bastion host.
 To remove the nodes and the master, but leave the HDFS data volumes and security groups:
 
     ansible-playbook -v \
-        -e cluster_name=spark-cluster -e num_nodes=4 \ 
-        -e remove_master=1 \
+        -e @cluster_vars.yaml \
+        -e remove_masters=1 \
         -e remove_nodes=1 \
         ~/pouta-ansible-cluster/playbooks/hortonworks/deprovision.yml
 
 To remove the nodes, master, all volumes and security groups:
 
     ansible-playbook -v \
-        -e cluster_name=spark-cluster -e num_nodes=4 \
-        -e remove_master=1 -e remove_master_volumes=1 \
+        -e @cluster_vars.yaml \
+        -e remove_masters=1 -e remove_master_volumes=1 \
         -e remove_nodes=1 -e remove_node_volumes=1 \
         -e remove_security_groups=1 \
         ~/pouta-ansible-cluster/playbooks/hortonworks/deprovision.yml

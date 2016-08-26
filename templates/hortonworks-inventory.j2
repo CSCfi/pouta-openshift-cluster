@@ -2,16 +2,24 @@
 ansible_ssh_user=cloud-user
 ansible_sudo=true
 cluster_name={{ cluster_name }}
-num_nodes={{ num_nodes }}
 
 [masters]
 
-{% for master in groups['masters'] %}
-{{ master }} ansible_ssh_host={{ hostvars[master]['ansible_ssh_host'] }}
+{% for vm in groups['masters'] %}
+{{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }} vm_group_name={{ hostvars[vm]['vm_group_name'] }}
 {% endfor %}
 
 [nodes]
 
-{% for node in groups['nodes'] %}
-{{ node }} ansible_ssh_host={{ hostvars[node]['ansible_ssh_host'] }}
+[nodes:children]
+{% for group_name in vars['node_groups'] %}
+{{ group_name }}
+{% endfor %}
+
+{% for group_name in vars['node_groups'] %}
+[{{ group_name }}]
+{% for vm in groups[group_name] %}
+{{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }} vm_group_name={{ hostvars[vm]['vm_group_name'] }}
+{% endfor %}
+
 {% endfor %}

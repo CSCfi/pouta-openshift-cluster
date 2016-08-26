@@ -3,26 +3,40 @@
   "default_password" : "spark",
   "host_groups" :[
     {
-      "name" : "host_group_1", 
+      "name" : "masters",
       "hosts" : [         
+{% for vm in groups['masters'] %}
         {
-          "fqdn" : "{{ cluster_name }}-master.novalocal"
+          "fqdn" : "{{ vm }}.novalocal"
         }
+{% if not loop.last %},{% endif %}
+{% endfor %}
       ]
     },
+
+{% for group_name in vars['node_groups'] %}
     {
-      "name" : "host_group_2", 
-      "hosts" : [
-    
-	{% for node_number in range(num_nodes|int) %}
+      "name" : "slaves-{{ group_name }}",
+      "configurations": [
         {
-          "fqdn" : "{{ cluster_name }}-node-{{ node_number + 1 }}.novalocal"
+          "yarn-site": {
+            "properties" : {
+              "yarn.nodemanager.resource.memory-mb" : "{{ (hostvars[groups[group_name][0]].ansible_memtotal_mb * 0.8) | int }}",
+              "yarn.nodemanager.resource.cpu-vcores" : "{{ hostvars[groups[group_name][0]].ansible_processor_vcpus }}"
+            }
+          }
         }
-        {% if node_number + 1 != num_nodes|int %}
-        ,
-        {% endif %}
-	{% endfor %}
+      ],
+      "hosts" : [
+{% for vm in groups[group_name] %}
+        {
+          "fqdn" : "{{ vm }}.novalocal"
+        }
+{% if not loop.last %},{% endif %}
+{% endfor %}
       ]
     }
+{% if not loop.last %},{% endif %}
+{% endfor %}
   ]
 }

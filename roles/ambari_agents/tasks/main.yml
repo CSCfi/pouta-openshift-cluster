@@ -7,9 +7,11 @@
   yum: name={{ item }}
   with_items:
     - ambari-agent
+  notify: restart ambari-agent
 
 - name: set hostnames on ambari agents
-  lineinfile: dest=/etc/ambari-agent/conf/ambari-agent.ini regexp=^hostname= line=hostname={{cluster_name}}-master
+  lineinfile: dest=/etc/ambari-agent/conf/ambari-agent.ini regexp=^hostname= line=hostname={{cluster_name}}-master-1
+  notify: restart ambari-agent
 
-- name: start ambari agents
-  service: name=ambari-agent state=running enabled=yes
+- name: enable ambari agent
+  service: name=ambari-agent enabled=yes

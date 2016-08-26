@@ -1,3 +1,7 @@
+- set_fact: vg_name=vg_{{ volume_spec.name }}
+
+- set_fact: pv_path={{ volume_spec.pv_path }}
+
 - name: Scan for {{ vg_name }} volume group
   command: vgdisplay {{ vg_name }}
   register: test_vg
@@ -15,6 +19,3 @@
 - name: Create volume group {{ vg_name }} on {{ pv_path }}
   lvg: vg={{ vg_name }} pvs={{ pv_path }}
   when: test_vg.rc==5
-
-- include: configure_swap.yml
-  when: "{{ configure_swap|bool }}"

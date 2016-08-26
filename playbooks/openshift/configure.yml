@@ -4,6 +4,7 @@
     - nodes
     - etcd
     - lbs
+    - nfsservers
   become: yes
   roles:
     - base
@@ -16,17 +17,11 @@
     - lbs
   become: yes
   roles:
-    - role: persistent_lvm_storage
-      pv_path: "{{ pv_vg_data }}"
-      vg_name: 'vg_data'
-      configure_swap: yes
+    - role: lvm_storage
 
     - role: docker_host
       docker_lvol_size: "50%FREE"
       docker_lvol_vg_name: "vg_data"
-
-    - role: volume_data_dir
-      data_dir_path: "/var/lib/origin/openshift.local.volumes"
 
 - name: Configure openshift masters
   hosts:
@@ -41,7 +36,4 @@
     - nfsservers
   become: yes
   roles:
-    - role: persistent_lvm_storage
-      pv_path: "{{ pv_vg_pvol }}"
-      vg_name: 'vg_pvol'
-      configure_swap: no
+    - role: lvm_storage
