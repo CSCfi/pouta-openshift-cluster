@@ -241,7 +241,7 @@ Run these on your management/bastion host.
 To remove the nodes and the master, but leave the HDFS data volumes and security groups:
 
     ansible-playbook -v \
-        -e cluster_name=spark-cluster -e num_nodes=4 \ 
+        -e @cluster_vars.yaml \
         -e remove_master=1 \
         -e remove_nodes=1 \
         ~/pouta-ansible-cluster/playbooks/hortonworks/deprovision.yml
@@ -249,7 +249,7 @@ To remove the nodes and the master, but leave the HDFS data volumes and security
 To remove the nodes, master, all volumes and security groups:
 
     ansible-playbook -v \
-        -e cluster_name=spark-cluster -e num_nodes=4 \
+        -e @cluster_vars.yaml \
         -e remove_master=1 -e remove_master_volumes=1 \
         -e remove_nodes=1 -e remove_node_volumes=1 \
         -e remove_security_groups=1 \
