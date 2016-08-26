@@ -1,7 +1,10 @@
-# Openshift Origin playbooks
+# OpenShift Origin playbooks
 
 These playbooks can be used to assist deploying an OpenShift Origin cluster in cPouta. The bulk of installation
-is done with the official installer playbook.
+is done with the official [installer playbook](https://github.com/openshift/openshift-ansible).
+
+*NOTE:* This document is not a complete guide, but mostly a checklist for persons already knowing
+what to do or willing to learn. Do not expect that after completing the steps you have a usable OpenShift environment.
 
 ## Playbooks
 
@@ -39,10 +42,9 @@ This is a log of an example installation of a proof of concept cluster with
 ### Prerequisites
 
 Shell environment with
-- cPouta credentials and OpenStack credentials
+- OpenStack credentials for cPouta 
 - python virtualenvironment with ansible>=2.1.0, shade and dnspython
-- another python virtualenvironment with ansible==1.9.4 and pyopenssl
-- both venvs should have latest setuptools and pip (pip install --upgrade setuptools pip)
+- venv should have latest setuptools and pip (pip install --upgrade setuptools pip)
 - ssh access to the internal network of your project
     - either run this on your bastion host
     - or set up ssh forwarding through your bastion host in your ~/.ssh/config
@@ -56,19 +58,20 @@ In general, see https://docs.openshift.org/latest/install_config/install/prerequ
 
 Clone the necessary playbooks from GitHub (here we assume they go under ~/git)
     
-    cd ~/git
-    git clone https://github.com/CSC-IT-Center-for-Science/pouta-ansible-cluster
-    git clone https://github.com/openshift/openshift-ansible.git
+    $ cd ~/git
+    $ git clone https://github.com/CSC-IT-Center-for-Science/pouta-ansible-cluster
+    $ git clone https://github.com/openshift/openshift-ansible.git
     
 The following is a temporary fix for creating NFS volumes
 
-    git clone https://github.com/tourunen/openshift-ansible.git openshift-ansible-tourunen
-    cd openshift-ansible-tourunen
-    git checkout nfs_fixes
+    $ git clone https://github.com/tourunen/openshift-ansible.git openshift-ansible-tourunen
+    $ cd openshift-ansible-tourunen
+    $ git checkout nfs_fixes
 
 ### Create a cluster config
 
 Decide a name for your cluster, create a new directory and copy the example config file and modify that
+
     $ cd
     $ mkdir YOUR_CLUSTER_NAME
     $ cd YOUR_CLUSTER_NAME
@@ -89,13 +92,11 @@ First provision the VMs and associated resources
 
 Then prepare the VMs for installation
 
-    $ ansible-playbook -v -i openshift-inventory ~/git/pouta-ansible-cluster/playbooks/openshift/configure.yml
+    $ ansible-playbook -v -e @cluster_vars.yaml -i openshift-inventory ~/git/pouta-ansible-cluster/playbooks/openshift/configure.yml
      
-Finally run the installer (this will take a while). The installer does not support ansible 2 yet, so we need to
-switch to an older version
+Finally run the installer (this will take a while).
     
-    $ workon ansible-1.9
-    $ ansible-playbook -v -i openshift-inventory ~/git/openshift-ansible/playbooks/byo/config.yml
+    $ ansible-playbook -v -b -i openshift-inventory ~/git/openshift-ansible/playbooks/byo/config.yml
 
 Also, create the persistent volumes at this point. Edit the playbook to suit your needs, then run it. Note that if you
 want to deploy a registry with persistent storage, you will need at least one pvol to hold the data for the registry.
@@ -130,11 +131,9 @@ Disable further deployments on master
 
     $ oc adm manage-node $HOSTNAME.novalocal --schedulable=false
 
-
 Add a user
     
     $ htpasswd -c /etc/origin/master/htpasswd alice
-
 
 ## Further actions
 
