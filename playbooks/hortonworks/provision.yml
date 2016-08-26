@@ -47,7 +47,7 @@
       loop_control:
         loop_var: "vm_group_name"
 
-- name: Generate inventory
+- name: Generate inventory and tmuxinator config
   hosts: localhost
   connection: local
   tasks:
@@ -56,6 +56,9 @@
         src: templates/hortonworks-inventory.j2
         dest: ./hortonworks-inventory
         backup: yes
+
+    - name: create tmuxinator status session config
+      include: tasks/create_tmuxinator_config.yml
 
 - name: Print resource info
   hosts:

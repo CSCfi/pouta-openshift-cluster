@@ -128,7 +128,7 @@
       loop_control:
         loop_var: "vm_group_name"
 
-- name: Generate inventory
+- name: Generate inventory and tmuxinator config
   hosts: localhost
   connection: local
   tasks:
@@ -138,19 +138,5 @@
         dest: ./openshift-inventory
         backup: yes
 
-- name: Generate tmux configuration
-  hosts: localhost
-  connection: local
-  vars:
-   local_home: "{{ lookup('env','HOME') }}"
-  tasks:
-    - name: create .tmuxinator.yaml on disk
-      template:
-        src: templates/tmuxinator_status.yml.j2
-        dest: ./.tmuxinator.yml
-
-    - name: create .tmux.conf on disk
-      template:
-        backup: yes
-        src: templates/tmux.conf.j2
-        dest: "{{ local_home }}/.tmux.conf"
+    - name: create tmuxinator status session config
+      include: tasks/create_tmuxinator_config.yml
