@@ -10,7 +10,6 @@
     loop_var: "volume_spec"
 
 - name: create {{ vm_group_name }} VMs
-  register: vm_group_vms
   os_server:
     name: "{{ cluster_name }}-{{ vm_group_name }}-{{ item }}"
     flavor: "{{ vm_group.flavor }}"
@@ -24,18 +23,34 @@
     volume_size: 50
     scheduler_hints:
       group: "{{ cluster_name }}-{{ vm_group.server_group|default(server_group|default(vm_group_name)) }}"
-    wait: yes
+    wait: no
   with_sequence: count={{ vm_group.num_vms|default(1) }}
+  async: 300
+
+# TODO: replace with os_server wait: yes and async_wait loop when os_server behaves with async (see ansible #4393)
+- name: wait for all VMs to be active
+  os_server_facts:
+    server: "{{ cluster_name }}-{{ vm_group_name }}-{{ item }}"
+    wait: yes
+  until: openstack_servers and openstack_servers[0].status == 'ACTIVE'
+  retries: 150
+  delay: 2
+  with_sequence: count={{ vm_group.num_vms|default(1) }}
+
+- name: get facts for {{ vm_group_name }} VMs
+  os_server_facts:
+    server: "{{ cluster_name }}-{{ vm_group_name }}-*"
+    wait: yes
 
 - name: add {{ vm_group_name }} vms to runtime inventory
   add_host:
-    name: "{{ item.openstack.name }}"
+    name: "{{ item.name }}"
     groups: "{{ vm_group.inventory_group|default(vm_group_name) }}"
-    ansible_ssh_host: "{{ item.openstack.private_v4 }}"
+    ansible_ssh_host: "{{ item.private_v4 }}"
     ansible_ssh_user: cloud-user
     vm_group_name: "{{ vm_group_name }}"
     pv_vg_data: "{{ vm_group.pv_vg_data | default('') }}"
-  with_items: "{{ vm_group_vms.results }}"
+  with_items: "{{ openstack_servers|sort(attribute='name') }}"
 
 - name: attach volumes for {{ vm_group_name }}
   include: tasks/vm_group_volume_attach.yml
