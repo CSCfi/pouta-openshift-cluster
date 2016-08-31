@@ -6,6 +6,17 @@
     name: "{{ cluster_name }}-{{ vm_group_name }}-{{ item }}"
     state: absent
   with_sequence: count={{ vm_group.num_vms|default(1) }}
+  async: 300
+  register: async_vm_remove
+  when: remove_vms | bool
+
+- name: check VM remove status
+  async_status: jid={{ item.ansible_job_id }}
+  register: job_result
+  until: job_result.finished
+  retries: 30
+  delay: 5
+  with_items: "{{ async_vm_remove.results }}"
   when: remove_vms | bool
 
 - name: remove {{ vm_group_name }} volumes
