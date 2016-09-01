@@ -156,14 +156,13 @@ Run the following command:
 
 Now, Provision the VMs and associated resources
 
-    $ ansible-playbook -v -e @cluster_vars.yaml ~/pouta-ansible-cluster/playbooks/hortonworks/provision.yml 
-
+    ansible-playbook -v -e @cluster_vars.yaml ~/pouta-ansible-cluster/playbooks/hortonworks/provision.yml 
 
 ### Configure and Setup the virtual cluster for Spark and HDFS usage:
 
 Once the above step completes successfully. Execute the following command:
 
-    ansible-playbook -v -i hortonworks-inventory ~/pouta-ansible-cluster/playbooks/hortonworks/configure.yml
+    ansible-playbook -v -e @cluster_vars.yaml -i hortonworks-inventory ~/pouta-ansible-cluster/playbooks/hortonworks/configure.yml
 
 Once the above command runs successfully, we need to access the Ambari web interface to track the progress. 
 There are a few options for this:
