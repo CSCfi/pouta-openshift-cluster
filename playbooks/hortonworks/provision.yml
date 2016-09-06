@@ -36,6 +36,8 @@
 
     - name: provision master
       include: tasks/vm_group_provision.yml
+      vars:
+        security_groups: ["{{ cluster_name }}-master", "{{ cluster_name }}-common"]
       with_items:
         - "master"
       loop_control:
