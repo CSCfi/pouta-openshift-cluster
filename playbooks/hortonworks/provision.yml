@@ -43,6 +43,18 @@
       loop_control:
         loop_var: "vm_group_name"
 
+    - name: assign selected public ip to master
+      os_floating_ip:
+        server: "{{ cluster_name }}-master-1"
+        floating_ip_address: "{{ master.floating_ip }}"
+      when: master.floating_ip is defined
+
+    - name: auto-assign floating ip
+      os_floating_ip:
+        server: "{{ cluster_name }}-master-1"
+        reuse: yes
+      when: (master.auto_ip|default(false))|bool and master.floating_ip is not defined
+
     - name: provision nodes
       include: tasks/vm_group_provision.yml
       with_items: "{{ node_groups }}"

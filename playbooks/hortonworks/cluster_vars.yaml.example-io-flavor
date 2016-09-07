@@ -7,6 +7,7 @@ bastion_secgroup: "bastion"
 master:
   inventory_group: masters
   auto_ip: yes
+  # floating_ip: 1.2.3.4
   flavor: "standard.large"
   volumes:
     - name: metadata
