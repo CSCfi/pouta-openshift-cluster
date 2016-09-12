@@ -59,6 +59,8 @@ node_groups:
 ssd:
   flavor: io.700GB
   num_vms: 8
+  # set server group id to a group with anti-affinity policy
+  #server_group_id:  replace-me-with-the-id
   volumes:
     # This is the ephemeral (scratch) disk for io-intensive flavors.
     # Size is set to 0, thus the block device is not provisioned from openstack volume but
@@ -94,6 +96,8 @@ ssd:
 disk:
   flavor: standard.xlarge
   num_vms: 8
+  # set server group id to a group with anti-affinity policy
+  #server_group_id:  replace-me-with-the-id
   volumes:
     - name: datavol
       size: 200
