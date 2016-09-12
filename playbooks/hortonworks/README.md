@@ -91,14 +91,17 @@ In this step we launch VMs in our cPouta project and configure them to act as a 
 for a simple cluster. You can run this on your management host, be it the bastion or your
 laptop.
 
-Make a python virtualenv called 'ansible2' and populate it
+Make a python virtualenv called 'ansible-2.1' and populate it
 
     mkvirtualenv --system-site-packages ansible2
     pip install --upgrade pip setuptools
     pip install ansible==2.1
     pip install shade dnspython funcsigs functools32
 
-Source your OpenStack cPouta access credentials (actual filename will vary)::
+You can activate it later with the command 'workon ansible-2.1'
+
+Source your OpenStack cPouta access credentials (actual filename will vary) and check that they work by listing
+the VM images
 
     source ~/openrc.sh
     nova image-list
@@ -130,9 +133,21 @@ Change the permissions on the config file
 
     chmod 600 ~/.ssh/config
 
+### Optional step: server group for node anti-affinity
+
+Run the following command to create a server group with anti-affinity policy. By assigning
+the VMs to this group, you make sure that they are running on separate physical hosts:
+
+    nova server-group-create <cluster_name>-common anti-affinity
+
+Make note of the server group id and set the server_group_id -variable for all the node
+groups. You can later check the group membership for the VMs by running
+
+    nova server-group-list
+
 ### Create a cluster config
 
-In the ~/ directory, create a config file cluster\_vars.yaml by copying one of the example files and modifying that.
+In the ~/ directory, create a config file *cluster_vars.yaml* by copying one of the example files and modifying that.
 For example, to provision a test cluster with master and four small nodes, take a copy the 
 *cluster_vars.yaml.example-io-flavor* -file and change at least the following: 
 
@@ -144,17 +159,9 @@ For example, to provision a test cluster with master and four small nodes, take 
 
 ### Run provisioning
 
-Enable the virtualenv by `workon ansible2` (if not already enabled)
+Make sure you have ansible-2.1 virtual environment and openstack credentials loaded. 
 
-Source your OpenStack cPouta access credentials (actual filename will vary)::
-
-    source ~/openrc.sh
-
-Run the following command:
-
-    nova server-group-create <cluster_name>-common anti-affinity
-
-Now, Provision the VMs and associated resources
+Then, provision the VMs and associated resources
 
     ansible-playbook -v -e @cluster_vars.yaml ~/pouta-ansible-cluster/playbooks/hortonworks/provision.yml 
 

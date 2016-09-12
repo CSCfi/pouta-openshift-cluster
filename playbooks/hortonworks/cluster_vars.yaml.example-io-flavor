@@ -43,6 +43,8 @@ node_groups:
 ssd:
   flavor: io.700GB
   num_vms: 8
+  # set server group id to a group with anti-affinity policy
+  #server_group_id:  replace-me-with-the-id
   volumes:
     - name: ssd
       size: 0
