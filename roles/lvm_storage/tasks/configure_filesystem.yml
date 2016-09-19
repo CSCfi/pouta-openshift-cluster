@@ -4,6 +4,8 @@
 
 - set_fact: lv_path="/dev/{{ vg_name }}/{{ lv_name }}"
 
+- set_fact: is_swap="{{ filesystem_spec.fstype|default('') == 'swap' }}"
+
 - stat: path=lv_path
   register: stat_lv_path
 
@@ -25,7 +27,7 @@
     fstype: "{{ filesystem_spec.fstype }}"
     dev: "{{ lv_path }}"
     opts: "-L {{ filesystem_spec.name }} {{ filesystem_spec.mkfs_opts|default('') }}"
-  when: filesystem_spec.fstype is defined and filesystem_spec.fstype != 'swap'
+  when: not is_swap
 
 - name: mount {{ filesystem_spec.name }}
   mount:
@@ -38,4 +40,4 @@
 
 - name: configure swap
   include: configure_swap.yml
-  when: filesystem_spec.fstype is defined and filesystem_spec.fstype == 'swap'
+  when: is_swap
