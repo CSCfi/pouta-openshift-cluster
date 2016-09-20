@@ -2,6 +2,7 @@
   command: lvdisplay {{ docker_lvol_vg_name }}/docker
   register: test_lv
   ignore_errors: yes
+  changed_when: false
 
 - name: Create logical volume {{ docker_lvol_vg_name }}-docker for docker
   lvol:
@@ -23,5 +24,3 @@
 
 - name: enable docker service
   service: name=docker state=running enabled=yes
-
-
