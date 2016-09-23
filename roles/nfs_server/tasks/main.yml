@@ -1,0 +1,22 @@
+---
+- name: install NFS server packages
+  yum:
+    name: nfs-utils
+    state: present
+
+- name: start and enable rpcbind and nfs-server
+  service:
+    name: "{{item}}"
+    state: started
+    enabled: yes
+  with_items:
+    - rpcbind
+    - nfs-server
+
+- name: create exports
+  lineinfile:
+    dest: /etc/exports
+    regexp: "^{{ item.directory }} "
+    line: "{{ item.directory }} {{ item.export_options | default(cluster_name+'*(rw)') }}"
+  with_items: "{{ exports }}"
+  notify: restart nfs-server

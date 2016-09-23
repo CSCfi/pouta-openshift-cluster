@@ -1,0 +1,15 @@
+---
+- name: make sure mount path exists
+  file:
+    path: "{{ item.directory }}"
+    state: directory
+  with_items: "{{ nfs_mounts }}"
+
+- name: mount and update fstab
+  mount:
+    name: "{{ item.directory }}"
+    src: "{{ item.server|default(cluster_name+'-master-1') }}:/{{ item.directory }}"
+    fstype: "nfs"
+    opts: "{{ item.mount_options|default('defaults,_netdev') }}"
+    state: mounted
+  with_items: "{{ nfs_mounts }}"
