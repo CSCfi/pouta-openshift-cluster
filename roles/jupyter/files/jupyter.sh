@@ -1,3 +1,4 @@
+#!/bin/bash
 source /etc/profile.d/virtualenvwrapper.sh
 mkvirtualenv jupyter --system-site-packages
 workon jupyter

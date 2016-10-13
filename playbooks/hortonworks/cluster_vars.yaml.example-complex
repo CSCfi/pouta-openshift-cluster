@@ -4,6 +4,9 @@ cluster_name: "my-spark"
 ssh_key: "bastion-key"
 bastion_secgroup: "bastion"
 
+# Install a jupyter notebook server on the cluster master
+# jupyter_notebook: true
+
 # List of directories on the master to export to nodes.
 # You can set export options and mount options per entry.
 # Defaults:

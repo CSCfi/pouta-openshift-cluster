@@ -157,6 +157,10 @@ For example, to provision a test cluster with master and four small nodes, take 
       flavor: io.160GB
       num_nodes: 4
 
+**Optional** To run a Jupyter ipython notebook on the cluster, you can add the variable `jupyter_notebook` with a value of true to `cluster_vars.yaml`:
+
+    jupyter_notebook: true
+
 ### Run provisioning
 
 Make sure you have ansible-2.1 virtual environment and openstack credentials loaded. 
@@ -263,20 +267,21 @@ To remove the nodes, master, all volumes and security groups:
 
 ### Running a Jupyter notebook on the cluster
 
-To run the Jupyter ipython notebook on the cluster. You should execute the following commands on the cluster master :
+First, please check if you have setup the cluster with the `jupyter_notebook: true` option in `cluster_vars.yaml`,
+then do the following:
 
-    sudo yum install gcc-c++ python-virtualenvwrapper
-    source /etc/profile.d/virtualenvwrapper.sh
-    mkvirtualenv jupyter --system-site-packages
-    workon jupyter
-    pip install --upgrade setuptools pip
-    pip install jupyter
-    pip install findspark
+Before running the notebook always run `workon jupyter` to activate the virtual environment.
 
-From now on, before running the notebook always run `workon jupyter` to activate the virtual environment.
 Then, export the following variables:
 
     export SPARK_HOME='/usr/hdp/current/spark-client'
+
+If you want to run the notebook in Spark's local mode:
+
+    export PYSPARK_SUBMIT_ARGS='--master local[*] pyspark-shell'
+
+If you want to run the notebook directly on the cluster (YARN mode):
+
     export PYSPARK_SUBMIT_ARGS='--master yarn pyspark-shell'
 
 Now run the notebook, using the following parameters:

@@ -34,7 +34,7 @@
      - masters
   become: no
   roles:
-    - jupyter_notebook
+    - jupyter
 
 - name: Ambari agents
   hosts:
