@@ -8,9 +8,6 @@
   with_items: "{{ groups['all'] }}"
   notify: restart_dnsmasq
 
-- name: install pdsh
-  yum: name=pdsh state=present
-
 # http://developerblog.redhat.com/2015/11/19/dns-your-openshift-v3-cluster/
 - name: install dnsmasq
   yum: name=dnsmasq state=present
@@ -26,3 +23,6 @@
     line: "-A INPUT -p udp -m udp --dport 53 -j ACCEPT"
     dest: /etc/sysconfig/iptables
     insertbefore: '^-A INPUT'
+
+- name: install pdsh
+  yum: name=pdsh state=present

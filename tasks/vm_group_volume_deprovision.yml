@@ -4,6 +4,17 @@
   os_volume:
     display_name: "{{ cluster_name }}-{{ vm_group_name }}-{{ item }}-{{ volume_spec.name }}"
     state: absent
-    wait: no
+    wait: yes
   with_sequence: count={{ vm_group.num_vms|default(1) }}
+  async: 300
+  register: async_volume_remove
+  when: "{{ volume_spec.size }}|default(0) > 0"
+
+- name: check volume remove status
+  async_status: jid={{ item.ansible_job_id }}
+  register: job_result
+  until: job_result.finished
+  retries: 30
+  delay: 15
+  with_items: "{{ async_volume_remove.results }}"
   when: "{{ volume_spec.size }}|default(0) > 0"
