@@ -12,7 +12,7 @@
       delegate_to: 127.0.0.1
 
     - name: wait for ssh to work
-      shell: ssh -q {{ ansible_ssh_user }}@{{ ansible_ssh_host }} 'echo success'
+      shell: ssh -o PasswordAuthentication=no -q {{ ansible_ssh_user }}@{{ ansible_ssh_host }} 'echo success'
       register: result
       until: result.stdout.find('success') != -1
       retries: 30
