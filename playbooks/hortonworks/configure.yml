@@ -29,6 +29,13 @@
     - role: nfs_client
       nfs_mounts: "{{ nfs_shares|default([]) }}"
 
+- name: Jupyter notebook
+  hosts:
+     - masters
+  become: no
+  roles:
+    - jupyter
+
 - name: Ambari agents
   hosts:
     - masters

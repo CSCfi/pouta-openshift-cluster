@@ -1,0 +1,10 @@
+- name: install the virtualenvwrapper for creating the virtual env
+  yum: name={{ item }}
+  become: yes
+  with_items:
+    - python-virtualenvwrapper
+  when: jupyter_notebook is defined and jupyter_notebook
+
+- name: create the virtual env required for running jupyter
+  script: jupyter.sh
+  when: jupyter_notebook is defined and jupyter_notebook
