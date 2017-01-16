@@ -57,3 +57,16 @@
   with_items: "{{ vm_group_volumes }}"
   loop_control:
     loop_var: "volume_spec"
+
+- name: add ssh config entries
+  blockinfile:
+    create: yes
+    mode: '0600'
+    dest: "{{ ansible_env.HOME }}/.ssh/config"
+    block: |
+      Host {{ item.name }} {{ item.private_v4 }}
+          Hostname {{ item.private_v4 }}
+          StrictHostKeyChecking no
+          UserKnownHostsFile /dev/null
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+  with_items: "{{ openstack_servers|sort(attribute='name') }}"

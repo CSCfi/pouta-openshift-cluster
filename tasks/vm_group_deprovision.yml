@@ -25,3 +25,10 @@
   loop_control:
     loop_var: "volume_spec"
   when: remove_volumes | bool
+
+- name: remove ssh config entries
+  blockinfile:
+    dest: "{{ ansible_env.HOME }}/.ssh/config"
+    state: absent
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}-{{ vm_group_name }}-{{ item }}"
+  with_sequence: count={{ vm_group.num_vms|default(1) }}
