@@ -61,7 +61,7 @@ Install the openstack python libraries via pip
 import your OpenStack command line access configuration
 
 
-  - see https://research.csc.fi/pouta-credentials how to export the openrc
+  - see https://research.csc.fi/pouta-install-client how to export the openrc
   - use scp to copy the file to bastion from your workstation::
 
     [me@workstation ~]$ scp openrc.sh cloud-user@86.50.1XX.XXX:
