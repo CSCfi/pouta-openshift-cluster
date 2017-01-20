@@ -14,7 +14,7 @@
     - bind-utils
     - nmap-ncat
     - lvm2
-    - ntp
+    - chrony
     - bzip2
 
 - name: stop cloud-init managing /etc/hosts
@@ -33,15 +33,20 @@
 
 - name: remove ntp.org pool hosts from config
   lineinfile:
-    dest: /etc/ntp.conf
+    dest: /etc/chrony.conf
     state: absent
     regexp: '^server .*ntp.org iburst'
   when: '{{ custom_ntp_servers is defined }}'
+  notify: restart chronyd
 
 - name: add custom servers to NTP config
   lineinfile:
-    dest: /etc/ntp.conf
+    dest: /etc/chrony.conf
     state: present
     line: 'server {{ item }} iburst'
   with_items: '{{ custom_ntp_servers|default([]) }}'
   when: '{{ custom_ntp_servers is defined }}'
+  notify: restart chronyd
+
+- name: enabled chronyd
+  service: name=chronyd enabled=yes
