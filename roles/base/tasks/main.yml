@@ -30,3 +30,18 @@
     dest: /etc/hosts
     state: absent
     regexp: "^127.0.0.1(.*){{ inventory_hostname }}(.*)"
+
+- name: remove ntp.org pool hosts from config
+  lineinfile:
+    dest: /etc/ntp.conf
+    state: absent
+    regexp: '^server .*ntp.org iburst'
+  when: '{{ custom_ntp_servers is defined }}'
+
+- name: add custom servers to NTP config
+  lineinfile:
+    dest: /etc/ntp.conf
+    state: present
+    line: 'server {{ item }} iburst'
+  with_items: '{{ custom_ntp_servers|default([]) }}'
+  when: '{{ custom_ntp_servers is defined }}'
