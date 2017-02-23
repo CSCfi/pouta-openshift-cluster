@@ -16,6 +16,8 @@
     - lvm2
     - chrony
     - bzip2
+    - iptables
+    - iptables-services
 
 - name: stop cloud-init managing /etc/hosts
   lineinfile:

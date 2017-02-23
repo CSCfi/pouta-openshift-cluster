@@ -1,13 +1,11 @@
 ---
-- set_fact: local_home="{{ lookup('env','HOME') }}"
-
 - name: create .tmuxinator.yaml on disk
   template:
     src: templates/tmuxinator_status.yml.j2
-    dest: ./.tmuxinator.yml
+    dest: "{{ ansible_env.HOME }}/{{ cluster_name }}/.tmuxinator.yml"
 
 - name: create .tmux.conf on disk
   template:
     backup: yes
     src: templates/tmux.conf.j2
-    dest: "{{ local_home }}/.tmux.conf"
+    dest: "{{ ansible_env.HOME }}/.tmux.conf"

@@ -1,4 +1,11 @@
 ---
+- name: allow access to NFSv4
+  lineinfile:
+    line: "-A INPUT -p tcp -m state --state NEW -m tcp --dport 2049 -j ACCEPT"
+    dest: /etc/sysconfig/iptables
+    insertbefore: '^-A INPUT -j REJECT --reject-with icmp-host-prohibited'
+  notify: restart iptables
+
 - name: install NFS server packages
   yum:
     name: nfs-utils
@@ -18,5 +25,5 @@
     dest: /etc/exports
     regexp: "^{{ item.directory }} "
     line: "{{ item.directory }} {{ item.export_options | default(cluster_name+'*(rw)') }}"
-  with_items: "{{ exports }}"
+  with_items: "{{ exports|default([]) }}"
   notify: restart nfs-server

@@ -68,7 +68,7 @@
     - name: create inventory on disk
       template:
         src: templates/hortonworks-inventory.j2
-        dest: ./hortonworks-inventory
+        dest: "{{ ansible_env.HOME }}/{{ cluster_name }}/hortonworks-inventory"
         backup: yes
 
     - name: create tmuxinator status session config

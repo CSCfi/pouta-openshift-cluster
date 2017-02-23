@@ -20,9 +20,12 @@
 
 - name: open ports 53 for DNS
   lineinfile:
-    line: "-A INPUT -p udp -m udp --dport 53 -j ACCEPT"
+    line: "-A INPUT -p {{ item }} -m {{ item }} --dport 53 -j ACCEPT"
     dest: /etc/sysconfig/iptables
     insertbefore: '^-A INPUT'
+  with_items:
+    - udp
+    - tcp
 
 - name: install pdsh
   yum: name=pdsh state=present

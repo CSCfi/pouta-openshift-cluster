@@ -91,14 +91,14 @@ In this step we launch VMs in our cPouta project and configure them to act as a 
 for a simple cluster. You can run this on your management host, be it the bastion or your
 laptop.
 
-Make a python virtualenv called 'ansible-2.1' and populate it
+Make a python virtualenv called 'ansible-2.2' and populate it
 
-    mkvirtualenv --system-site-packages ansible2
-    pip install --upgrade pip setuptools
-    pip install ansible==2.1
+    mkvirtualenv --system-site-packages ansible-2.2
+    pip install --upgrade pip
+    pip install 'ansible<2.3'
     pip install shade dnspython funcsigs functools32
 
-You can activate it later with the command 'workon ansible-2.1'
+You can activate it later with the command 'workon ansible-2.2'
 
 Source your OpenStack cPouta access credentials (actual filename will vary) and check that they work by listing
 the VM images
@@ -114,24 +114,6 @@ Create a new key (if don't already have one) for the cluster (adapt the name) an
 Clone this example repo
 
     git clone https://github.com/CSC-IT-Center-for-Science/pouta-ansible-cluster.git
-
-Disable ssh host key checking (http://docs.ansible.com/ansible/intro_getting_started.html#host-key-checking).
-Add an entry for all the hosts in your cPouta subnet. Use *ip* command to figure out your network address range.
-Also adapt the IdentityFile -line to match the key you have generated.
-    
-    ip a
-    
-    vi ~/.ssh/config
-    
-    Host XX.XX.XX.*
-
-        StrictHostKeyChecking no
-        IdentitiesOnly yes
-        IdentityFile ~/.ssh/id_rsa_mycluster
-        
-Change the permissions on the config file
-
-    chmod 600 ~/.ssh/config
 
 ### Optional step: server group for node anti-affinity
 
@@ -163,7 +145,7 @@ For example, to provision a test cluster with master and four small nodes, take 
 
 ### Run provisioning
 
-Make sure you have ansible-2.1 virtual environment and openstack credentials loaded. 
+Make sure you have ansible-2.2 virtual environment and openstack credentials loaded. 
 
 Then, provision the VMs and associated resources
 

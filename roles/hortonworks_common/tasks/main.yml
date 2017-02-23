@@ -9,3 +9,10 @@
     regexp: '^securerandom.source.*'
     line: 'securerandom.source=file:/dev/urandom'
     state: present
+
+- name: open all TCP traffic (actual control done with security rules)
+  lineinfile:
+    line: "-A INPUT -p tcp -m state --state NEW -m tcp -j ACCEPT"
+    dest: /etc/sysconfig/iptables
+    insertbefore: '^-A INPUT -j REJECT --reject-with icmp-host-prohibited'
+  notify: restart iptables
