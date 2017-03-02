@@ -6,6 +6,8 @@
     - set_fact: remove_volumes={{ remove_node_volumes|default(False) }}
     - name: remove nodes
       include: tasks/vm_group_deprovision.yml
+      vars:
+        server_group_suffix: "common"
       with_items: "{{ node_groups }}"
       loop_control:
         loop_var: "vm_group_name"

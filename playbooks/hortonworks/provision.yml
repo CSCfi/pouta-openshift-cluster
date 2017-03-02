@@ -57,6 +57,8 @@
 
     - name: provision nodes
       include: tasks/vm_group_provision.yml
+      vars:
+        server_group_suffix: "common"
       with_items: "{{ node_groups }}"
       loop_control:
         loop_var: "vm_group_name"

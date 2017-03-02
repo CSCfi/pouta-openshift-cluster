@@ -52,3 +52,4 @@ crashlytics-build.properties
 
 # Ansible retry files
 *.retry
+/.idea/
