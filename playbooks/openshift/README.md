@@ -43,8 +43,10 @@ This is a log of an example installation of a proof of concept cluster with
 
 Shell environment with
 - OpenStack credentials for cPouta 
-- python virtualenvironment with ansible>=2.1.0, shade and dnspython
+- python virtualenv with ansible, shade, dnspython and pyopenssl
 - venv should have latest setuptools and pip (pip install --upgrade setuptools pip)
+- metrics needs java keytool on the bastion host: sudo yum install java-1.8.0-openjdk-headless
+- if you have SELinux enabled, either disable that or make sure the virtualenv has libselinux-python  
 - ssh access to the internal network of your project
     - either run this on your bastion host
     - or set up ssh forwarding through your bastion host in your ~/.ssh/config
@@ -58,12 +60,8 @@ In general, see https://docs.openshift.org/latest/install_config/install/prerequ
 
 Clone the necessary playbooks from GitHub (here we assume they go under ~/git)
     
-    $ cd ~/git
+    $ mkdir -p ~/git && cd ~/git
     $ git clone https://github.com/CSC-IT-Center-for-Science/pouta-ansible-cluster
-    $ git clone https://github.com/openshift/openshift-ansible.git
-    
-The following is a temporary fix for creating NFS volumes
-
     $ git clone https://github.com/tourunen/openshift-ansible.git openshift-ansible-tourunen
     $ cd openshift-ansible-tourunen
     $ git checkout nfs_fixes
@@ -81,13 +79,14 @@ Change at least the following config entries:
     cluster_name: "YOUR_CLUSTER_NAME" 
     ssh_key: "bastion-key"
 
-    
+If you are deploying the cluster to a non-default network, remember to add and configure an interface to bastion host in
+that network. The network also needs to be attached to a router.
 
 ### Run provisioning
 
 First provision the VMs and associated resources
 
-    $ workon ansible-2.1
+    $ workon ansible-2.2
     $ ansible-playbook -v -e @cluster_vars.yaml ~/git/pouta-ansible-cluster/playbooks/openshift/provision.yml 
 
 Then prepare the VMs for installation
@@ -115,21 +114,9 @@ Add the persistent volumes that were created earlier to OpenShift
 
     $ for vol in persistent-volume.pvol*; do oc create -f $vol; done
 
-Deploy registry with persistent storage. Note that you need a pvol that is at least 200GB for this.
+Re-deploy registry with persistent storage. Note that you need a pvol that is at least 200GB for this.
 
-    $ oc adm manage-node $HOSTNAME.novalocal --schedulable=true
-    $ oc delete all --selector=docker-registry=default
-    $ oc adm registry --selector=region=infra
-    $ oc volume dc/docker-registry --remove --name=registry-storage 
     $ oc volume dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi 
-
-Installer already creates a deployment config for router, just scale it up
-    
-    $ oc scale dc/router --replicas=1 
-
-Disable further deployments on master
-
-    $ oc adm manage-node $HOSTNAME.novalocal --schedulable=false
 
 Add a user
     
@@ -140,3 +127,24 @@ Add a user
 - open security groups
 - start testing and learning
 - get a proper certificate for master
+
+## Security groups
+
+- common
+    - applied to all VMs
+    - allow ssh from bastion
+- infra
+    - applied for all infrastructure VMs (masters, etcd, lb)
+    - allow all traffic between infra VMs
+- masters
+    - applied to all masters
+    - allow incoming DNS from common
+- nodes
+    - applied for all node VMs
+    - allow all traffic from infra SG
+- lb
+    - applied to load balancers/router VMs
+    - allow all traffic to router http, https and api port
+- nfs
+    - applied to NFS server
+    - allow nfs v4 from all VMs

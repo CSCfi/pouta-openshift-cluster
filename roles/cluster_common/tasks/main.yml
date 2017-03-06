@@ -33,3 +33,7 @@
 - name: set SELinux state
   selinux: state="{{ selinux_state }}"
   when: selinux_state is defined
+
+# rpcbind is installed and enabled by default, turn it off for security
+- name: disable rpcbind
+  service: name=rpcbind state=stopped enabled=false

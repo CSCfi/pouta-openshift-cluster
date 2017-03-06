@@ -1,0 +1,15 @@
+- name: Run NFS volume creation
+  include: ../../../openshift-ansible-tourunen/setup_lvm_nfs.yml
+
+- name: Copy files to master-1
+  hosts: masters[0]
+  tasks:
+    - name: copy default project template to master-1
+      template:
+        src: templates/project-request.yaml
+        dest: /home/cloud-user/project-request.yaml
+
+    - name: copy nfs_pv definitions to master-1
+      copy:
+        src: /tmp/nfs_pv
+        dest: /home/cloud-user/

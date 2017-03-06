@@ -10,6 +10,13 @@
     - base
     - cluster_common
 
+- name: Configure cluster masters
+  hosts:
+    - masters
+  become: yes
+  roles:
+    - cluster_master
+
 - name: Configure openshift VMs
   hosts:
     - masters
@@ -20,20 +27,27 @@
     - role: lvm_storage
 
     - role: docker_host
-      docker_lvol_size: "50%FREE"
       docker_lvol_vg_name: "vg_data"
+      docker_lvol_size: "99%FREE"
 
 - name: Configure openshift masters
   hosts:
     - masters
   become: yes
   roles:
-    - cluster_master
     - openshift_master
 
-- name: Configure nfs server
+- name: Configure openshift nodes
+  hosts:
+    - nodes
+  become: yes
+  roles:
+    - openshift_node
+
+- name: Prepare nfs server for OpenShift NFS playbook
   hosts:
     - nfsservers
   become: yes
   roles:
-    - role: lvm_storage
+    - lvm_storage
+    - nfs_server

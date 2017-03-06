@@ -1,0 +1,9 @@
+STORAGE_DRIVER={{ docker_storage_driver|default('devicemapper') }}
+
+{% if docker_lvol_vg_name is defined %}
+VG={{ docker_lvol_vg_name }}
+{% endif %}
+
+{% if docker_lvol_size is defined %}
+DATA_SIZE={{ docker_lvol_size }}
+{% endif %}

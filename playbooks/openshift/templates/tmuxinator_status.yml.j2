@@ -4,17 +4,17 @@ windows:
   - overview:
       layout: tiled
       panes:
-        - pods:
-          - ssh -l cloud-user -t {{ hostvars[groups.master.0]['ansible_ssh_host'] }}
-          - watch -n 10 oc get pods --all-namespaces
+        - active_pods:
+          - ssh -l cloud-user -t {{ groups.master.0 }}
+          - watch -n 10 "oc get pods --all-namespaces | egrep -v 'Completed|DeadlineExceeded|build .*Error'"
         - routes:
-          - ssh -l cloud-user -t {{ hostvars[groups.master.0]['ansible_ssh_host'] }}
+          - ssh -l cloud-user -t {{groups.master.0 }}
           - watch -n 10 oc get routes --all-namespaces
         - pvc:
-          - ssh -l cloud-user -t {{ hostvars[groups.master.0]['ansible_ssh_host'] }}
+          - ssh -l cloud-user -t {{ groups.master.0 }}
           - watch -n 10 oc get pvc --all-namespaces
         - pods_per_node:
-            - ssh -l cloud-user -t {{ hostvars[groups.master.0]['ansible_ssh_host'] }}
+            - ssh -l cloud-user -t {{ groups.master.0 }}
             {% raw %}
             - watch -n 10 "oc get pods --all-namespaces --template='{{range .items}}{{.spec.nodeName}}~{{.status.phase}}#{{end}}' | tr '~#' '\t\n' | sort | uniq -c"
             {% endraw %}
@@ -23,14 +23,14 @@ windows:
       layout: even-vertical
       panes:
 {% for host in groups['master'] %}
-        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} sudo journalctl -f -u 'origin*'
+        - ssh -l cloud-user -t {{ host }} sudo journalctl -f -u 'origin*'
 {% endfor %}
 
   - masters-dstat:
       layout: even-vertical
       panes:
 {% for host in groups['master'] %}
-        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+        - ssh -l cloud-user -t {{ host }} dstat -tarfsm -C total -N total 60
 {% endfor %}
 
   - nodes-dstat:
@@ -38,7 +38,7 @@ windows:
       panes:
 {% for group_name in vars['node_groups'] %}
 {% for host in groups[group_name] %}
-        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+        - ssh -l cloud-user -t {{ host }} dstat -tarfsm -C total -N total 60
 {% endfor %}
 {% endfor %}
 
@@ -47,16 +47,16 @@ windows:
       layout: even-vertical
       panes:
 {% for host in groups['etcd'] %}
-        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+        - ssh -l cloud-user -t {{ host }} dstat -tarfsm -C total -N total 60
 {% endfor %}
 {% endif %}
 
-{% if 'lbs' in groups %}
+{% if 'lb' in groups %}
   - lbs-dstat:
       layout: even-vertical
       panes:
-{% for host in groups['lbs'] %}
-        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+{% for host in groups['lb'] %}
+        - ssh -l cloud-user -t {{ host }} dstat -tarfsm -C total -N total 60
 {% endfor %}
 {% endif %}
 
@@ -65,6 +65,6 @@ windows:
       layout: even-vertical
       panes:
 {% for host in groups['nfs'] %}
-        - ssh -l cloud-user -t {{ hostvars[host]['ansible_ssh_host'] }} dstat -tarfsm -C total -N total 60
+        - ssh -l cloud-user -t {{ host }} dstat -tarfsm -C total -N total 60
 {% endfor %}
 {% endif %}

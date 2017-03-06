@@ -13,12 +13,18 @@
 
 - name: start and enable rpcbind and nfs-server
   service:
-    name: "{{item}}"
+    name: "{{ item }}"
     state: started
     enabled: yes
   with_items:
     - rpcbind
     - nfs-server
+
+# see https://github.com/ansible/ansible-modules-core/issues/3764
+- name: enable rpcbind
+  command: "systemctl enable rpcbind"
+  register: systemctl_result
+  changed_when: systemctl_result.stderr != ''
 
 - name: create exports
   lineinfile:

@@ -1,0 +1,49 @@
+- name: add our own chain
+  lineinfile:
+    dest: /etc/sysconfig/iptables
+    insertafter: '^:OUTPUT ACCEPT'
+    line: ':PAC_FORWARD - [0:0]'
+
+- name: block access from SDN to internal network (INPUT)
+  blockinfile:
+    dest: /etc/sysconfig/iptables
+    insertbefore: '^-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT'
+  # here we insert our own blocking rule and the rules that would be inserted by OpenShift as well to prevent
+  # OpenShift overriding our rule. see https://trello.com/c/vwOxBiXn/253-iptables-make-it-possible-to-specify-the-chain-in-which-to-insert-the-accept-vxlan-rule-operations
+    block: |
+      -A INPUT -d 192.168.0.0/16 -i tun0 -j REJECT --reject-with icmp-port-unreachable
+      -A INPUT -i tun0 -m comment --comment "traffic from docker for internet" -j ACCEPT
+      -A INPUT -i tun0 -m comment --comment "traffic from SDN" -j ACCEPT
+      -A INPUT -s 192.168.0.0/16 -j ACCEPT
+    marker: '-A INPUT -m comment --comment "{mark} ANSIBLE MANAGED BLOCK INPUT"'
+  when: "'masters' not in group_names"
+  notify: restart iptables
+
+- name: block access from SDN to internal network (FORWARD)
+  blockinfile:
+    dest: /etc/sysconfig/iptables
+    insertbefore: '^-A FORWARD -j REJECT'
+  # here we insert our own blocking rule and the rules that would be inserted by OpenShift as well to prevent
+  # OpenShift overriding our rule. see https://trello.com/c/vwOxBiXn/253-iptables-make-it-possible-to-specify-the-chain-in-which-to-insert-the-accept-vxlan-rule-operations
+    block: |
+      -A FORWARD -j PAC_FORWARD
+      -A FORWARD -s 10.128.0.0/14 -d 192.168.0.0/16 -j REJECT --reject-with icmp-port-unreachable
+      -A FORWARD -s 10.128.0.0/14 -j ACCEPT
+      -A FORWARD -d 10.128.0.0/14 -j ACCEPT
+    marker: '-A FORWARD -m comment --comment "{mark} ANSIBLE MANAGED BLOCK INPUT"'
+  when: "'masters' not in group_names"
+  notify: restart iptables
+
+# TODO : open access to only masters (here we let security groups do the rest of the filtering)
+- name: block access from SDN to internal network (PAC_FORWARD)
+  blockinfile:
+    dest: /etc/sysconfig/iptables
+    insertafter: '^-A FORWARD -j REJECT'
+    block: |
+      -A PAC_FORWARD -s 10.128.0.0/14 -d 192.168.0.0/16 -p udp -m udp --dport 53 -j ACCEPT
+      -A PAC_FORWARD -s 10.128.0.0/14 -d 192.168.0.0/16 -p tcp -m tcp --dport 53 -j ACCEPT
+      -A PAC_FORWARD -s 10.128.0.0/14 -d 192.168.0.0/16 -p tcp -m tcp --dport 8443 -j ACCEPT
+      -A PAC_FORWARD -j RETURN
+    marker: '-A PAC_FORWARD -m comment --comment "{mark} ANSIBLE MANAGED BLOCK PAC_FORWARD"'
+  when: "'masters' not in group_names"
+  notify: restart iptables

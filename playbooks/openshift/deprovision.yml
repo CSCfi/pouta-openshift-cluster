@@ -1,4 +1,4 @@
-- name: Destroy a cluster deployed by cluster.yml
+- name: Destroy a cluster deployed by provision.yml, defined by cluster_vars.yaml
   hosts: localhost
   connection: local
   tasks:
@@ -6,6 +6,8 @@
     - set_fact: remove_volumes={{ remove_lb_volumes|default(False) }}
     - name: remove lbs VMs
       include: tasks/vm_group_deprovision.yml
+      vars:
+        server_group_suffix: "lb"
       with_items:
         - lb
       loop_control:
@@ -16,6 +18,8 @@
     - set_fact: remove_volumes={{ remove_node_volumes|default(False) }}
     - name: remove node VMs
       include: tasks/vm_group_deprovision.yml
+      vars:
+        server_group_suffix: "node"
       with_items: "{{ node_groups }}"
       loop_control:
         loop_var: "vm_group_name"
@@ -24,6 +28,8 @@
     - set_fact: remove_volumes={{ remove_master_volumes|default(False) }}
     - name: remove master VM
       include: tasks/vm_group_deprovision.yml
+      vars:
+        server_group_suffix: "master"
       with_items:
         - master
       loop_control:
@@ -55,5 +61,9 @@
         state: absent
       with_items:
         - "{{ cluster_name }}-common"
+        - "{{ cluster_name }}-infra"
         - "{{ cluster_name }}-master"
+        - "{{ cluster_name }}-node"
+        - "{{ cluster_name }}-lb"
+        - "{{ cluster_name }}-nfs"
       when: remove_security_groups | default(False) | bool

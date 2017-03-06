@@ -1,0 +1,162 @@
+# Ansible generated inventory. Will be overwritten by provision.yml
+
+[OSEv3:vars]
+ansible_ssh_user=cloud-user
+ansible_become=true
+
+# set openstack-ansible install type and version
+containerized={{ oso_install_containerized | default(false) }}
+deployment_type=origin
+{% if oso_release is defined %}
+openshift_release={{ oso_release }}
+{% endif %}
+{% if oso_image_tag is defined %}
+openshift_image_tag={{ oso_image_tag }}
+{% endif %}
+
+# move the internal DNS away from port 53, where we have dnsmasq for cluster DNS
+openshift_master_dns_port=8053
+openshift_dns_ip={{ hostvars[groups['master'][0]]['ansible_ssh_host'] }}
+openshift_use_dnsmasq=false
+
+# project network isolation by default
+os_sdn_network_plugin_name='redhat/openshift-ovs-multitenant'
+
+# use iptables, not firewalld
+os_firewall_use_firewalld=False
+
+{% if oso_secure_registry|default(False) %}
+# set the flag telling registry in secured (helps with scaling, has to be done manually)
+openshift_docker_hosted_registry_insecure=False
+{% endif %}
+
+openshift_hosted_registry_selector='type=master'
+
+# single "master runs all the bells and whistles" installation
+openshift_master_cluster_hostname={{ groups['master'][0] }}
+openshift_master_cluster_public_hostname={{ openshift_public_hostname }}
+
+# set authentication to htpasswd and provide a htpasswd file
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+
+{% if openshift_master_htpasswd_file is defined %}
+openshift_master_htpasswd_file={{ openshift_master_htpasswd_file }}
+{% endif %}
+
+# as a guess, set the default subdomain to openshift_public_hostname
+openshift_master_default_subdomain={{ openshift_public_hostname }}
+
+# default project node selector
+osm_default_node_selector='default_run=allow'
+osm_project_request_template='default/project-request-default'
+
+# deploy the router on a node with external IP
+openshift_hosted_router_selector='type=master'
+
+# if the wildcard cert is defined, set it for api and router
+# note the difference with singular and plural
+{% if certificate_crt is defined %}
+openshift_master_named_certificates=[{'certfile': '{{ certificate_crt }}', 'keyfile': '{{ certificate_key }}', 'cafile': '{{ certificate_ca }}', 'names': ['{{ openshift_public_hostname }}'] }]
+openshift_master_overwrite_named_certificates=true
+openshift_hosted_router_certificate={'certfile': '{{ certificate_crt }}', 'keyfile': '{{ certificate_key }}', 'cafile': '{{ certificate_ca }}' }
+{% endif %}
+
+# deploy metrics service
+openshift_hosted_metrics_deploy={{ oso_deploy_metrics|default(false)|bool }}
+openshift_hosted_metrics_resolution=20s
+
+# deploy aggregated logging service
+openshift_hosted_logging_deploy={{ oso_deploy_logging|default(false)|bool }}
+
+# reduce master memory usage
+osm_api_server_args={'deserialization-cache-size': ['1000']}
+
+{% if openshift_buildoverrides_nodeselectors is defined %}
+# run builds on dedicated nodes
+openshift_buildoverrides_nodeselectors={{ openshift_buildoverrides_nodeselectors }}
+{% endif %}
+openshift_buildoverrides_force_pull=True
+
+#
+# Host definitions
+#
+
+[OSEv3:children]
+masters
+nodes
+
+[masters:vars]
+vm_group_name=master
+pv_vg_data=vg_data
+
+{% for group_var_key, group_var_value in (master.group_vars|default({})).iteritems() %}
+# custom group var from cluster_conf.yaml
+{{ group_var_key }}={{ group_var_value }}
+{% endfor %}
+
+[masters]
+{% for vm in groups['master'] %}
+{{ vm }} openshift_hostname={{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }}
+{% endfor %}
+
+# we compose [nodes] from (potentially heterogeneous) child groups
+[nodes]
+
+[nodes:children]
+node_masters
+{% for group_name in vars['node_groups'] %}
+{{ group_name }}
+{% endfor %}
+
+[node_masters:vars]
+openshift_schedulable=true
+
+{% set labels={'type': 'master'}|combine(master.node_labels|default({})) %}
+openshift_node_labels={{ labels }}
+
+{% for group_var_key, group_var_value in (master.group_vars|default({})).iteritems() %}
+# custom group var from cluster_conf.yaml
+{{ group_var_key }}={{ group_var_value }}
+{% endfor %}
+
+[node_masters]
+{% for vm in groups['master'] %}
+{{ vm }} openshift_hostname={{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }}
+{% endfor %}
+
+{% for group_name in vars['node_groups'] %}
+[{{ group_name }}:vars]
+{% set labels={'type': group_name, 'default_run': 'allow'}|combine(vars[group_name].node_labels|default({})) %}
+openshift_node_labels={{ labels }}
+pv_vg_data=vg_data
+vm_group_name={{ group_name }}
+
+{% for group_var_key, group_var_value in (vars[group_name].group_vars|default({})).iteritems() %}
+# custom group var from cluster_conf.yaml
+{{ group_var_key }}={{ group_var_value }}
+{% endfor %}
+
+[{{ group_name }}]
+{% for vm in groups[group_name] %}
+{{ vm }} openshift_hostname={{ vm }} ansible_ssh_host={{ hostvars[vm]['ansible_ssh_host'] }}
+{% endfor %}
+
+{% endfor %}
+
+[nfsservers:vars]
+vm_group_name=nfs
+pv_vg_pvol=vg_pvol
+
+{% if nfs is defined %}
+{% for group_var_key, group_var_value in (nfs.group_vars|default({})).iteritems() %}
+# custom group var from cluster_conf.yaml
+{{ group_var_key }}={{ group_var_value }}
+{% endfor %}
+{% endif %}
+
+[nfsservers]
+{% if nfs is defined %}
+{{ groups['nfs'][0] }}  openshift_hostname={{ groups['nfs'][0] }} ansible_ssh_host={{ hostvars[groups['nfs'][0]]['ansible_ssh_host'] }}
+{% else %}
+{{ groups['master'][0] }}  openshift_hostname={{ groups['master'][0] }} ansible_ssh_host={{ hostvars[groups['master'][0]]['ansible_ssh_host'] }}
+{% endif %}
