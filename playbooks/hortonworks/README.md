@@ -113,7 +113,7 @@ Create a new key (if don't already have one) for the cluster (adapt the name) an
 
 Clone this example repo
 
-    git clone https://github.com/CSC-IT-Center-for-Science/pouta-ansible-cluster.git
+    git clone https://github.com/CSCfi/pouta-ansible-cluster.git
 
 ### Optional step: server group for node anti-affinity
 

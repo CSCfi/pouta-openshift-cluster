@@ -61,7 +61,7 @@ In general, see https://docs.openshift.org/latest/install_config/install/prerequ
 Clone the necessary playbooks from GitHub (here we assume they go under ~/git)
     
     $ mkdir -p ~/git && cd ~/git
-    $ git clone https://github.com/CSC-IT-Center-for-Science/pouta-ansible-cluster
+    $ git clone https://github.com/CSCfi/pouta-ansible-cluster
     $ git clone https://github.com/tourunen/openshift-ansible.git openshift-ansible-tourunen
     $ cd openshift-ansible-tourunen
     $ git checkout nfs_fixes
