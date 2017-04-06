@@ -76,6 +76,9 @@ openshift_hosted_logging_deploy={{ oso_deploy_logging|default(false)|bool }}
 # reduce master memory usage
 osm_api_server_args={'deserialization-cache-size': ['1000']}
 
+# leave more free space in the docker storage pool by lowering gc thresholds
+openshift_node_kubelet_args={'image-gc-high-threshold': ['80'],'image-gc-low-threshold': ['70']}
+
 {% if openshift_buildoverrides_nodeselectors is defined %}
 # run builds on dedicated nodes
 openshift_buildoverrides_nodeselectors={{ openshift_buildoverrides_nodeselectors }}
