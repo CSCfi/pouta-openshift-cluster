@@ -73,6 +73,7 @@ openshift_hosted_metrics_deployer_version={{ oso_metrics_tag|default(oso_image_t
 
 # deploy aggregated logging service
 openshift_hosted_logging_deploy={{ oso_deploy_logging|default(false)|bool }}
+openshift_logging_image_version={{ oso_logging_tag|default(oso_image_tag|default('v'+oso_release|default('latest'))) }}
 
 # reduce master memory usage
 osm_api_server_args={'deserialization-cache-size': ['1000']}

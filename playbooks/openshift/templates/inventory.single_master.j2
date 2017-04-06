@@ -65,6 +65,7 @@ openshift_hosted_router_certificate={'certfile': '{{ certificate_crt }}', 'keyfi
 openshift_hosted_metrics_deploy={{ oso_deploy_metrics|default(false)|bool }}
 openshift_hosted_metrics_resolution=20s
 openshift_hosted_metrics_deployer_version={{ oso_metrics_tag|default(oso_image_tag|default('v'+oso_release|default('latest'))) }}
+openshift_logging_image_version={{ oso_logging_tag|default(oso_image_tag|default('v'+oso_release|default('latest'))) }}
 
 # deploy aggregated logging service
 openshift_hosted_logging_deploy={{ oso_deploy_logging|default(false)|bool }}

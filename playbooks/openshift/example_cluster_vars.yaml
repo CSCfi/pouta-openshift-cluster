@@ -97,6 +97,9 @@ oso_deploy_metrics: false
 # deploy logging during installation
 oso_deploy_logging: false
 
+# specify a custom version for metrics
+#oso_logging_tag: latest
+
 openshift_public_hostname: "your.master.hostname.here"
 openshift_public_ip: "your.master.ip.here"
 openshift_builddefaults_nodeselectors: "{'type':'build'}"
