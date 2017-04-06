@@ -4,7 +4,7 @@
     state: present
     dest: /etc/hosts
     line: "{{ hostvars[item]['ansible_ssh_host'] }} {{ item }}.novalocal {{ item }}"
-  when: "{{ hostvars[item]['ansible_ssh_host'] is defined }}"
+  when: hostvars[item]['ansible_ssh_host'] is defined
   with_items: "{{ groups['all'] }}"
   notify: restart_dnsmasq
 

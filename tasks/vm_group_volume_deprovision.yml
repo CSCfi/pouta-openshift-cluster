@@ -8,7 +8,7 @@
   with_sequence: count={{ vm_group.num_vms|default(1) }}
   async: 300
   register: async_volume_remove
-  when: "{{ volume_spec.size }}|default(0) > 0"
+  when: volume_spec.size|default(0) > 0
 
 - name: check volume remove status
   async_status: jid={{ item.ansible_job_id }}
@@ -17,4 +17,4 @@
   retries: 30
   delay: 15
   with_items: "{{ async_volume_remove.results }}"
-  when: "{{ volume_spec.size }}|default(0) > 0"
+  when: volume_spec.size|default(0) > 0
