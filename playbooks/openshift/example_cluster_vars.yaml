@@ -91,6 +91,9 @@ oso_install_containerized: false
 # deploy metrics during installation
 oso_deploy_metrics: false
 
+# specify a custom version for metrics
+#oso_metrics_tag: latest
+
 # deploy logging during installation
 oso_deploy_logging: false
 
