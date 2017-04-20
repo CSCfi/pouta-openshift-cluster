@@ -43,7 +43,7 @@ This is a log of an example installation of a proof of concept cluster with
 
 Shell environment with
 - OpenStack credentials for cPouta 
-- python virtualenv with ansible, shade, dnspython and pyopenssl
+- python virtualenv with ansible==2.3, shade, dnspython and pyopenssl
 - venv should have latest setuptools and pip (pip install --upgrade setuptools pip)
 - metrics needs java keytool on the bastion host: sudo yum install java-1.8.0-openjdk-headless
 - if you have SELinux enabled, either disable that or make sure the virtualenv has libselinux-python  
@@ -86,7 +86,7 @@ that network. The network also needs to be attached to a router.
 
 First provision the VMs and associated resources
 
-    $ workon ansible-2.2
+    $ workon ansible-2.3
     $ ansible-playbook -v -e @cluster_vars.yaml ~/git/pouta-ansible-cluster/playbooks/openshift/provision.yml 
 
 Then prepare the VMs for installation
