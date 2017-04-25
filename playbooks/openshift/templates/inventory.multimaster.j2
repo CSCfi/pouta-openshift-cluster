@@ -190,7 +190,7 @@ pv_vg_pvol=vg_pvol
 
 [nfsservers]
 {% if nfs is defined and nfs.num_vms|default(0) > 0 %}
-{{ groups['nfs'][0] }} openshift_hostname={{ vm }} ansible_ssh_host={{ hostvars[groups['nfs'][0]]['ansible_ssh_host'] }}
+{{ groups['nfs'][0] }} ansible_ssh_host={{ hostvars[groups['nfs'][0]]['ansible_ssh_host'] }}
 {% endif %}
 
 [etcd:vars]
