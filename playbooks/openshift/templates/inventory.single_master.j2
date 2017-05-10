@@ -154,6 +154,8 @@ vm_group_name={{ group_name }}
 [nfsservers:vars]
 vm_group_name=nfs
 pv_vg_pvol=vg_pvol
+ansible_ssh_user=cloud-user
+ansible_become=true
 
 {% if nfs is defined %}
 {% for group_var_key, group_var_value in (nfs.group_vars|default({})).iteritems() %}
