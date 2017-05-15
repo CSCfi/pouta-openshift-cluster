@@ -252,6 +252,11 @@
   hosts: localhost
   connection: local
   tasks:
+    - name: make sure the directory for inventory files exists
+      file:
+        state: directory
+        path: "{{ ansible_env.HOME }}/{{ cluster_name }}"
+
     - name: create inventory on disk (multimaster)
       template:
         src: templates/inventory.multimaster.j2
