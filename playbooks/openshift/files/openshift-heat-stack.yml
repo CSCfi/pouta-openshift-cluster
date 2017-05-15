@@ -1,0 +1,127 @@
+---
+heat_template_version: 2015-10-15
+
+description: >
+  Provision resources for OpenShift.
+
+parameters:
+  env_name:
+    description: >
+      A name for the OpenShift environment to be used for naming resources.
+    type: string
+  bastion_allow_ports:
+    description: >
+      Which ports to allow connections to on the bastion host.
+    type: comma_delimited_list
+    default: '22'
+  bastion_allow_cidrs:
+    description: >
+      The CIDRs of the networks where the bastion host should be accessible
+      from.
+    type: comma_delimited_list
+    default: '0.0.0.0/0'
+  openshift_public_ip:
+    description: >
+      The public IP address of the OpenShift service.
+    type: string
+
+resources:
+  secgroup_bastion:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: "bastion"
+      rules:
+        repeat:
+          for_each:
+            <%port%>: { get_param: bastion_allow_ports }
+            <%cidr%>: { get_param: bastion_allow_cidrs }
+          template:
+            protocol: tcp
+            port_range_min: <%port%>
+            port_range_max: <%port%>
+            remote_ip_prefix: <%cidr%>
+
+  secgroup_common:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: "common"
+      rules:
+        - remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_bastion }
+        - remote_mode: remote_group_id
+          protocol: icmp
+        - remote_mode: remote_group_id
+          protocol: udp
+          port_range_min: 4789
+          port_range_max: 4789
+
+  secgroup_infra:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: infra
+      rules:
+        - remote_mode: remote_group_id
+
+  secgroup_lb:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: lb
+      rules:
+        - protocol: tcp
+          port_range_min: 8443
+          port_range_max: 8443
+          remote_ip_prefix: { get_param: openshift_public_ip }
+        - protocol: tcp
+          port_range_min: 8443
+          port_range_max: 8443
+          remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_common }
+
+  secgroup_master:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: master
+      rules:
+       - protocol: udp
+         port_range_min: 53
+         port_range_max: 53
+         remote_mode: remote_group_id
+         remote_group_id: { get_resource: secgroup_common }
+       - protocol: tcp
+         port_range_min: 53
+         port_range_max: 53
+         remote_mode: remote_group_id
+         remote_group_id: { get_resource: secgroup_common }
+       - protocol: tcp
+         port_range_min: 8443
+         port_range_max: 8443
+         remote_mode: remote_group_id
+         remote_group_id: { get_resource: secgroup_common }
+
+  secgroup_nfs:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: nfs
+      rules:
+        - remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_common }
+          protocol: tcp
+          port_range_min: 2049
+          port_range_max: 2049
+
+  secgroup_node:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: node
+      rules:
+        - remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_infra }
+
+outputs:

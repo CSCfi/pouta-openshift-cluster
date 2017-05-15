@@ -53,3 +53,6 @@ crashlytics-build.properties
 # Ansible retry files
 *.retry
 /.idea/
+
+# Vim swap file
+*.swp

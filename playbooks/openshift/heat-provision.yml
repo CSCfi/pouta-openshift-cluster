@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Build the OpenShift Heat stack
+      register: heat_stack
+      os_stack:
+        name: "{{ cluster_name }}-stack"
+        state: present
+        template: "files/openshift-heat-stack.yml"
+        parameters:
+          env_name: "{{ cluster_name }}"
+          openshift_public_ip: "{{ openshift_public_ip }}"
