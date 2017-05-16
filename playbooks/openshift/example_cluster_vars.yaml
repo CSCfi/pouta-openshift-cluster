@@ -85,7 +85,7 @@ build:
 oso_install_containerized: false
 # if you use containerized install, this has to be set.
 # See https://hub.docker.com/r/openshift/origin/tags/
-#oso_image_tag: v1.3.0-alpha.3
+#oso_image_tag: v1.4.1
 #oso_release: latest
 
 # deploy metrics during installation
