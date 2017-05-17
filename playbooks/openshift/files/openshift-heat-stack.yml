@@ -9,6 +9,7 @@ parameters:
     description: >
       A name for the OpenShift environment to be used for naming resources.
     type: string
+    default: { get_param: 'OS::stack_name' }
   bastion_allow_ports:
     description: >
       Which ports to allow connections to on the bastion host.
@@ -20,9 +21,29 @@ parameters:
       from.
     type: comma_delimited_list
     default: '0.0.0.0/0'
-  openshift_public_ip:
+  lb_secgroup_rules:
     description: >
-      The public IP address of the OpenShift service.
+      Rules for the load balancer security group.
+    type: json
+  openshift_networks:
+    description: >
+      The network config for VMs in the OpenShift cluster.
+    type: json
+  key_name:
+    description: >
+      The name of the SSH key to initially insert into VMs.
+    type: string
+  etcd_cluster_size:
+    description: >
+      How many virtual machines to put in the etcd cluster.
+    type: string
+  etcd_vm_image:
+    description: >
+      What OpenStack image to use for etcd hosts.
+    type: string
+  etcd_vm_flavor:
+    description: >
+      What OpenStack flavor to use for etcd hosts.
     type: string
 
 resources:
@@ -70,16 +91,7 @@ resources:
     properties:
       env_name: { get_param: env_name }
       name_suffix: lb
-      rules:
-        - protocol: tcp
-          port_range_min: 8443
-          port_range_max: 8443
-          remote_ip_prefix: { get_param: openshift_public_ip }
-        - protocol: tcp
-          port_range_min: 8443
-          port_range_max: 8443
-          remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+      rules: { get_param: lb_secgroup_rules }
 
   secgroup_master:
     type: secgroup.yaml
@@ -123,5 +135,28 @@ resources:
       rules:
         - remote_mode: remote_group_id
           remote_group_id: { get_resource: secgroup_infra }
+
+  etcd_cluster:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: etcd_cluster_size }
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "etcd"
+          image: { get_param: etcd_vm_image }
+          networks: { get_param: openshift_networks }
+          flavor: { get_param: etcd_vm_flavor }
+          metadata:
+            group: "etcd"
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_resource: secgroup_infra }
+            - { get_resource: secgroup_common }
 
 outputs:

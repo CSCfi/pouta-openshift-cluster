@@ -5,9 +5,14 @@
     - name: Build the OpenShift Heat stack
       register: heat_stack
       os_stack:
-        name: "{{ cluster_name }}-stack"
+        name: "{{ cluster_name }}"
         state: present
         template: "files/openshift-heat-stack.yml"
         parameters:
           env_name: "{{ cluster_name }}"
-          openshift_public_ip: "{{ openshift_public_ip }}"
+          lb_secgroup_rules: "{{ lb_secgroup_rules }}"
+          openshift_networks: "{{ openshift_networks }}"
+          key_name: "{{ key_name }}"
+          etcd_cluster_size: "{{ etcd_cluster_size }}"
+          etcd_vm_image: "{{ etcd_vm_image }}"
+          etcd_vm_flavor: "{{ etcd_vm_flavor }}"
