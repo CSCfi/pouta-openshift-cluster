@@ -1,0 +1,53 @@
+---
+heat_template_version: 2015-10-15
+
+description: >
+  VM with a volume attached.
+
+parameters:
+  vm_name:
+    type: string
+  image:
+    type: string
+  networks:
+    type: json
+  flavor:
+    type: string
+  metadata:
+    type: json
+  key_name:
+    type: string
+  security_groups:
+    type: json
+  scheduler_hints:
+    type: json
+  vol_name_suffix:
+    type: string
+  vol_size:
+    type: string
+
+resources:
+  vm:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: vm_name }
+      image: { get_param: image }
+      networks: { get_param: networks }
+      flavor: { get_param: flavor }
+      metadata: { get_param: metadata }
+      key_name: { get_param: key_name }
+      security_groups: { get_param: security_groups }
+      scheduler_hints: { get_param: scheduler_hints }
+
+  volume:
+    type: OS::Cinder::Volume
+    properties:
+      name:
+        list_join: ['-', [{ get_param: vm_name }, { get_param: vol_name_suffix }]]
+      size: { get_param: vol_size }
+
+  volume_attachment:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: { get_resource: vm }
+      volume_id: { get_resource: volume }

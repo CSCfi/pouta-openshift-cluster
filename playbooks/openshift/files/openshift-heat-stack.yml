@@ -21,9 +21,9 @@ parameters:
       from.
     type: comma_delimited_list
     default: '0.0.0.0/0'
-  lb_secgroup_rules:
+  secgroup_ext_access_rules:
     description: >
-      Rules for the load balancer security group.
+      Rules for the security group that governs external access to the system.
     type: json
   openshift_networks:
     description: >
@@ -33,10 +33,10 @@ parameters:
     description: >
       The name of the SSH key to initially insert into VMs.
     type: string
-  etcd_cluster_size:
+  etcd_vm_group_size:
     description: >
       How many virtual machines to put in the etcd cluster.
-    type: string
+    type: number
   etcd_vm_image:
     description: >
       What OpenStack image to use for etcd hosts.
@@ -45,8 +45,69 @@ parameters:
     description: >
       What OpenStack flavor to use for etcd hosts.
     type: string
+  lb_vm_group_size:
+    description: >
+      How many load balancer VMs to start.
+    type: number
+  lb_vm_image:
+    description: >
+      What OpenStack image to use for load balancer hosts.
+    type: string
+  lb_vm_flavor:
+    description: >
+      What OpenStack flavor to use for load balancer VMs.
+    type: string
+  lb_vol_size:
+    description: >
+      The size of the Cinder volume to attach to LB VMs.
+    type: number
+  nfs_vm_group_size:
+    description: >
+      How many NFS VMs to start.
+    type: number
+  nfs_vm_image:
+    description: >
+      What OpenStack image to use for NFS hosts.
+    type: string
+  nfs_vm_flavor:
+    description: >
+      What OpenStack flavor to use for NFS VMs.
+    type: string
+  nfs_vol_size:
+    description: >
+      The size of the Cinder volume to attach to NFS VMs.
+    type: number
+  master_vm_group_size:
+    description: >
+      How many master VMs to start.
+    type: number
+  master_vm_image:
+    description: >
+      What OpenStack image to use for master hosts.
+    type: string
+  master_vm_flavor:
+    description: >
+      What OpenStack flavor to use for master VMs.
+    type: string
+  node_ssd_vm_group_size:
+    description: >
+      How many SSD node VMs to start.
+    type: number
+  node_ssd_vm_image:
+    description: >
+      What OpenStack image to use for SSD nodes.
+    type: string
+  node_ssd_vm_flavor:
+    description: >
+      What OpenStack flavor to use for SSD node VMs.
+    type: string
 
 resources:
+
+  #-----------------------------------
+  # Security groups
+  #-----------------------------------
+
   secgroup_bastion:
     type: secgroup.yaml
     properties:
@@ -91,7 +152,16 @@ resources:
     properties:
       env_name: { get_param: env_name }
       name_suffix: lb
-      rules: { get_param: lb_secgroup_rules }
+      rules:
+        - remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_common }
+
+  secgroup_ext_access:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: "ext-access"
+      rules: { get_param: secgroup_ext_access_rules }
 
   secgroup_master:
     type: secgroup.yaml
@@ -136,10 +206,48 @@ resources:
         - remote_mode: remote_group_id
           remote_group_id: { get_resource: secgroup_infra }
 
-  etcd_cluster:
+  #-----------------------------------
+  # Nova server groups (anti-affinity)
+  #-----------------------------------
+
+  etcd:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: etcd
+      policies: ['anti-affinity']
+
+  lb:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: lb
+      policies: ['anti-affinity']
+
+  nfs:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: nfs
+      policies: ['anti-affinity']
+
+  master:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: master
+      policies: ['anti-affinity']
+
+  node_ssd:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: node_ssd
+      policies: ['anti-affinity']
+
+  #-----------------------------------
+  # VM resource groups
+  #-----------------------------------
+
+  etcd_vm_group:
     type: OS::Heat::ResourceGroup
     properties:
-      count: { get_param: etcd_cluster_size }
+      count: { get_param: etcd_vm_group_size }
       resource_def:
         type: OS::Nova::Server
         properties:
@@ -158,5 +266,117 @@ resources:
           security_groups:
             - { get_resource: secgroup_infra }
             - { get_resource: secgroup_common }
+          scheduler_hints:
+            group: { get_resource: etcd }
+
+  lb_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: lb_vm_group_size }
+      resource_def:
+        type: vm_with_volume.yaml
+        properties:
+          vm_name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "lb"
+          image: { get_param: lb_vm_image }
+          networks: { get_param: openshift_networks }
+          flavor: { get_param: lb_vm_flavor }
+          metadata:
+            group: "lb"
+            extra_group: "node_lbs"
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_resource: secgroup_lb }
+            - { get_resource: secgroup_ext_access }
+            - { get_resource: secgroup_infra }
+            - { get_resource: secgroup_common }
+          scheduler_hints:
+            group: { get_resource: lb }
+          vol_name_suffix: "data"
+          vol_size: { get_param: lb_vol_size }
+
+  nfs_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: nfs_vm_group_size }
+      resource_def:
+        type: vm_with_volume.yaml
+        properties:
+          vm_name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "nfs"
+          image: { get_param: nfs_vm_image }
+          networks: { get_param: openshift_networks }
+          flavor: { get_param: nfs_vm_flavor }
+          metadata:
+            group: "nfsservers"
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_resource: secgroup_nfs }
+            - { get_resource: secgroup_infra }
+            - { get_resource: secgroup_common }
+          scheduler_hints:
+            group: { get_resource: nfs }
+          vol_name_suffix: "pvol"
+          vol_size: { get_param: nfs_vol_size }
+
+  master_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: master_vm_group_size }
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "master"
+          image: { get_param: master_vm_image }
+          networks: { get_param: openshift_networks }
+          flavor: { get_param: master_vm_flavor }
+          metadata:
+            group: "masters"
+            extra_group: "node_masters"
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_resource: secgroup_infra }
+            - { get_resource: secgroup_common }
+            - { get_resource: secgroup_master }
+          scheduler_hints:
+            group: { get_resource: master }
+
+  node_ssd_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: node_ssd_vm_group_size }
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "ssd"
+          image: { get_param: node_ssd_vm_image }
+          networks: { get_param: openshift_networks }
+          flavor: { get_param: node_ssd_vm_flavor }
+          metadata:
+            group: "ssd"
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_resource: secgroup_node }
+            - { get_resource: secgroup_common }
+          scheduler_hints:
+            group: { get_resource: node_ssd }
 
 outputs:
