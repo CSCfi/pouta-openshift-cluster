@@ -33,6 +33,14 @@ parameters:
     description: >
       The name of the SSH key to initially insert into VMs.
     type: string
+  bastion_vm_image:
+    description: >
+      What OpenStack image to use for the bastion host.
+    type: string
+  bastion_vm_flavor:
+    description: >
+      What OpenStack flavor to use for the bastion host.
+    type: string
   etcd_vm_group_size:
     description: >
       How many virtual machines to put in the etcd cluster.
@@ -205,6 +213,24 @@ resources:
       rules:
         - remote_mode: remote_group_id
           remote_group_id: { get_resource: secgroup_infra }
+
+  bastion:
+    type: OS::Nova::Server
+    properties:
+      name:
+        str_replace:
+          template: env_name-name_suffix
+          params:
+            env_name: { get_param: env_name }
+            name_suffix: "bastion"
+      image: { get_param: bastion_vm_image }
+      networks: { get_param: openshift_networks }
+      flavor: { get_param: bastion_vm_flavor }
+      metadata:
+        group: "bastion"
+      key_name: { get_param: key_name }
+      security_groups:
+        - { get_resource: secgroup_bastion }
 
   #-----------------------------------
   # Nova server groups (anti-affinity)

@@ -10,9 +10,12 @@
         template: "files/openshift-heat-stack.yml"
         parameters:
           env_name: "{{ cluster_name }}"
+          bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
           secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
           openshift_networks: "{{ openshift_networks }}"
           key_name: "{{ key_name }}"
+          bastion_vm_image: "{{ bastion_vm_image }}"
+          bastion_vm_flavor: "{{ bastion_vm_flavor }}"
           etcd_vm_group_size: "{{ etcd_vm_group_size }}"
           etcd_vm_image: "{{ etcd_vm_image }}"
           etcd_vm_flavor: "{{ etcd_vm_flavor }}"
@@ -30,15 +33,17 @@
           node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
           node_ssd_vm_image: "{{ node_ssd_vm_image }}"
           node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
-
-    - name: Associate floating IP to first LB node
+    - name: Associate floating IP with first LB node
       os_floating_ip:
         server: "{{ cluster_name }}-lb-0"
         floating_ip_address: "{{ openshift_public_ip }}"
       when: lb_vm_group_size > 0
-
-    - name: Associate floating IP to first master node
+    - name: Associate floating IP with first master node
       os_floating_ip:
         server: "{{ cluster_name }}-master-0"
         floating_ip_address: "{{ openshift_public_ip }}"
       when: lb_vm_group_size == 0
+    - name: Associate floating IP with bastion host
+      os_floating_ip:
+        server: "{{ cluster_name }}-bastion"
+        floating_ip_address: "{{ bastion_public_ip }}"
