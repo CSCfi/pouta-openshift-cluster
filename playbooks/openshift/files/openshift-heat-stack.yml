@@ -41,6 +41,10 @@ parameters:
     description: >
       What OpenStack flavor to use for the bastion host.
     type: string
+  bastion_cloud_config:
+    description: >
+      Configuration for cloud-init for the bastion host.
+    type: json
   etcd_vm_group_size:
     description: >
       How many virtual machines to put in the etcd cluster.
@@ -214,6 +218,15 @@ resources:
         - remote_mode: remote_group_id
           remote_group_id: { get_resource: secgroup_infra }
 
+  #-----------------------------------
+  # Bastion VM
+  #-----------------------------------
+
+  bastion_cloud_config_resource:
+    type: "OS::Heat::CloudConfig"
+    properties:
+      cloud_config: { get_param: bastion_cloud_config }
+
   bastion:
     type: OS::Nova::Server
     properties:
@@ -231,6 +244,8 @@ resources:
       key_name: { get_param: key_name }
       security_groups:
         - { get_resource: secgroup_bastion }
+      user_data: { get_resource: bastion_cloud_config_resource }
+      user_data_format: RAW
 
   #-----------------------------------
   # Nova server groups (anti-affinity)

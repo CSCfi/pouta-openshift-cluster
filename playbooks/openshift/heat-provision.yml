@@ -16,6 +16,7 @@
           key_name: "{{ key_name }}"
           bastion_vm_image: "{{ bastion_vm_image }}"
           bastion_vm_flavor: "{{ bastion_vm_flavor }}"
+          bastion_cloud_config: "{{ bastion_cloud_config }}"
           etcd_vm_group_size: "{{ etcd_vm_group_size }}"
           etcd_vm_image: "{{ etcd_vm_image }}"
           etcd_vm_flavor: "{{ etcd_vm_flavor }}"

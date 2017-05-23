@@ -8,6 +8,7 @@ Host *
 Host {{ cluster_name }}-bastion
   HostName {{ bastion_public_ip }}
   User cloud-user
+  StrictHostKeyChecking no
 
 Host {{ host_ssh_config_pattern }}
   ProxyCommand ssh -F /tmp/pac.ssh.config -q {{ cluster_name }}-bastion nc %h %p
