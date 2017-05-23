@@ -47,3 +47,8 @@
       os_floating_ip:
         server: "{{ cluster_name }}-bastion"
         floating_ip_address: "{{ bastion_public_ip }}"
+    - name: Create config for SSH
+      template:
+        src: "templates/ssh.config.j2"
+        dest: "/tmp/pac.ssh.config"
+        mode: 0644

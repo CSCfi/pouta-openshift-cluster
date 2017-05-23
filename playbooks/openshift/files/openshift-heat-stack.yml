@@ -312,8 +312,7 @@ resources:
           networks: { get_param: openshift_networks }
           flavor: { get_param: lb_vm_flavor }
           metadata:
-            group: "lb"
-            extra_group: "node_lbs"
+            groups: "lb,node_lbs"
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_lb }
@@ -370,8 +369,7 @@ resources:
           networks: { get_param: openshift_networks }
           flavor: { get_param: master_vm_flavor }
           metadata:
-            group: "masters"
-            extra_group: "node_masters"
+            groups: "masters,node_masters"
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_infra }
