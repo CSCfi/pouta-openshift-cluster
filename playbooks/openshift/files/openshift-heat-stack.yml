@@ -113,6 +113,18 @@ parameters:
     description: >
       What OpenStack flavor to use for SSD node VMs.
     type: string
+  node_build_vm_group_size:
+    description: >
+      How many build node VMs to start.
+    type: number
+  node_build_vm_image:
+    description: >
+      What OpenStack image to use for build nodes.
+    type: string
+  node_build_vm_flavor:
+    description: >
+      What OpenStack flavor to use for build node VMs.
+    type: string
 
 resources:
 
@@ -281,6 +293,12 @@ resources:
       name: node_ssd
       policies: ['anti-affinity']
 
+  node_build:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: node_build
+      policies: ['anti-affinity']
+
   #-----------------------------------
   # VM resource groups
   #-----------------------------------
@@ -417,5 +435,30 @@ resources:
             - { get_resource: secgroup_common }
           scheduler_hints:
             group: { get_resource: node_ssd }
+
+  node_build_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: node_build_vm_group_size }
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "build"
+          image: { get_param: node_build_vm_image }
+          networks: { get_param: openshift_networks }
+          flavor: { get_param: node_build_vm_flavor }
+          metadata:
+            group: "build"
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_resource: secgroup_node }
+            - { get_resource: secgroup_common }
+          scheduler_hints:
+            group: { get_resource: node_build }
 
 outputs:

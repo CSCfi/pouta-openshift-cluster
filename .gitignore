@@ -56,3 +56,6 @@ crashlytics-build.properties
 
 # Vim swap file
 *.swp
+
+# Vault password file
+.vault_pass

@@ -34,6 +34,9 @@
           node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
           node_ssd_vm_image: "{{ node_ssd_vm_image }}"
           node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
+          node_build_vm_group_size: "{{ node_build_vm_group_size }}"
+          node_build_vm_image: "{{ node_build_vm_image }}"
+          node_build_vm_flavor: "{{ node_build_vm_flavor }}"
     - name: Associate floating IP with first LB node
       os_floating_ip:
         server: "{{ cluster_name }}-lb-0"
