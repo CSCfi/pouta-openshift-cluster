@@ -11,4 +11,4 @@
   yum: name=docker state=present
 
 - name: enable docker service
-  service: name=docker state=running enabled=yes
+  service: name=docker state=started enabled=yes

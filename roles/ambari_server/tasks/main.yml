@@ -33,7 +33,7 @@
     creates: /etc/ambari-server/conf/password.dat
 
 - name: start ambari service
-  service: name=ambari-server state=running enabled=yes
+  service: name=ambari-server state=started enabled=yes
 
 - name: allow access to ambari
   lineinfile:
