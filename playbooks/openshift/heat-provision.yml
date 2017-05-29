@@ -51,8 +51,34 @@
       os_floating_ip:
         server: "{{ cluster_name }}-bastion"
         floating_ip_address: "{{ bastion_public_ip }}"
-    - name: Create config for SSH
-      template:
-        src: "templates/ssh.config.j2"
+    - name: Refresh dynamic inventory
+      meta: refresh_inventory
+    - name: add global ssh config
+      blockinfile:
+        create: yes
+        mode: '0600'
         dest: "/tmp/pac.ssh.config"
-        mode: 0644
+        block: |
+          Host *
+            ForwardAgent no
+            GSSAPIAuthentication no
+            ControlMaster auto
+            ControlPath ~/.ssh_controlmaster/socket_%r@%h:%p
+            ControlPersist 30m
+          Host {{ bastion_public_ip }}
+              StrictHostKeyChecking no
+              UserKnownHostsFile /dev/null
+        marker: "# {mark} ANSIBLE MANAGED BLOCK for global PAC options"
+    - name: add ssh config entries for hosts
+      blockinfile:
+        create: yes
+        mode: '0600'
+        dest: "/tmp/pac.ssh.config"
+        block: |
+          Host {{ item }} {{ hostvars[item].ansible_ssh_host }}
+              HostName {{ hostvars[item].ansible_ssh_host }}
+              StrictHostKeyChecking no
+              UserKnownHostsFile /dev/null
+              ProxyCommand ssh -F /tmp/pac.ssh.config -q cloud-user@{{ bastion_public_ip }} nc %h %p
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
+      with_items: "{{ groups.all }}"
