@@ -100,6 +100,10 @@ oso_deploy_logging: false
 # specify a custom version for metrics
 #oso_logging_tag: latest
 
+# instead of using playbooks/openshift/templates/project-request.yml
+# for default quotas for new projects, use a custom file
+#oso_default_project_request: "/path/to/custom/project-request.yml"
+
 openshift_public_hostname: "your.master.hostname.here"
 openshift_public_ip: "your.master.ip.here"
 openshift_builddefaults_nodeselectors: "{'type':'build'}"

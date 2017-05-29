@@ -1,15 +1,43 @@
 - name: Run NFS volume creation
   include: ../../../openshift-ansible-tourunen/setup_lvm_nfs.yml
 
-- name: Copy files to master-1
+- name: Import objects through master-1
   hosts: masters[0]
   tasks:
-    - name: copy default project template to master-1
-      template:
-        src: templates/project-request.yaml
-        dest: /home/cloud-user/project-request.yaml
-
     - name: copy nfs_pv definitions to master-1
       copy:
         src: /tmp/nfs_pv
         dest: /home/cloud-user/
+
+    - name: create PVs
+      shell: for vol in nfs_pv/persistent-volume.pvol*; do oc create -f $vol; done
+      failed_when: false
+
+    - name: check if registry PV exists
+      shell: oc get pvc -n default registry
+      register: existing_registry_pv
+      changed_when: false
+      failed_when: false
+
+    - name: add a persistent volume to the registry
+      shell: oc volume dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi --claim-name=registry
+      when: existing_registry_pv.stdout_lines | length == 0
+
+    - name: copy default project template to master-1
+      template:
+        src: "{{ oso_default_project_request|default('templates/project-request.yaml') }}"
+        dest: /home/cloud-user/project-request.yaml
+
+    - name: check if project template exists
+      shell: oc get template -n default project-request-default
+      register: existing_template
+      changed_when: false
+      failed_when: false
+
+    - name: import project template
+      shell: oc create -f /home/cloud-user/project-request.yaml
+      when: existing_template.stdout_lines | length == 0
+
+    - name: update project template
+      shell: oc replace -f /home/cloud-user/project-request.yaml
+      when: existing_template.stdout_lines | length > 0

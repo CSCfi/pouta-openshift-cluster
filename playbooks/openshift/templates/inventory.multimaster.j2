@@ -90,6 +90,11 @@ openshift_buildoverrides_nodeselectors={{ openshift_buildoverrides_nodeselectors
 {% endif %}
 openshift_buildoverrides_force_pull=True
 
+{% if openshift_master_admission_plugin_config is defined %}
+# Admission plugin config
+openshift_master_admission_plugin_config={{ openshift_master_admission_plugin_config }}
+{% endif %}
+
 #
 # Host definitions
 #

@@ -45,7 +45,8 @@ Shell environment with
 - OpenStack credentials for cPouta 
 - python virtualenv with ansible==2.3, shade, dnspython and pyopenssl
 - venv should have latest setuptools and pip (pip install --upgrade pip setuptools)
-- metrics needs java keytool on the bastion host: sudo yum install java-1.8.0-openjdk-headless
+- metrics needs some extra packages on the bastion host
+  - sudo yum install java-1.8.0-openjdk-headless python-passlib httpd-tools
 - if you have SELinux enabled, either disable that or make sure the virtualenv has libselinux-python  
 - ssh access to the internal network of your project
     - either run this on your bastion host
@@ -64,6 +65,7 @@ Clone the necessary playbooks from GitHub (here we assume they go under ~/git)
     
     $ mkdir -p ~/git && cd ~/git
     $ git clone https://github.com/CSCfi/pouta-ansible-cluster
+    $ git clone https://github.com/openshift/openshift-ansible.git
     $ git clone https://github.com/tourunen/openshift-ansible.git openshift-ansible-tourunen
     $ cd openshift-ansible-tourunen
     $ git checkout release-1.5-csc
@@ -99,41 +101,16 @@ Provision the VMs and associated resources
     $ workon ansible-2.3
     $ ansible-playbook -v -e @cluster_vars.yaml ~/git/pouta-ansible-cluster/playbooks/openshift/provision.yml 
 
-Then prepare the VMs for installation
-
-    $ ansible-playbook -v -e @cluster_vars.yaml -i openshift-inventory ~/git/pouta-ansible-cluster/playbooks/openshift/configure.yml
-     
-Finally run the installer (this will take a while).
-    
-    $ ansible-playbook -v -b -i openshift-inventory ~/git/openshift-ansible-tourunen/playbooks/byo/config.yml
-
-Also, create the persistent volumes at this point. Edit the playbook to suit your needs, then run it. Note that if you
-want to deploy a registry with persistent storage, you will need at least one pvol to hold the data for the registry.
+Before we run the configuration and installation playbook, we should define what persistent volumes are created.
+Edit the NFS PV setup playbook to suit your needs.
 
     $ vi ~/git/openshift-ansible-tourunen/setup_lvm_nfs.yml
-    $ ansible-playbook -v -i openshift-inventory -e @cluster_vars.yaml ~/git/pouta-ansible-cluster/playbooks/openshift/post_install.yml
 
-### Configure the cluster
+Note that registry will by default require one PV with size >= 128MiB .
 
-Login to the master
+Then run the configuration and installation playbook. This will take a while.
 
-    $ ssh cloud-user@your-master-1
-    
-Add the persistent volumes that were created during post install to OpenShift
-
-    $ for vol in nfs_pv/persistent-volume.pvol*; do oc create -f $vol; done
-
-Re-deploy registry with persistent storage. Note that you need a pvol that is at least 200GB for this.
-
-    $ oc volume dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi 
-
-Add the default project request object (before this step no projects can be created)
-
-    $ oc create -f project-request.yaml
-    
-Add a user
-    
-    $ sudo htpasswd -c /etc/origin/master/htpasswd alice
+    $ ansible-playbook -v -e @cluster_vars.yaml -i openshift-inventory ~/git/pouta-ansible-cluster/playbooks/openshift/config.yml
 
 ## Further actions
 
