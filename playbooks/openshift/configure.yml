@@ -72,6 +72,6 @@
         mode: 0600
     - name: Place CA cert under temp dir
       copy:
-        dest: "/dev/shm/{{ cluster_name }}/ca.crt"
+        dest: "/dev/shm/{{ cluster_name }}/ext_ca.crt"
         content: "{{ tls_ca_certificate }}"
         mode: 0600

@@ -63,7 +63,7 @@
             ForwardAgent no
             GSSAPIAuthentication no
             ControlMaster auto
-            ControlPath ~/.ssh_controlmaster/socket_%r@%h:%p
+            ControlPath .ssh_controlmaster/socket_%r@%h:%p
             ControlPersist 30m
           Host {{ bastion_public_ip }}
               StrictHostKeyChecking no
