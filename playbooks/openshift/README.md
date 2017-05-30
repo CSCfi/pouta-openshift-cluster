@@ -17,6 +17,13 @@ what to do or willing to learn. Do not expect that after completing the steps yo
     
 - writes an inventory file to be used by later stages
 
+### heat_provision.yml
+
+- an alternative provisioning method to provision.yml that uses OpenStack Heat
+  instead of using the other OpenStack APIs separately through Ansible
+- currently more opinionated compared to provision.yml, but also a lot faster
+  especially for multimaster deployments
+
 ### pre_install.yml
 
 - adds basic tools
@@ -25,9 +32,24 @@ what to do or willing to learn. Do not expect that after completing the steps yo
     - internal DNS
 - configures persistent storage
 
+### post_install.yml
+
+- creates NFS volumes for OpenShift
+- puts the registry on persistent storage
+- customizes the default project template
+
 ### deprovision.yml
 
-- used to tear the cluster resources down
+- used to tear the cluster resources down when using provision.yml
+
+### site.yml
+
+- aggregates all installation steps after provisioning into a single playbook
+
+### heat_site.yml
+
+- aggregates all installation steps including provisioning using Heat into a
+  single playbook
 
 ## Example installation process
 
@@ -112,6 +134,73 @@ Then run the configuration and installation playbook. This will take a while.
 
     $ ansible-playbook -v -e @cluster_vars.yaml -i openshift-inventory ~/git/pouta-ansible-cluster/playbooks/openshift/config.yml
 
+### Advanced deployment mechanism using Heat (for automated build pipelines)
+
+You will need to fulfill the prerequisites and clone the same repostiries as
+mentioned in the example installation instructions above. In addition, you will
+need to provide installation information via a separate repository/directory
+instead of using cluster_vars.yml.
+
+The format of this repository/directory is as follows:
+
+```
+environments
+├── environment1
+│   ├── groups
+│   ├── group_vars
+│   │   ├── all
+│   │   │   ├── tls.yml
+│   │   │   ├── vars.yml
+│   │   │   ├── vault.yml
+│   │   │   └── volumes.yml
+│   │   ├── masters.yml
+│   │   ├── nfsservers.yml
+│   │   ├── node_lbs.yml
+│   │   ├── node_masters.yml
+│   │   ├── OSEv3
+│   │   │   ├── vars.yml
+│   │   │   └── vault.yml
+│   │   └── ssd.yml
+│   ├── hosts -> ../openstack.py
+│   └── host_vars
+├── openstack.py
+└── environment2
+    └...
+```
+
+Multiple environments are described here, all in their own subdirectory (here
+environment1 and environment2, but the names can be whatever). You will need to
+fill in the same data as would be filled in in cluster_vars.yml, except using
+the standard Ansible group_vars and host_vars structure.
+
+The roles of the files are:
+  * groups: inventory file describing host grouping
+  * group_vars: directory with config data specific to individual groups
+  * host_vars: directory with config data specific to individual hosts
+  * group_vars/all: config data relevant to all hosts in the installation
+  * masters/nfsservers/node_lbs/node_masters etc.: config data for specific
+    host groups in the OpenShift cluster
+  * OSEv3: OpenShift installer config data
+  * openstack.py: dynamic inventory script for OpenStack provided by the
+    Ansible project
+  * hosts: symlink to dynamic inventory script under environment specific
+    directory
+  * vault.yml files: encrypted variables for storing e.g. secret keys
+
+Once you have all of this configured, running the actual installation is simple.
+
+Source your openstack credentials first:
+
+    $ source ~/openrc.bash
+
+Then run heat_site.yml to provision infrastructure on OpenStack and install
+OpenShift on this infrastructure:
+
+    $ time ansible-playbook heat_site.yml \
+    -e "os_ansible_path=<path-to-openshift-ansible>" \
+    -i <path-to-environment-dir> \
+    --ask-vault-pass
+
 ## Further actions
 
 - open security groups
@@ -130,6 +219,13 @@ To deprovision all the resources, run
     -e remove_nfs=1 -e remove_nfs_volumes=1 \
     -e remove_security_groups=1 \
     ~/git/pouta-ansible-cluster/playbooks/openshift/deprovision.yml
+
+### Deprovisioning when using Heat
+
+Just delete the Heat stack. This deletes all resources in one go. Partial
+deletes are not currently supported, as the Heat stack update process does not
+nicely replace missing resources. This may be possible in newer OpenStack
+versions.
 
 ## Security groups
 
