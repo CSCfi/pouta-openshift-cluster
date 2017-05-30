@@ -1,4 +1,0 @@
----
-- include: heat-provision.yml
-- include: configure.yml
-- include: install.yml

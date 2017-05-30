@@ -17,7 +17,7 @@ what to do or willing to learn. Do not expect that after completing the steps yo
     
 - writes an inventory file to be used by later stages
 
-### configure.yml
+### pre_install.yml
 
 - adds basic tools
 - installs and configures

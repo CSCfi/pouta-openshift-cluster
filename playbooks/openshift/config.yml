@@ -1,7 +1,7 @@
 ---
 
 - name: Run basic cluster configuration
-  include: configure.yml
+  include: pre_install.yml
 
 - name: Run OpenShift Origin installer
   include: ../../../openshift-ansible/playbooks/byo/config.yml
