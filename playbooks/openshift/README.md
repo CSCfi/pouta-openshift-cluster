@@ -42,6 +42,10 @@ what to do or willing to learn. Do not expect that after completing the steps yo
 
 - used to tear the cluster resources down when using provision.yml
 
+### heat_deprovision.yml
+
+- used to tear the cluster resources down when using heat_provision.yml
+
 ### site.yml
 
 - aggregates all installation steps after provisioning into a single playbook
@@ -222,10 +226,13 @@ To deprovision all the resources, run
 
 ### Deprovisioning when using Heat
 
-Just delete the Heat stack. This deletes all resources in one go. Partial
-deletes are not currently supported, as the Heat stack update process does not
-nicely replace missing resources. This may be possible in newer OpenStack
-versions.
+    $ ansible-playbook heat_deprovision.yml \
+    -i <inventory directory/file> \
+    --ask-vault-pass
+
+Partial deletes are not currently supported, as the Heat stack update process
+does not nicely replace missing resources. This may be possible in newer
+OpenStack versions.
 
 ## Security groups
 
