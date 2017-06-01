@@ -58,12 +58,8 @@
           Host *
             ForwardAgent no
             GSSAPIAuthentication no
-            ControlMaster auto
-            ControlPath .ssh_controlmaster/socket_%r@%h:%p
-            ControlPersist 30m
-          Host {{ bastion_public_ip }}
-              StrictHostKeyChecking no
-              UserKnownHostsFile /dev/null
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
         marker: "# {mark} ANSIBLE MANAGED BLOCK for global PAC options"
     - name: add ssh config entries for hosts
       blockinfile:
@@ -76,7 +72,7 @@
               StrictHostKeyChecking no
               UserKnownHostsFile /dev/null
               ProxyCommand ssh -F /tmp/pac.ssh.config -q cloud-user@{{ bastion_public_ip }} nc %h %p
-        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
       with_items: "{{ groups.all }}"
 
 - name: Wait for SSH to work on all hosts
