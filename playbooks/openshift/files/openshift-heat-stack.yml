@@ -295,6 +295,7 @@ resources:
       flavor: { get_param: bastion_vm_flavor }
       metadata:
         group: "bastion"
+        stack: { get_param: env_name }
       key_name: { get_param: key_name }
       security_groups:
         - { get_resource: secgroup_bastion }
@@ -359,6 +360,7 @@ resources:
           flavor: { get_param: etcd_vm_flavor }
           metadata:
             group: "etcd"
+            stack: { get_param: env_name }
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_infra }
@@ -386,6 +388,7 @@ resources:
           flavor: { get_param: lb_vm_flavor }
           metadata:
             groups: "lb,node_lbs"
+            stack: { get_param: env_name }
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_lb }
@@ -417,6 +420,7 @@ resources:
           flavor: { get_param: nfs_vm_flavor }
           metadata:
             group: "nfsservers"
+            stack: { get_param: env_name }
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_nfs }
@@ -447,6 +451,7 @@ resources:
           flavor: { get_param: master_vm_flavor }
           metadata:
             groups: "masters,node_masters"
+            stack: { get_param: env_name }
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_infra }
@@ -475,6 +480,7 @@ resources:
           flavor: { get_param: node_ssd_vm_flavor }
           metadata:
             group: "ssd"
+            stack: { get_param: env_name }
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_node }
