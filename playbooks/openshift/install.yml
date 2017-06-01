@@ -1,2 +1,2 @@
 ---
-- include: "{{ os_ansible_path }}/playbooks/byo/config.yml"
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/byo/config.yml"
