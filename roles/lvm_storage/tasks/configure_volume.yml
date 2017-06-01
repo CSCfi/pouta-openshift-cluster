@@ -6,6 +6,7 @@
   command: vgdisplay {{ vg_name }}
   register: test_vg
   ignore_errors: yes
+  failed_when: false
   changed_when: false
 
 # in case the volumes were there, activate them in case they are reused from a previous incarnation
