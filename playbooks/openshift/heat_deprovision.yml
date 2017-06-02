@@ -12,14 +12,15 @@
         server: "{{ cluster_name }}-lb-0"
         floating_ip_address: "{{ openshift_public_ip }}"
         state: absent
-      when: lb_vm_group_size > 0
+      when: master_vm_group_size > 1
     - name: Disassociate floating IP from first master node
       os_floating_ip:
         server: "{{ cluster_name }}-master-0"
         floating_ip_address: "{{ openshift_public_ip }}"
         state: absent
-      when: lb_vm_group_size == 0
+      when: master_vm_group_size == 1
     - name: Delete stack {{ cluster_name }}
       os_stack:
         name: "{{ cluster_name }}"
         state: absent
+        wait: yes

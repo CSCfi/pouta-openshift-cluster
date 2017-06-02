@@ -2,47 +2,74 @@
 - hosts: localhost
   connection: local
   tasks:
-    - name: Build the OpenShift Heat stack
-      register: heat_stack
-      os_stack:
-        name: "{{ cluster_name }}"
-        state: present
-        template: "files/openshift-heat-stack.yml"
-        parameters:
-          env_name: "{{ cluster_name }}"
-          bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
-          secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
-          key_name: "{{ key_name }}"
-          bastion_vm_image: "{{ bastion_vm_image }}"
-          bastion_vm_flavor: "{{ bastion_vm_flavor }}"
-          bastion_cloud_config: "{{ bastion_cloud_config }}"
-          etcd_vm_group_size: "{{ etcd_vm_group_size }}"
-          etcd_vm_image: "{{ etcd_vm_image }}"
-          etcd_vm_flavor: "{{ etcd_vm_flavor }}"
-          lb_vm_group_size: "{{ lb_vm_group_size }}"
-          lb_vm_image: "{{ lb_vm_image }}"
-          lb_vm_flavor: "{{ lb_vm_flavor }}"
-          lb_vol_size: "{{ lb_vol_size }}"
-          nfs_vm_group_size: "{{ nfs_vm_group_size }}"
-          nfs_vm_image: "{{ nfs_vm_image }}"
-          nfs_vm_flavor: "{{ nfs_vm_flavor }}"
-          nfs_vol_size: "{{ nfs_vol_size }}"
-          master_vm_group_size: "{{ master_vm_group_size }}"
-          master_vm_image: "{{ master_vm_image }}"
-          master_vm_flavor: "{{ master_vm_flavor }}"
-          node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
-          node_ssd_vm_image: "{{ node_ssd_vm_image }}"
-          node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
-    - name: Associate floating IP with first LB node
-      os_floating_ip:
-        server: "{{ cluster_name }}-lb-0"
-        floating_ip_address: "{{ openshift_public_ip }}"
-      when: lb_vm_group_size > 0
-    - name: Associate floating IP with first master node
-      os_floating_ip:
-        server: "{{ cluster_name }}-master-0"
-        floating_ip_address: "{{ openshift_public_ip }}"
-      when: lb_vm_group_size == 0
+    - block:
+      - name: Build the OpenShift Heat stack (full)
+        register: heat_stack
+        os_stack:
+          name: "{{ cluster_name }}"
+          state: present
+          template: "files/openshift-heat-stack.yml"
+          wait: yes
+          parameters:
+            env_name: "{{ cluster_name }}"
+            bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
+            secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
+            key_name: "{{ key_name }}"
+            bastion_vm_image: "{{ bastion_vm_image }}"
+            bastion_vm_flavor: "{{ bastion_vm_flavor }}"
+            bastion_cloud_config: "{{ bastion_cloud_config }}"
+            etcd_vm_group_size: "{{ etcd_vm_group_size }}"
+            etcd_vm_image: "{{ etcd_vm_image }}"
+            etcd_vm_flavor: "{{ etcd_vm_flavor }}"
+            lb_vm_group_size: "{{ lb_vm_group_size }}"
+            lb_vm_image: "{{ lb_vm_image }}"
+            lb_vm_flavor: "{{ lb_vm_flavor }}"
+            lb_vol_size: "{{ lb_vol_size }}"
+            nfs_vm_group_size: "{{ nfs_vm_group_size }}"
+            nfs_vm_image: "{{ nfs_vm_image }}"
+            nfs_vm_flavor: "{{ nfs_vm_flavor }}"
+            nfs_vol_size: "{{ nfs_vol_size }}"
+            master_vm_group_size: "{{ master_vm_group_size }}"
+            master_vm_image: "{{ master_vm_image }}"
+            master_vm_flavor: "{{ master_vm_flavor }}"
+            node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
+            node_ssd_vm_image: "{{ node_ssd_vm_image }}"
+            node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
+      - name: Associate floating IP with first LB node
+        os_floating_ip:
+          server: "{{ cluster_name }}-lb-0"
+          floating_ip_address: "{{ openshift_public_ip }}"
+      when: master_vm_group_size > 1
+
+    - block:
+      - name: Build the OpenShift Heat stack (minimal)
+        register: heat_stack
+        os_stack:
+          name: "{{ cluster_name }}"
+          state: present
+          template: "files/openshift-heat-stack-minimal.yml"
+          wait: yes
+          parameters:
+            env_name: "{{ cluster_name }}"
+            bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
+            secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
+            key_name: "{{ key_name }}"
+            bastion_vm_image: "{{ bastion_vm_image }}"
+            bastion_vm_flavor: "{{ bastion_vm_flavor }}"
+            bastion_cloud_config: "{{ bastion_cloud_config }}"
+            master_vm_group_size: "{{ master_vm_group_size }}"
+            master_vm_image: "{{ master_vm_image }}"
+            master_vm_flavor: "{{ master_vm_flavor }}"
+            master_vm_vol_size: "{{ master_vm_vol_size }}"
+            node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
+            node_ssd_vm_image: "{{ node_ssd_vm_image }}"
+            node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
+      - name: Associate floating IP with master
+        os_floating_ip:
+          server: "{{ cluster_name }}-master-0"
+          floating_ip_address: "{{ openshift_public_ip }}"
+      when: master_vm_group_size == 1
+
     - name: Associate floating IP with bastion host
       os_floating_ip:
         server: "{{ cluster_name }}-bastion"
