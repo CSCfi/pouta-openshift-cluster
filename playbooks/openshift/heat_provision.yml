@@ -14,6 +14,8 @@
             env_name: "{{ cluster_name }}"
             bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
             secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
+            openshift_network_cidr: "{{ openshift_network_cidr }}"
+            openshift_router: "{{ openshift_router }}"
             key_name: "{{ key_name }}"
             bastion_vm_image: "{{ bastion_vm_image }}"
             bastion_vm_flavor: "{{ bastion_vm_flavor }}"
@@ -40,7 +42,6 @@
           server: "{{ cluster_name }}-lb-0"
           floating_ip_address: "{{ openshift_public_ip }}"
       when: master_vm_group_size > 1
-
     - block:
       - name: Build the OpenShift Heat stack (minimal)
         register: heat_stack
@@ -53,6 +54,8 @@
             env_name: "{{ cluster_name }}"
             bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
             secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
+            openshift_network_cidr: "{{ openshift_network_cidr }}"
+            openshift_router: "{{ openshift_router }}"
             key_name: "{{ key_name }}"
             bastion_vm_image: "{{ bastion_vm_image }}"
             bastion_vm_flavor: "{{ bastion_vm_flavor }}"
@@ -69,7 +72,6 @@
           server: "{{ cluster_name }}-master-0"
           floating_ip_address: "{{ openshift_public_ip }}"
       when: master_vm_group_size == 1
-
     - name: Associate floating IP with bastion host
       os_floating_ip:
         server: "{{ cluster_name }}-bastion"
@@ -102,11 +104,38 @@
         marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
       with_items: "{{ groups.all }}"
 
-- name: Wait for SSH to work on all hosts
-  hosts: all
+- name: Wait for SSH to work on the bastion
+  hosts: localhost
+  connection: local
   gather_facts: no
   tasks:
-    - name: Try running setup to verify connectivity
-      setup:
-      retries: 30
-      delay: 5
+    - name: Wait for connectivity on port 22 on the bastion
+      wait_for:
+        host: "{{ bastion_public_ip }}"
+        port: 22
+        search_regex: "OpenSSH"
+        delay: 5
+        timeout: 900
+
+- name: Install nmap-ncat on bastion if need be
+  hosts: bastion
+  gather_facts: no
+  tasks:
+    - name: Install nmap-ncat
+      yum:
+        name: nmap-ncat
+        state: present
+
+- name: Wait for SSH to work on all other hosts
+  hosts: all
+  gather_facts: no
+  any_errors_fatal: yes
+  tasks:
+    - name: Wait for connectivity on port 22 on all other hosts
+      wait_for:
+        host: "{{ ansible_ssh_host }}"
+        port: 22
+        search_regex: "OpenSSH"
+        delay: 5
+        timeout: 300
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['ansible_ssh_host'] }}"

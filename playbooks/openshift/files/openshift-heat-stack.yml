@@ -29,18 +29,17 @@ parameters:
     description: >
       What CIDR to use for the dedicated cluster network.
     type: string
-    default: '192.168.0.0/16'
+    default: '192.168.10.0/24'
   openshift_network_dns_servers:
     description: >
       What DNS servers to use in the dedicated cluster network.
     type: comma_delimited_list
     default: '193.166.4.24,193.166.4.25'
-  public_network_id:
+  openshift_router:
     description: >
-      The public network in OpenStack to which the dedicated cluster net router
-      should be connected to.
+      The router to which the dedicated cluster network should be connected to
+      for external access.
     type: string
-    default: 'public'
   key_name:
     description: >
       The name of the SSH key to initially insert into VMs.
@@ -251,23 +250,10 @@ resources:
       cidr: { get_param: openshift_network_cidr }
       dns_nameservers: { get_param: openshift_network_dns_servers }
 
-  openshift_router:
-    type: OS::Neutron::Router
-    depends_on: "openshift_subnet"
-    properties:
-      name:
-        str_replace:
-            template: env_name-name_suffix
-            params:
-              env_name: { get_param: env_name }
-              name_suffix: "router"
-      external_gateway_info:
-        network: { get_param: public_network_id }
-
   openshift_subnet_router_interface:
     type: OS::Neutron::RouterInterface
     properties:
-      router: { get_resource: openshift_router }
+      router: { get_param: openshift_router }
       subnet: { get_resource: openshift_subnet }
 
   #-----------------------------------
