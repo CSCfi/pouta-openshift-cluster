@@ -29,6 +29,30 @@
     opts: "-L {{ filesystem_spec.name }} {{ filesystem_spec.mkfs_opts|default('') }}"
   when: not is_swap
 
+- block:
+  - name: check for swap
+    shell: 'swapon --show=NAME,PRIO | grep -E "^/"'
+    register: swapon_output
+    ignore_errors: yes
+    changed_when: false
+    failed_when: false
+
+  - name: run mkswap on {{ lv_path }}
+    command: mkswap -L {{ filesystem_spec.name }} {{ lv_path }}
+    when: swapon_output.stdout_lines | length == 0
+
+  - name: run swapon {{ lv_path }}
+    command: swapon {{ lv_path }}
+    when: swapon_output.stdout_lines | length == 0
+
+  - name: write swap entry in fstab
+    mount:
+      name: none
+      src: "{{ lv_path }}"
+      fstype: swap
+      state: present
+  when: is_swap
+
 - name: mount {{ filesystem_spec.name }}
   mount:
     name: "{{ filesystem_spec.mount_path }}"
@@ -37,7 +61,3 @@
     opts: "{{ filesystem_spec.mount_opts|default('defaults,rw') }}"
     state: mounted
   when: filesystem_spec.mount_path is defined
-
-- name: configure swap
-  include: configure_swap.yml
-  when: is_swap
