@@ -85,6 +85,14 @@ objects:
     scopes:
     - NotTerminating
 
+- apiVersion: v1
+  kind: ResourceQuota
+  metadata:
+    name: storage-resources
+  spec:
+    hard:
+      requests.storage: "{{ storage_default_quota|default('50Gi') }}"
+
 # Limit range
 - apiVersion: "v1"
   kind: "LimitRange"

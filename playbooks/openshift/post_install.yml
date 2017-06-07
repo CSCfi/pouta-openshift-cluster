@@ -1,10 +1,10 @@
 - name: Run NFS volume creation
   include: ../../../openshift-ansible-tourunen/setup_lvm_nfs.yml
 
-- name: Import objects through master-1
+- name: Import objects through first master
   hosts: masters[0]
   tasks:
-    - name: copy nfs_pv definitions to master-1
+    - name: copy nfs_pv definitions to first master
       copy:
         src: /tmp/nfs_pv
         dest: /home/cloud-user/
@@ -23,7 +23,7 @@
       shell: oc volume dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi --claim-name=registry
       when: existing_registry_pv.stdout_lines | length == 0
 
-    - name: copy default project template to master-1
+    - name: copy default project template to first master
       template:
         src: "{{ oso_default_project_request|default('templates/project-request.yaml') }}"
         dest: /home/cloud-user/project-request.yaml
@@ -41,3 +41,24 @@
     - name: update project template
       shell: oc replace -f /home/cloud-user/project-request.yaml
       when: existing_template.stdout_lines | length > 0
+
+    - name: copy StorageClass object template for Cinder storage
+      template:
+        src: "templates/cinder-storageclass.yaml.j2"
+        dest: /home/cloud-user/cinder-storageclass.yaml
+      register: storageclass_template
+
+    - name: check if StorageClass exists
+      shell: "oc get storageclass -n default {{ storage_class_name }}"
+      register: existing_storageclass
+      changed_when: false
+      failed_when: false
+
+    - name: create StorageClass object
+      shell: oc create -f /home/cloud-user/cinder-storageclass.yaml
+      when: existing_storageclass.stdout_lines | length == 0
+
+    - name: update StorageClass object
+      shell: oc replace -f /home/cloud-user/cinder-storageclass.yaml
+      when: existing_storageclass.stdout_lines | length > 0
+      changed_when: storageclass_template.changed

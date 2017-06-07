@@ -1,0 +1,13 @@
+---
+kind: "StorageClass"
+apiVersion: "storage.k8s.io/v1beta1"
+metadata:
+  name: "{{ storage_class_name }}"
+  annotations:
+{% for annotation in storage_class_annotations %}
+    {{ annotation.name }}: "{{ annotation.value }}"
+{% endfor %}
+provisioner: "kubernetes.io/cinder"
+parameters:
+  type: "{{ storage_class_cinder_type }}"
+  availability: "nova"
