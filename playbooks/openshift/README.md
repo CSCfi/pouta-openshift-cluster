@@ -14,7 +14,7 @@ what to do or willing to learn. Do not expect that after completing the steps yo
     - VMs with optionally booting from volume
     - volumes for persistent storage
     - common and master security groups
-    
+
 - writes an inventory file to be used by later stages
 
 ### heat_provision.yml
@@ -73,11 +73,19 @@ Shell environment with
 - venv should have latest setuptools and pip (pip install --upgrade pip setuptools)
 - metrics needs some extra packages on the bastion host
   - sudo yum install java-1.8.0-openjdk-headless python-passlib httpd-tools
-- if you have SELinux enabled, either disable that or make sure the virtualenv has libselinux-python  
+- if you have SELinux enabled, either disable that or make sure the virtualenv has libselinux-python
 - ssh access to the internal network of your project
     - either run this on your bastion host
     - or set up ssh forwarding through your bastion host in your ~/.ssh/config
     - please test ssh manually after provisioning 
+
+There is a requirements.txt file that you can use to install the Python dependencies:
+
+    $ mkvirtualenv --system-site-packages -r requirements.txt pac
+
+The reason `--system-site-packages` is used here is because libselinux-python
+is only available via RPM and must be taken from the system wide site-packages
+location.
 
 For packages on CentOS-7, see: [Creating a bastion host](../../CREATE_BASTION_HOST.md)
 
@@ -112,7 +120,7 @@ Change at least the following config entries:
     openshift_public_hostname: "your.master.hostname.here"
     openshift_public_ip: "your.master.ip.here"
     project_external_ips: ["your.master.ip.here"]
-    
+
 If you are deploying the cluster to a non-default network, remember to add and configure an interface to bastion host in
 that network. The network also needs to be attached to a router.
 
