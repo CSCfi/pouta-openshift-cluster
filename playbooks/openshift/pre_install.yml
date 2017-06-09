@@ -54,6 +54,8 @@
 
 - name: Create temporary files on a RAM disk for TLS certs and keys
   hosts: localhost
+  gather_facts: no
+  connection: local
   tasks:
     - name: Create a temporary directory on the RAM disk
       file:
