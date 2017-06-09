@@ -1,4 +1,36 @@
 ---
+
+- name: Remove projects and persistent volumes still in use
+  gather_facts: no
+  hosts: masters[0]
+  tasks:
+    - name: Check if SSH works
+      shell: ssh -o ConnectTimeout=10 -F /tmp/pac.ssh.config cloud-user@{{ cluster_name }}-master-0 'echo success'
+      register: ssh_result
+      failed_when: false
+      delegate_to: localhost
+    - name: remove registry and its PVC
+      shell: "{{ item }}"
+      with_items:
+      - oc delete dc docker-registry -n default
+      - oc delete pvc registry -n default
+      failed_when: false
+      when: ssh_result.stdout.find('success') == 0
+    - name: remove projects, this will release the PVCs too
+      shell: "{{ item }}"
+      with_items:
+      - oc delete projects --all
+      failed_when: false
+      when: ssh_result.stdout.find('success') == 0
+    - name: wait for recycler pod to remove the dynamically provisioned PVs
+      shell: oc get pv -o jsonpath='{.items[*].spec.cinder}'
+      register: result
+      until: result.stdout_lines|length == 0
+      retries: 60
+      delay: 5
+      failed_when: false
+      when: ssh_result.stdout.find('success') == 0
+
 - hosts: localhost
   gather_facts: no
   connection: local

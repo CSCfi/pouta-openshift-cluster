@@ -21,7 +21,7 @@
             key_name: "{{ key_name }}"
             bastion_vm_image: "{{ bastion_vm_image }}"
             bastion_vm_flavor: "{{ bastion_vm_flavor }}"
-            bastion_cloud_config: "{{ bastion_cloud_config }}"
+            bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
             etcd_vm_group_size: "{{ etcd_vm_group_size }}"
             etcd_vm_image: "{{ etcd_vm_image }}"
             etcd_vm_flavor: "{{ etcd_vm_flavor }}"
@@ -61,7 +61,7 @@
             key_name: "{{ key_name }}"
             bastion_vm_image: "{{ bastion_vm_image }}"
             bastion_vm_flavor: "{{ bastion_vm_flavor }}"
-            bastion_cloud_config: "{{ bastion_cloud_config }}"
+            bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
             master_vm_group_size: "{{ master_vm_group_size }}"
             master_vm_image: "{{ master_vm_image }}"
             master_vm_flavor: "{{ master_vm_flavor }}"
@@ -92,6 +92,16 @@
             StrictHostKeyChecking no
             UserKnownHostsFile /dev/null
         marker: "# {mark} ANSIBLE MANAGED BLOCK for global PAC options"
+    - name: add ssh config entry for bastion
+      blockinfile:
+        create: yes
+        mode: '0600'
+        dest: "/tmp/pac.ssh.config"
+        block: |
+          Host {{ item }} {{ hostvars[item].ansible_ssh_host }}
+              HostName {{ bastion_public_ip }}
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
+      with_items: "{{ groups.bastion }}"
     - name: add ssh config entries for hosts
       blockinfile:
         create: yes
@@ -100,11 +110,11 @@
         block: |
           Host {{ item }} {{ hostvars[item].ansible_ssh_host }}
               HostName {{ hostvars[item].ansible_ssh_host }}
-              StrictHostKeyChecking no
-              UserKnownHostsFile /dev/null
               ProxyCommand ssh -F /tmp/pac.ssh.config -q cloud-user@{{ bastion_public_ip }} nc %h %p
         marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
-      when: item != "localhost"
+      when:
+      - item != "localhost"
+      - item != "{{ cluster_name }}-bastion"
       with_items: "{{ groups.all }}"
     - name: Wait for connectivity on port 22 on the bastion
       wait_for:
@@ -113,10 +123,18 @@
         search_regex: "OpenSSH"
         delay: 5
         timeout: 900
+    - name: Wait for SSH to work
+      shell: ssh -F /tmp/pac.ssh.config cloud-user@{{ bastion_public_ip }} 'echo success'
+      register: result
+      until: result.stdout.find('success') != -1
+      retries: 30
+      delay: 5
+      changed_when: false
 
 - name: Install nmap-ncat on bastion if need be
   hosts: bastion
   gather_facts: no
+  become: yes
   tasks:
     - name: Install nmap-ncat
       yum:

@@ -1,5 +1,6 @@
 - name: Run NFS volume creation
   include: ../../../openshift-ansible-tourunen/setup_lvm_nfs.yml
+  when: provision_nfs_pvs|default(false)|bool
 
 - name: Import objects through first master
   hosts: masters[0]
@@ -8,20 +9,12 @@
       copy:
         src: /tmp/nfs_pv
         dest: /home/cloud-user/
+      when: provision_nfs_pvs|default(false)|bool
 
     - name: create PVs
       shell: for vol in nfs_pv/persistent-volume.pvol*; do oc create -f $vol; done
       failed_when: false
-
-    - name: check if registry PV exists
-      shell: oc get pvc -n default registry
-      register: existing_registry_pv
-      changed_when: false
-      failed_when: false
-
-    - name: add a persistent volume to the registry
-      shell: oc volume dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi --claim-name=registry
-      when: existing_registry_pv.stdout_lines | length == 0
+      when: provision_nfs_pvs|default(false)|bool
 
     - name: copy default project template to first master
       template:
@@ -62,3 +55,13 @@
       shell: oc replace -f /home/cloud-user/cinder-storageclass.yaml
       when: existing_storageclass.stdout_lines | length > 0
       changed_when: storageclass_template.changed
+
+    - name: check if registry PVC exists
+      shell: oc get pvc -n default registry
+      register: existing_registry_pv
+      changed_when: false
+      failed_when: false
+
+    - name: add a persistent volume to the registry
+      shell: oc volume dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi --claim-name=registry
+      when: existing_registry_pv.stdout_lines | length == 0
