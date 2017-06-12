@@ -57,6 +57,7 @@
   gather_facts: no
   connection: local
   tasks:
+    - include: environment_context.yml
     - name: Create a temporary directory on the RAM disk
       file:
         path: "/dev/shm/{{ cluster_name }}"

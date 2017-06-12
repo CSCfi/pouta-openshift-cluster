@@ -3,6 +3,7 @@
   gather_facts: no
   connection: local
   tasks:
+    - include: environment_context.yml
     - name: Disassociate floating IP from bastion
       os_floating_ip:
         server: "{{ cluster_name }}-bastion"

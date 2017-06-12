@@ -3,6 +3,7 @@
   gather_facts: no
   connection: local
   tasks:
+    - include: environment_context.yml
     - block:
       - name: Build the OpenShift Heat stack (full)
         register: heat_stack
@@ -105,12 +106,6 @@
         marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
       when: item != "localhost"
       with_items: "{{ groups.all }}"
-
-- name: Wait for SSH to work on the bastion
-  hosts: localhost
-  connection: local
-  gather_facts: no
-  tasks:
     - name: Wait for connectivity on port 22 on the bastion
       wait_for:
         host: "{{ bastion_public_ip }}"
