@@ -199,11 +199,32 @@ The roles of the files are:
     directory
   * vault.yml files: encrypted variables for storing e.g. secret keys
 
+For initialize_ramdisk.yml to work, you will need to populate the following variables:
+
+  * ssh_private_key
+  * tls_certificate
+  * tls_secret_key
+  * tls_ca_certificate
+  * openshift_cloudprovider_openstack_auth_url
+  * openshift_cloudprovider_openstack_auth_url
+  * openshift_cloudprovider_openstack_username
+  * openshift_cloudprovider_openstack_domain_name
+  * openshift_cloudprovider_openstack_password
+  * openshift_cloudprovider_openstack_tenant_id
+  * openshift_cloudprovider_openstack_tenant_name
+  * penshift_cloudprovider_openstack_region
+
 Once you have all of this configured, running the actual installation is simple.
 
-Source your openstack credentials first:
+Extract site specific data under /dev/shm/<cluster-name> by running 
 
-    $ source ~/openrc.bash
+    $ SKIP_DYNAMIC_INVENTORY=1 ansible-playbook initialize_ramdisk.yml \
+    -i <path-to-environment-dir> \
+    --ask-vault-pass
+
+Source the extracted OpenStack credentials:
+
+    $ source /dev/shm/<cluster-name>/openrc.sh
 
 Then run heat_site.yml to provision infrastructure on OpenStack and install
 OpenShift on this infrastructure:

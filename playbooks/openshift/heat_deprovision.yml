@@ -53,6 +53,10 @@
         floating_ip_address: "{{ openshift_public_ip }}"
         state: absent
       when: master_vm_group_size == 1
+    - name: Delete public key
+      os_keypair:
+        state: absent
+        name: "{{ cluster_name }}"
     - name: Delete stack {{ cluster_name }}
       os_stack:
         name: "{{ cluster_name }}"

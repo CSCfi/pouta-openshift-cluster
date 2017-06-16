@@ -4,6 +4,11 @@
   connection: local
   tasks:
     - include: environment_context.yml
+    - name: Add public key to OpenStack for {{ cluster_name }}
+      os_keypair:
+        state: present
+        name: "{{ cluster_name }}"
+        public_key_file: "/dev/shm/{{ cluster_name }}/id_rsa.pub"
     - block:
       - name: Build the OpenShift Heat stack (full)
         register: heat_stack
@@ -18,7 +23,7 @@
             secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
             openshift_network_cidr: "{{ openshift_network_cidr }}"
             openshift_router: "{{ openshift_router }}"
-            key_name: "{{ key_name }}"
+            key_name: "{{ cluster_name }}"
             bastion_vm_image: "{{ bastion_vm_image }}"
             bastion_vm_flavor: "{{ bastion_vm_flavor }}"
             bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
@@ -58,7 +63,7 @@
             secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
             openshift_network_cidr: "{{ openshift_network_cidr }}"
             openshift_router: "{{ openshift_router }}"
-            key_name: "{{ key_name }}"
+            key_name: "{{ cluster_name }}"
             bastion_vm_image: "{{ bastion_vm_image }}"
             bastion_vm_flavor: "{{ bastion_vm_flavor }}"
             bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
@@ -98,8 +103,9 @@
         mode: '0600'
         dest: "/tmp/pac.ssh.config"
         block: |
-          Host {{ item }} {{ hostvars[item].ansible_ssh_host }}
+          Host {{ item }} {{ hostvars[item].ansible_ssh_host }} {{ bastion_public_ip }}
               HostName {{ bastion_public_ip }}
+              IdentityFile /dev/shm/{{ cluster_name }}/id_rsa
         marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
       with_items: "{{ groups.bastion }}"
     - name: add ssh config entries for hosts
@@ -110,6 +116,7 @@
         block: |
           Host {{ item }} {{ hostvars[item].ansible_ssh_host }}
               HostName {{ hostvars[item].ansible_ssh_host }}
+              IdentityFile /dev/shm/{{ cluster_name }}/id_rsa
               ProxyCommand ssh -F /tmp/pac.ssh.config -q cloud-user@{{ bastion_public_ip }} nc %h %p
         marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
       when:
