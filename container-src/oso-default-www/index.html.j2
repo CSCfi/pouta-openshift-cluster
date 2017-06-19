@@ -1,0 +1,32 @@
+<html>
+<head>
+<style>
+body {
+    font-family: sans-serif;
+    margin-left: 40px;
+}
+
+div {
+    padding: 0.5em;
+}
+</style>
+</head>
+<body>
+<h1>Welcome to {{ platform_name|default('OpenShift Origin test cluster') }} platform!</h1>
+<h2>Links</h2>
+
+    <div>
+    Here are some links to get you started:
+    </div>
+
+    <div>
+        <a href="{{ platform_api_url|default('') }}">Cluster API and Web UI</a>
+    </div>
+    <div>
+        <a href="https://registry-console-default.{{ platform_app_base_name|default('') }}">Integrated registry UI</a>
+    </div>
+    <div>
+        <a href="https://docs.openshift.org/latest/dev_guide/index.html">OpenShift Origin development guide</a>
+    </div>
+</body>
+</html>

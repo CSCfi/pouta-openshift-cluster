@@ -28,11 +28,11 @@
       failed_when: false
 
     - name: import project template
-      shell: oc create -f /home/cloud-user/project-request.yaml
+      shell: oc create -n default -f /home/cloud-user/project-request.yaml
       when: existing_template.stdout_lines | length == 0
 
     - name: update project template
-      shell: oc replace -f /home/cloud-user/project-request.yaml
+      shell: oc replace -n default -f /home/cloud-user/project-request.yaml
       when: existing_template.stdout_lines | length > 0
 
     - name: copy StorageClass object template for Cinder storage
@@ -48,11 +48,11 @@
       failed_when: false
 
     - name: create StorageClass object
-      shell: oc create -f /home/cloud-user/cinder-storageclass.yaml
+      shell: oc create -n default -f /home/cloud-user/cinder-storageclass.yaml
       when: existing_storageclass.stdout_lines | length == 0
 
     - name: update StorageClass object
-      shell: oc replace -f /home/cloud-user/cinder-storageclass.yaml
+      shell: oc replace -n default -f /home/cloud-user/cinder-storageclass.yaml
       when: existing_storageclass.stdout_lines | length > 0
       changed_when: storageclass_template.changed
 
@@ -63,5 +63,43 @@
       failed_when: false
 
     - name: add a persistent volume to the registry
-      shell: oc volume dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi --claim-name=registry
+      shell: oc volume -n default dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi --claim-name=registry
       when: existing_registry_pv.stdout_lines | length == 0
+
+    # block for conditionally deploying default-www-app
+    - block:
+      - name: check if project default-www exists
+        shell: oc get projects | grep default-www
+        register: existing_default_www
+        changed_when: false
+        failed_when: false
+
+      - name: create project default-www
+        shell: oc new-project default-www && oc project default
+        when: existing_default_www.stdout_lines | length == 0
+
+      - name: check if app has been deployed
+        shell: oc get dc -n default-www default-www-app
+        register: existing_default_www_app
+        changed_when: false
+        failed_when: false
+
+      - name: create app
+        shell: oc new-app -n default-www --name default-www-app {{ default_www_app_image }}
+        when: existing_default_www_app.stdout_lines | length == 0
+
+      - name: create routes
+        shell: |
+          oc create route edge default-www-{{ item.name }} \
+          -n default-www \
+          --service default-www-app --insecure-policy=Redirect \
+          --hostname {{ item.hostname|default(item.name + "." + openshift_public_hostname) }}
+        with_items:
+        - name: default
+          hostname: "{{ openshift_public_hostname }}"
+        - name: www
+        - name: admin
+        failed_when: false
+      when:
+      - deploy_default_www_app | default(false) | bool
+      - default_www_app_image is defined
