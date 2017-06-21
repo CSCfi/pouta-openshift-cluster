@@ -67,6 +67,7 @@ This is a log of an example installation of a proof of concept cluster with
 
 ### Prerequisites
 
+#### Alternative 1: native environment
 Shell environment with
 - OpenStack credentials for cPouta 
 - python virtualenv with ansible==2.3, shade, dnspython and pyopenssl
@@ -92,6 +93,30 @@ For packages on CentOS-7, see: [Creating a bastion host](../../CREATE_BASTION_HO
 For automatic, self-provisioned app routes to work, you will need a wildcard DNS CNAME for your master's public IP.
  
 In general, see https://docs.openshift.org/latest/install_config/install/prerequisites.html
+
+#### Alternative 2: containerized environment for Heat based deployment
+
+We also have a deployment container with all dependencies preinstalled. To build the container, 
+check out PAC git repo (see below) and run the build script located in `container-src/pac-deployer`:
+ 
+    cd ~/git/pouta-ansible-cluster/container-src/pac-deployer 
+    sudo ./build.bash
+    
+To launch a shell in a temporary container for deployment, run
+
+    cd ~/git/pouta-ansible-cluster/playbooks/openshift
+    sudo ./run_deployment_container.bash
+
+The script assumes that the environments directory is called openshift-environments and located
+in a sibling directory next to PAC. If Docker containers can be launched without 'sudo',
+that can be left out in the commands above.
+
+__Note on SELinux__: If you are running under SELinux enforcing mode, the container processes
+may not be able to access the volumes by default. To enable access from containerized 
+processes, change the labels on the mounted directories:
+ 
+    chcon -Rt svirt_sandbox_file_t \
+        pouta-ansible-cluster openshift-ansible openshift-ansible-tourunen openshift-environments
 
 ### Clone playbooks
 
@@ -140,7 +165,7 @@ Edit the NFS PV setup playbook to suit your needs.
 
     $ vi ~/git/openshift-ansible-tourunen/setup_lvm_nfs.yml
 
-Note that registry will by default require one PV with size >= 128MiB .
+Note that registry will by default require one PV with size >= 128GiB .
 
 Then run the configuration and installation playbook. This will take a while.
 
@@ -148,8 +173,9 @@ Then run the configuration and installation playbook. This will take a while.
 
 ### Advanced deployment mechanism using Heat (for automated build pipelines)
 
-You will need to fulfill the prerequisites and clone the same repostiries as
-mentioned in the example installation instructions above. In addition, you will
+You will need to fulfill the prerequisites and clone the same repositories as
+mentioned in the example installation instructions above. The recommended way 
+is to use the containerized environment. In addition, you will
 need to provide installation information via a separate repository/directory
 instead of using cluster_vars.yml.
 
@@ -212,9 +238,17 @@ For initialize_ramdisk.yml to work, you will need to populate the following vari
   * openshift_cloudprovider_openstack_password
   * openshift_cloudprovider_openstack_tenant_id
   * openshift_cloudprovider_openstack_tenant_name
-  * penshift_cloudprovider_openstack_region
+  * openshift_cloudprovider_openstack_region
 
 Once you have all of this configured, running the actual installation is simple.
+
+Change the current working directory to playbooks/openshift:
+
+    $ cd ~/git/pouta-ansible-cluster/playbooks/openshift
+    
+Alternative when using containerized deployment:
+
+    $ cd /opt/deployment/pouta-ansible-cluster/playbooks/openshift
 
 Extract site specific data under /dev/shm/<cluster-name> by running 
 
@@ -230,7 +264,6 @@ Then run heat_site.yml to provision infrastructure on OpenStack and install
 OpenShift on this infrastructure:
 
     $ time ansible-playbook heat_site.yml \
-    -e "os_ansible_path=<path-to-openshift-ansible>" \
     -i <path-to-environment-dir> \
     --ask-vault-pass
 
