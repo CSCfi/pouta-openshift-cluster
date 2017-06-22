@@ -88,6 +88,14 @@
         shell: oc new-app -n default-www --name default-www-app {{ default_www_app_image }}
         when: existing_default_www_app.stdout_lines | length == 0
 
+      - name: set environment variables
+        shell: oc set env -n default-www dc/default-www-app {{ item }}
+        with_items:
+        - PLATFORM_NAME={{ cluster_name }}
+        - PLATFORM_API_URL=https://{{ openshift_public_hostname }}:8443
+        - PLATFORM_APP_BASE_NAME={{ openshift_public_hostname }}
+        when: existing_default_www_app.stdout_lines | length == 0
+
       - name: create routes
         shell: |
           oc create route edge default-www-{{ item.name }} \
