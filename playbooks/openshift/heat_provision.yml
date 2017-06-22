@@ -9,6 +9,11 @@
         state: present
         name: "{{ cluster_name }}"
         public_key_file: "/dev/shm/{{ cluster_name }}/id_rsa.pub"
+    - name: check if stack has been provisioned already
+      shell: openstack stack show {{ cluster_name }}
+      register: stack_output
+      failed_when: false
+      changed_when: false
     - block:
       - name: Build the OpenShift Heat stack (full)
         register: heat_stack
@@ -48,7 +53,9 @@
         os_floating_ip:
           server: "{{ cluster_name }}-lb-0"
           floating_ip_address: "{{ openshift_public_ip }}"
-      when: master_vm_group_size > 1
+      when:
+      - master_vm_group_size > 1
+      - stack_output.stderr.find('Stack not found') != -1
     - block:
       - name: Build the OpenShift Heat stack (minimal)
         register: heat_stack
@@ -78,7 +85,9 @@
         os_floating_ip:
           server: "{{ cluster_name }}-master-0"
           floating_ip_address: "{{ openshift_public_ip }}"
-      when: master_vm_group_size == 1
+      when:
+      - master_vm_group_size == 1
+      - stack_output.stderr.find('Stack not found') != -1
     - name: Associate floating IP with bastion host
       os_floating_ip:
         server: "{{ cluster_name }}-bastion"
