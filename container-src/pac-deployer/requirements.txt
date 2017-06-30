@@ -38,6 +38,7 @@ oslo.serialization==2.15.0
 oslo.utils==3.20.0
 packaging==16.8
 paramiko==2.1.2
+passlib==1.7.1
 pbr==1.10.0
 positional==1.1.1
 prettytable==0.7.2
