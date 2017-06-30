@@ -1,0 +1,204 @@
+---
+
+- name: Deploy monitoring
+  hosts: masters[0]
+  tasks:
+    - include: environment_context.yml
+
+    - name: install python-passlib
+      yum:
+        name: python-passlib
+        state: present
+
+    - name: create temp directory for templating
+      command: mktemp -d
+      register: mktemp
+      changed_when: False
+
+    - name: check if monitoring project exists
+      shell: oc get project monitoring-infra
+      register: existing_monitoring_project
+      changed_when: false
+      failed_when: false
+
+    - name: create project definition
+      template:
+        src: infra-project.yaml.j2
+        dest: "{{ mktemp.stdout }}/infra-project.yaml"
+      vars:
+        name: monitoring-infra
+        labels: {}
+        annotations:
+          openshift.io/node-selector: "type=master"
+      changed_when: no
+
+    - name: create project monitoring-infra
+      shell: oc create -f "{{ mktemp.stdout }}/infra-project.yaml"
+#      shell: oc new-project monitoring-infra && oc project default
+      when: existing_monitoring_project.stdout_lines | length == 0
+
+    - name: create htpasswd access token file
+      htpasswd:
+        path: "{{ mktemp.stdout }}/proxy-htpasswd"
+        name: token
+        password: "{{ monitoring_access_token }}"
+
+    - name: register htpasswd contents
+      slurp:
+        src: "{{ mktemp.stdout }}/proxy-htpasswd"
+      register: proxy_htpasswd
+
+    - name: create secret definition
+      template:
+        src: secret.yaml.j2
+        dest: "{{ mktemp.stdout }}/secret.yaml"
+      vars:
+        name: monitoring-token
+        labels: {}
+        data:
+          htpasswd: "{{ proxy_htpasswd['content'] }}"
+          token: "{{ monitoring_access_token | b64encode }}"
+      changed_when: no
+
+    - name: check if secret has been created already
+      shell: oc get secret -n monitoring-infra monitoring-token
+      register: existing_secret
+      changed_when: false
+      failed_when: false
+
+    - name: create htpasswd secret
+      shell: oc create -n monitoring-infra -f {{ mktemp.stdout }}/secret.yaml
+      when: existing_secret.stdout_lines | length == 0
+
+    - name: replace htpasswd secret
+      shell: oc replace -n monitoring-infra -f {{ mktemp.stdout }}/secret.yaml
+      when: existing_secret.stdout_lines | length > 0
+
+    - name: list existing pvcs
+      shell: oc get pvc -n monitoring-infra
+      register: existing_pvcs
+      changed_when: false
+      failed_when: false
+
+    - name: create prometheus data volume definition
+      template:
+        src: pvc.yaml.j2
+        dest: /home/cloud-user/prometheus-data-pvc.yaml
+      vars:
+        name: prometheus-data
+        labels: {}
+        size: "10Gi"
+
+    - name: create prometheus data volume
+      shell: oc create -n monitoring-infra -f /home/cloud-user/prometheus-data-pvc.yaml
+      when: "'prometheus-data' not in existing_pvcs.stdout"
+
+    - name: create prometheus deployment template
+      template:
+        src: "templates/prometheus.yaml.j2"
+        dest: /home/cloud-user/prometheus.yaml
+      register: copy_prometheus_template
+
+    - name: create prometheus deployment
+      shell: oc create -n monitoring-infra -f /home/cloud-user/prometheus.yaml
+      when: existing_monitoring_project.stdout_lines | length == 0
+
+    - name: update prometheus deployment
+      shell: oc replace -n monitoring-infra -f /home/cloud-user/prometheus.yaml
+      failed_when: false
+      changed_when: true
+      when:
+      - copy_prometheus_template.changed
+      - existing_monitoring_project.stdout_lines | length > 0
+
+    - name: create grafana data volume definition
+      template:
+        src: pvc.yaml.j2
+        dest: /home/cloud-user/grafana-data-pvc.yaml
+      vars:
+        name: grafana-data
+        labels: {}
+        size: "1Gi"
+
+    - name: create grafana data volume
+      shell: oc create -n monitoring-infra -f /home/cloud-user/grafana-data-pvc.yaml
+      when: "'grafana-data' not in existing_pvcs.stdout"
+
+    - name: create grafana deployment template
+      template:
+        src: "templates/grafana.yaml.j2"
+        dest: /home/cloud-user/grafana.yaml
+      register: copy_grafana_template
+
+    - name: create grafana deployment
+      shell: oc create -n monitoring-infra -f /home/cloud-user/grafana.yaml
+      when: existing_monitoring_project.stdout_lines | length == 0
+
+    - name: update grafana deployment
+      shell: oc replace -n monitoring-infra -f /home/cloud-user/grafana.yaml
+      failed_when: false
+      changed_when: true
+      when:
+      - copy_grafana_template.changed
+      - existing_monitoring_project.stdout_lines | length > 0
+
+- name: Populate grafana
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - include: environment_context.yml
+
+    - name: wait for grafana to start responding
+      uri:
+        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/health
+        method: GET
+        user: admin
+        password: "{{ monitoring_access_token }}"
+        force_basic_auth: yes
+      failed_when: false
+      register: grafana_up
+      until: grafana_up.status == 200
+      retries: 120
+
+    - name: check if datasource exists already
+      uri:
+        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/datasources/name/local
+        method: GET
+        user: admin
+        password: "{{ monitoring_access_token }}"
+        force_basic_auth: yes
+        status_code:
+        - 200
+        - 404
+      register: existing_datasource
+
+    - name: add prometheus as data source
+      uri:
+        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/datasources
+        method: POST
+        user: admin
+        password: "{{ monitoring_access_token }}"
+        body: "{{ lookup('template','grafana_prometheus_ds.json.j2') }}"
+        force_basic_auth: yes
+        status_code: 200
+        body_format: json
+      when: existing_datasource.status != 200
+
+    - name: add or update k8s dashboard
+      uri:
+        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/dashboards/db
+        method: POST
+        user: admin
+        password: "{{ monitoring_access_token }}"
+        body: "{{ lookup('file','files/grafana_k8s_dashboard.json') }}"
+        force_basic_auth: yes
+        status_code: 200
+        body_format: json
+
+    - name: delete temp directory
+      file:
+        path: mktemp.stdout
+        state: absent
+      changed_when: False
+      check_mode: no
