@@ -26,7 +26,7 @@ Boot a new VM from the latest CentOS 7 image that is provided by CSC
   - pick a name for the VM, for example 'bastion'
   - Flavor: standard.tiny
   - Instance boot source: Image
-  - Image Name: Latest public Centos image (CentOS-7.0 at the time of writing)
+  - Image Name: Latest public Centos image (CentOS-7 at the time of writing)
   - Keypair: select your key
   - Security Groups: select *default* and *bastion*
   - Network: select the desired network (you probably only have one, which is the default)

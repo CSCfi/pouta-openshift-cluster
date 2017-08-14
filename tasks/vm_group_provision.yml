@@ -28,7 +28,7 @@
   os_server:
     name: "{{ cluster_name }}-{{ vm_group_name }}-{{ item }}"
     flavor: "{{ vm_group.flavor }}"
-    image: "{{ vm_group.image|default('CentOS-7.0') }}"
+    image: "{{ vm_group.image|default('CentOS-7') }}"
     key_name: "{{ ssh_key }}"
     network: "{{ network_name }}"
     security_groups: "{{ security_groups }}"
