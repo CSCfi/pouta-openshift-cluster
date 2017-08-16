@@ -77,7 +77,7 @@ items:
         serviceAccountName: prometheus
         containers:
         - name: basic-auth-proxy
-          image: docker-registry.oso-pilot.csc.fi/c14n-public/basic-auth-proxy:latest
+          image: {{ monitoring_basic_auth_proxy_image }}
           imagePullPolicy: Always
           ports:
           - containerPort: 8888
@@ -97,7 +97,7 @@ items:
           - --storage.tsdb.retention=6h
           - --config.file=/etc/prometheus/prometheus.yml
           - --web.listen-address=0.0.0.0:8080
-          image: registry.svc.ci.openshift.org/ci/prometheus:latest
+          image: {{ monitoring_prometheus_image }}
           imagePullPolicy: Always
           volumeMounts:
           - mountPath: /etc/prometheus
