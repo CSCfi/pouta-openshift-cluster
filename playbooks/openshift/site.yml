@@ -1,10 +1,12 @@
 ---
+- name: Provision resources for OpenShift using Heat
+  include: provision.yml
 
-- name: Run basic cluster configuration
+- name: Prepare hosts for OpenShift installation
   include: pre_install.yml
 
-- name: Run OpenShift Origin installer
-  include: ../../../openshift-ansible/playbooks/byo/config.yml
+- name: Install OpenShift
+  include: install.yml
 
-- name: Run configuration tasks against OpenShift
+- name: Do post installation steps for OpenShift
   include: post_install.yml

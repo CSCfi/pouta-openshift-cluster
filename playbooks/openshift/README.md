@@ -14,15 +14,7 @@ what to do or willing to learn. Do not expect that after completing the steps yo
     - VMs with optionally booting from volume
     - volumes for persistent storage
     - common and master security groups
-
-- writes an inventory file to be used by later stages
-
-### heat_provision.yml
-
-- an alternative provisioning method to provision.yml that uses OpenStack Heat
-  instead of using the other OpenStack APIs separately through Ansible
-- currently more opinionated compared to provision.yml, but also a lot faster
-  especially for multimaster deployments
+- uses OpenStack Heat
 
 ### pre_install.yml
 
@@ -40,20 +32,11 @@ what to do or willing to learn. Do not expect that after completing the steps yo
 
 ### deprovision.yml
 
-- used to tear the cluster resources down when using provision.yml
-
-### heat_deprovision.yml
-
-- used to tear the cluster resources down when using heat_provision.yml
+- used to tear the cluster resources down
 
 ### site.yml
 
 - aggregates all installation steps after provisioning into a single playbook
-
-### heat_site.yml
-
-- aggregates all installation steps including provisioning using Heat into a
-  single playbook
 
 ## Example installation process
 
@@ -67,48 +50,21 @@ This is a log of an example installation of a proof of concept cluster with
 
 ### Prerequisites
 
-#### Alternative 1: native environment
-Shell environment with
-- OpenStack credentials for cPouta 
-- python virtualenv with ansible==2.3, shade, dnspython and pyopenssl
-- venv should have latest setuptools and pip (pip install --upgrade pip setuptools)
-- metrics needs some extra packages on the bastion host
-  - sudo yum install java-1.8.0-openjdk-headless python-passlib httpd-tools
-- if you have SELinux enabled, either disable that or make sure the virtualenv has libselinux-python
-- ssh access to the internal network of your project
-    - either run this on your bastion host
-    - or set up ssh forwarding through your bastion host in your ~/.ssh/config
-    - please test ssh manually after provisioning 
+TODO: Fix when poc-deployer is updated (repo cloning, vault secret initialization, ...)
 
-There is a requirements.txt file that you can use to install the Python dependencies:
-
-    $ mkvirtualenv --system-site-packages -r requirements.txt pac
-
-The reason `--system-site-packages` is used here is because libselinux-python
-is only available via RPM and must be taken from the system wide site-packages
-location.
-
-For packages on CentOS-7, see: [Creating a bastion host](../../CREATE_BASTION_HOST.md)
-
-For automatic, self-provisioned app routes to work, you will need a wildcard DNS CNAME for your master's public IP.
+We have a deployment container with all dependencies preinstalled. To build the container, 
+check out POC git repo (see below) and run the build script located in `container-src/poc-deployer`:
  
-In general, see https://docs.openshift.org/latest/install_config/install/prerequisites.html
-
-#### Alternative 2: containerized environment for Heat based deployment
-
-We also have a deployment container with all dependencies preinstalled. To build the container, 
-check out PAC git repo (see below) and run the build script located in `container-src/pac-deployer`:
- 
-    cd ~/git/pouta-ansible-cluster/container-src/pac-deployer 
+    cd ~/git/poc/container-src/poc-deployer 
     sudo ./build.bash
     
 To launch a shell in a temporary container for deployment, run
 
-    cd ~/git/pouta-ansible-cluster/playbooks/openshift
+    cd ~/git/poc/playbooks/openshift
     sudo ./run_deployment_container.bash
 
 The script assumes that the environments directory is called openshift-environments and located
-in a sibling directory next to PAC. If Docker containers can be launched without 'sudo',
+in a sibling directory next to POC. If Docker containers can be launched without 'sudo',
 that can be left out in the commands above.
 
 __Note on SELinux__: If you are running under SELinux enforcing mode, the container processes
@@ -116,62 +72,9 @@ may not be able to access the volumes by default. To enable access from containe
 processes, change the labels on the mounted directories:
  
     chcon -Rt svirt_sandbox_file_t \
-        pouta-ansible-cluster openshift-ansible openshift-ansible-tourunen openshift-environments
+        poc openshift-ansible openshift-environments
 
-### Clone playbooks
-
-Clone the necessary playbooks from GitHub (here we assume they go under ~/git)
-    
-    $ mkdir -p ~/git && cd ~/git
-    $ git clone https://github.com/CSCfi/pouta-ansible-cluster
-    $ git clone https://github.com/openshift/openshift-ansible.git
-    $ git clone https://github.com/tourunen/openshift-ansible.git openshift-ansible-tourunen
-    $ cd openshift-ansible-tourunen
-    $ git checkout release-1.5-csc
-
-### Create a cluster config
-
-Decide a name for your cluster, create a new directory and copy the example config file and modify that
-
-    $ cd
-    $ mkdir YOUR_CLUSTER_NAME
-    $ cd YOUR_CLUSTER_NAME
-    $ cp ~/git/pouta-ansible-cluster/playbooks/openshift/example_cluster_vars.yaml cluster_vars.yaml
-
-Change at least the following config entries:
-
-    cluster_name: "YOUR_CLUSTER_NAME" 
-    ssh_key: "bastion-key"
-    openshift_public_hostname: "your.master.hostname.here"
-    openshift_public_ip: "your.master.ip.here"
-    project_external_ips: ["your.master.ip.here"]
-
-If you are deploying the cluster to a non-default network, remember to add and configure an interface to bastion host in
-that network. The network also needs to be attached to a router.
-
-### Run provisioning
-
-Source your openstack credentials first
-
-    $ source ~/openrc.bash
-
-Provision the VMs and associated resources
-
-    $ workon ansible-2.3
-    $ ansible-playbook -v -e @cluster_vars.yaml ~/git/pouta-ansible-cluster/playbooks/openshift/provision.yml 
-
-Before we run the configuration and installation playbook, we should define what persistent volumes are created.
-Edit the NFS PV setup playbook to suit your needs.
-
-    $ vi ~/git/openshift-ansible-tourunen/setup_lvm_nfs.yml
-
-Note that registry will by default require one PV with size >= 128GiB .
-
-Then run the configuration and installation playbook. This will take a while.
-
-    $ ansible-playbook -v -e @cluster_vars.yaml -i openshift-inventory ~/git/pouta-ansible-cluster/playbooks/openshift/config.yml
-
-### Advanced deployment mechanism using Heat (for automated build pipelines)
+### Deployment
 
 You will need to fulfill the prerequisites and clone the same repositories as
 mentioned in the example installation instructions above. The recommended way 
@@ -242,11 +145,7 @@ For initialize_ramdisk.yml to work, you will need to populate the following vari
 
 Once you have all of this configured, running the actual installation is simple.
 
-Change the current working directory to playbooks/openshift:
-
-    $ cd ~/git/pouta-ansible-cluster/playbooks/openshift
-    
-Alternative when using containerized deployment:
+e when using containerized deployment:
 
     $ cd /opt/deployment/pouta-ansible-cluster/playbooks/openshift
 
@@ -273,20 +172,7 @@ OpenShift on this infrastructure:
 - start testing and learning
 - get a proper certificate for master
 
-## Deprovisioning
-
-To deprovision all the resources, run
-
-    $ ansible-playbook -v -e @cluster_vars.yaml \
-    -e remove_nodes=1 -e remove_node_volumes=1 \
-    -e remove_masters=1 -e remove_master_volumes=1 \
-    -e remove_etcd=1 \
-    -e remove_lbs=1 -e remove_lb_volumes=1 \
-    -e remove_nfs=1 -e remove_nfs_volumes=1 \
-    -e remove_security_groups=1 \
-    ~/git/pouta-ansible-cluster/playbooks/openshift/deprovision.yml
-
-### Deprovisioning when using Heat
+### Deprovisioning
 
     $ ansible-playbook heat_deprovision.yml \
     -i <inventory directory/file> \

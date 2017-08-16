@@ -1,7 +1,3 @@
-- name: Run NFS volume creation
-  include: ../../../openshift-ansible-tourunen/setup_lvm_nfs.yml
-  when: provision_nfs_pvs|default(false)|bool
-
 - name: Import objects through first master
   hosts: masters[0]
   tasks:

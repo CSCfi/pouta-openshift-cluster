@@ -1,275 +1,172 @@
 ---
-- name: Deploy base infra for OpenShift Origin in cPouta
-  hosts: localhost
+- hosts: localhost
+  gather_facts: no
   connection: local
-  vars:
-    cluster_name: "my-oso"
-    ssh_key: "my_key"
-    network_name: ""
-    network_cidr: "192.168.1.0/24"
-    boot_from_volume: no
-    bastion_secgroup: "bastion"
   tasks:
-
-# Network setup
-
-    - name: create network
-      register: network_facts
-      os_network:
-        name: "{{ network_name }}"
+    - include: environment_context.yml
+    - name: Add public key to OpenStack for {{ cluster_name }}
+      os_keypair:
         state: present
-      when: network_name|default("") != ""
-
-    - name: create subnet
-      os_subnet:
-        network_name: "{{ network_name }}"
-        name: "{{ network_name }}-subnet-1"
-        cidr: "{{ network_cidr }}"
-        dns_nameservers:
-         - 193.166.4.24
-         - 193.166.4.25
-      when: network_name|default("") != ""
-
-# Security group setup
-
-    - name: bastion security group - create
-      register: sg_bastion
-      os_security_group:
-        name: "{{ bastion_secgroup }}"
-        description: "Ansible generated security group for bastion"
-
-    - name: common SG - create
-      register: sg_common
-      os_security_group:
-        name: "{{ cluster_name }}-common"
-        description: "Ansible generated common security group for {{ cluster_name }}"
-
-    - name: common SG - open cluster internal access to bastion
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-common"
-        remote_group: "{{ sg_bastion.secgroup.id }}"
-
-    - name: common SG - open cluster internal ping
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-common"
-        remote_group: "{{ sg_common.secgroup.id }}"
-        protocol: icmp
-
-    - name: common SG - open cluster SDN
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-common"
-        remote_group: "{{ sg_common.secgroup.id }}"
-        protocol: udp
-        port_range_min: 4789
-        port_range_max: 4789
-
-    - name: infra SG - create
-      register: sg_infra
-      os_security_group:
-        name: "{{ cluster_name }}-infra"
-        description: "Ansible generated security group for {{ cluster_name }} infra VMs"
-
-    - name: infra SG - open comms in infra
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-infra"
-        remote_group: "{{ sg_infra.secgroup.id }}"
-
-    - name: master SG - create
-      os_security_group:
-        name: "{{ cluster_name }}-master"
-        description: "Ansible generated security group for {{ cluster_name }} master VMs"
-
-    - name: master SG - open comms to infra
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-master"
-        remote_group: "{{ sg_common.secgroup.id }}"
-        protocol: "{{ item.proto }}"
-        port_range_min: "{{ item.port }}"
-        port_range_max: "{{ item.port }}"
-      with_items:
-        - { proto: 'udp', port: 53 }
-        - { proto: 'tcp', port: 53 }
-        - { proto: 'tcp', port: 8443 }
-
-    - name: node SG - create
-      os_security_group:
-        name: "{{ cluster_name }}-node"
-        description: "Ansible generated security group for {{ cluster_name }} node VMs"
-
-    - name: node SG - open comms to infra
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-node"
-        remote_group: "{{ sg_infra.secgroup.id }}"
-
-    - name: lb SG - create
-      os_security_group:
-        name: "{{ cluster_name }}-lb"
-        description: "Ansible generated security group for {{ cluster_name }} lb VMs"
-
-    - name: open access from project router (NAT) and external ip
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-lb"
-        protocol: tcp
-        port_range_min: 8443
-        port_range_max: 8443
-        remote_ip_prefix: "{{ item }}/32"
-      with_items: "{{ project_external_ips | default([]) }}"
-      when: project_external_ips is defined
-
-    - name: open internal access
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-lb"
-        protocol: tcp
-        port_range_min: 8443
-        port_range_max: 8443
-        remote_group: "{{ sg_common.secgroup.id }}"
-
-    - name: populate LB secgroup rules from cluster_vars.yaml
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-lb"
-        protocol: tcp
-        port_range_min: "{{ item.port }}"
-        port_range_max: "{{ item.port }}"
-        remote_ip_prefix: "{{ item.cidr }}"
-      with_items: "{{ lb_sec_rules | default([]) }}"
-
-    - name: nfs SG - create
-      os_security_group:
-        name: "{{ cluster_name }}-nfs"
-        description: "Ansible generated security group for {{ cluster_name }} nfs VMs"
-
-    - name: open NFS v4 to all cluster members
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-nfs"
-        protocol: tcp
-        port_range_min: 2049
-        port_range_max: 2049
-        remote_group: "{{ sg_common.secgroup.id }}"
-
-    - name: populate custom secgroup rules from cluster_vars.yaml
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-{{ item.0.name }}"
-        protocol: tcp
-        port_range_min: "{{ item.1.port }}"
-        port_range_max: "{{ item.1.port }}"
-        remote_ip_prefix: "{{ item.1.cidr }}"
-      with_subelements:
-         - "{{ custom_secgroup_rules | default([]) }}"
-         - rules
-
-# VM provisioning
-
-    # figure out the sec groups the master(s) need to be in
-    - name: set secgroup facts
-      set_fact:
-        master_secgroups: ["{{ cluster_name }}-infra", "{{ cluster_name }}-common", "{{ cluster_name }}-master"]
-
-    - name: master as lb
-      set_fact:
-        master_secgroups: "{{ master_secgroups }} + [ '{{ cluster_name }}-lb' ]"
-      when: lb is not defined or (lb.num_vms|default(0)) < 1
-
-    - name: master as nfs
-      set_fact:
-        master_secgroups: "{{ master_secgroups }} + [ '{{ cluster_name}}-nfs' ]"
-      when: nfs is not defined or (nfs.num_vms|default(0)) < 1
-
-    - name: provision master VMs
-      include: tasks/vm_group_provision.yml
-      vars:
-        security_groups: "{{ master_secgroups }}"
-        server_group_suffix: "master"
-      with_items:
-        - "master"
-      loop_control:
-        loop_var: "vm_group_name"
-
-    - name: assign public ip to first master (no separate load balancers)
+        name: "{{ cluster_name }}"
+        public_key_file: "/dev/shm/{{ cluster_name }}/id_rsa.pub"
+    - name: check if stack has been provisioned already
+      shell: openstack stack show {{ cluster_name }}
+      register: stack_output
+      failed_when: false
+      changed_when: false
+    - block:
+      - name: Build the OpenShift Heat stack (full)
+        register: heat_stack
+        os_stack:
+          name: "{{ cluster_name }}"
+          state: present
+          template: "files/openshift-heat-stack.yml"
+          wait: yes
+          parameters:
+            env_name: "{{ cluster_name }}"
+            bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
+            secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
+            openshift_network_cidr: "{{ openshift_network_cidr }}"
+            openshift_router: "{{ openshift_router }}"
+            key_name: "{{ cluster_name }}"
+            bastion_vm_image: "{{ bastion_vm_image }}"
+            bastion_vm_flavor: "{{ bastion_vm_flavor }}"
+            bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
+            etcd_vm_group_size: "{{ etcd_vm_group_size }}"
+            etcd_vm_image: "{{ etcd_vm_image }}"
+            etcd_vm_flavor: "{{ etcd_vm_flavor }}"
+            lb_vm_group_size: "{{ lb_vm_group_size }}"
+            lb_vm_image: "{{ lb_vm_image }}"
+            lb_vm_flavor: "{{ lb_vm_flavor }}"
+            lb_vol_size: "{{ lb_vol_size }}"
+            nfs_vm_group_size: "{{ nfs_vm_group_size }}"
+            nfs_vm_image: "{{ nfs_vm_image }}"
+            nfs_vm_flavor: "{{ nfs_vm_flavor }}"
+            nfs_vol_size: "{{ nfs_vol_size }}"
+            master_vm_group_size: "{{ master_vm_group_size }}"
+            master_vm_image: "{{ master_vm_image }}"
+            master_vm_flavor: "{{ master_vm_flavor }}"
+            node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
+            node_ssd_vm_image: "{{ node_ssd_vm_image }}"
+            node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
+      - name: Associate floating IP with first LB node
+        os_floating_ip:
+          server: "{{ cluster_name }}-lb-0"
+          floating_ip_address: "{{ openshift_public_ip }}"
+      when:
+      - master_vm_group_size > 1
+      - stack_output.stderr.find('Stack not found') != -1
+    - block:
+      - name: Build the OpenShift Heat stack (minimal)
+        register: heat_stack
+        os_stack:
+          name: "{{ cluster_name }}"
+          state: present
+          template: "files/openshift-heat-stack-minimal.yml"
+          wait: yes
+          parameters:
+            env_name: "{{ cluster_name }}"
+            bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
+            secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
+            openshift_network_cidr: "{{ openshift_network_cidr }}"
+            openshift_router: "{{ openshift_router }}"
+            key_name: "{{ cluster_name }}"
+            bastion_vm_image: "{{ bastion_vm_image }}"
+            bastion_vm_flavor: "{{ bastion_vm_flavor }}"
+            bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
+            master_vm_group_size: "{{ master_vm_group_size }}"
+            master_vm_image: "{{ master_vm_image }}"
+            master_vm_flavor: "{{ master_vm_flavor }}"
+            master_vm_vol_size: "{{ master_vm_vol_size }}"
+            node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
+            node_ssd_vm_image: "{{ node_ssd_vm_image }}"
+            node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
+      - name: Associate floating IP with master
+        os_floating_ip:
+          server: "{{ cluster_name }}-master-0"
+          floating_ip_address: "{{ openshift_public_ip }}"
+      when:
+      - master_vm_group_size == 1
+      - stack_output.stderr.find('Stack not found') != -1
+    - name: Associate floating IP with bastion host
       os_floating_ip:
-        server: "{{ cluster_name }}-master-1"
-        floating_ip_address: "{{ openshift_public_ip }}"
-      when: lb is not defined or (lb.num_vms|default(0)) < 1
+        server: "{{ cluster_name }}-bastion"
+        floating_ip_address: "{{ bastion_public_ip }}"
+    - name: Refresh dynamic inventory
+      meta: refresh_inventory
+    - name: add global ssh config
+      blockinfile:
+        create: yes
+        mode: '0600'
+        dest: "/tmp/pac.ssh.config"
+        block: |
+          Host *
+            ForwardAgent no
+            GSSAPIAuthentication no
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+        marker: "# {mark} ANSIBLE MANAGED BLOCK for global PAC options"
+    - name: add ssh config entry for bastion
+      blockinfile:
+        create: yes
+        mode: '0600'
+        dest: "/tmp/pac.ssh.config"
+        block: |
+          Host {{ item }} {{ hostvars[item].ansible_ssh_host }} {{ bastion_public_ip }}
+              HostName {{ bastion_public_ip }}
+              IdentityFile /dev/shm/{{ cluster_name }}/id_rsa
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
+      with_items: "{{ groups.bastion }}"
+    - name: add ssh config entries for hosts
+      blockinfile:
+        create: yes
+        mode: '0600'
+        dest: "/tmp/pac.ssh.config"
+        block: |
+          Host {{ item }} {{ hostvars[item].ansible_ssh_host }}
+              HostName {{ hostvars[item].ansible_ssh_host }}
+              IdentityFile /dev/shm/{{ cluster_name }}/id_rsa
+              ProxyCommand ssh -F /tmp/pac.ssh.config -q cloud-user@{{ bastion_public_ip }} nc %h %p
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
+      when:
+      - item != "localhost"
+      - item != "{{ cluster_name }}-bastion"
+      with_items: "{{ groups.all }}"
+    - name: Wait for connectivity on port 22 on the bastion
+      wait_for:
+        host: "{{ bastion_public_ip }}"
+        port: 22
+        search_regex: "OpenSSH"
+        delay: 5
+        timeout: 900
+    - name: Wait for SSH to work
+      shell: ssh -F /tmp/pac.ssh.config cloud-user@{{ bastion_public_ip }} 'echo success'
+      register: result
+      until: result.stdout.find('success') != -1
+      retries: 30
+      delay: 5
+      changed_when: false
 
-    - name: provision etcd VMs
-      include: tasks/vm_group_provision.yml
-      vars:
-        security_groups: ["{{ cluster_name }}-infra", "{{ cluster_name }}-common"]
-        server_group_suffix: "etcd"
-      with_items:
-        - "etcd"
-      loop_control:
-        loop_var: "vm_group_name"
-      when: etcd is defined
-
-    - name: provision lb VMs
-      include: tasks/vm_group_provision.yml
-      vars:
-        security_groups: ["{{ cluster_name }}-lb", "{{ cluster_name }}-infra", "{{ cluster_name }}-common"]
-        server_group_suffix: "lb"
-      with_items:
-        - "lb"
-      loop_control:
-        loop_var: "vm_group_name"
-      when: lb is defined and (lb.num_vms|default(0)) > 0
-
-    - name: assign public IP to first load balancer
-      os_floating_ip:
-        server: "{{ cluster_name }}-lb-1"
-        floating_ip_address: "{{ openshift_public_ip }}"
-      when: lb is defined and (lb.num_vms|default(0)) > 0
-
-    - name: lb SG - open access to the API itself
-      os_security_group_rule:
-        security_group: "{{ cluster_name }}-lb"
-        protocol: tcp
-        port_range_min: "{{ item }}"
-        port_range_max: "{{ item }}"
-        remote_ip_prefix: "{{ openshift_public_ip }}/32"
-      with_items:
-        - [80, 443, 8443]
-
-    - name: provision nfs VMs
-      include: tasks/vm_group_provision.yml
-      vars:
-        security_groups: ["{{ cluster_name }}-nfs", "{{ cluster_name }}-infra", "{{ cluster_name }}-common"]
-      with_items:
-        - "nfs"
-      loop_control:
-        loop_var: "vm_group_name"
-      when: nfs is defined and (nfs.num_vms|default(0)) > 0
-
-    - name: provision nodes
-      include: tasks/vm_group_provision.yml
-      vars:
-        security_groups: ["{{ cluster_name }}-node", "{{ cluster_name }}-common"]
-        inventory_group: "nodes"
-        server_group_suffix: "node"
-      with_items: "{{ node_groups }}"
-      loop_control:
-        loop_var: "vm_group_name"
-
-- name: Generate inventory, tmuxinator config and ssh config
-  hosts: localhost
-  connection: local
+- name: Install nmap-ncat on bastion if need be
+  hosts: bastion
+  gather_facts: no
+  become: yes
   tasks:
-    - name: make sure the directory for inventory files exists
-      file:
-        state: directory
-        path: "{{ ansible_env.HOME }}/{{ cluster_name }}"
+    - name: Install nmap-ncat
+      yum:
+        name: nmap-ncat
+        state: present
 
-    - name: create inventory on disk (multimaster)
-      template:
-        src: templates/inventory.multimaster.j2
-        dest: "{{ ansible_env.HOME }}/{{ cluster_name }}/openshift-inventory"
-        backup: yes
-      when: master.num_vms > 1
-
-    - name: create inventory on disk (single master)
-      template:
-        src: templates/inventory.single_master.j2
-        dest: "{{ ansible_env.HOME }}/{{ cluster_name }}/openshift-inventory"
-        backup: yes
-      when: master.num_vms == 1
-
-    - name: create tmuxinator status session config
-      include: tasks/create_tmuxinator_config.yml
+- name: Wait for SSH to work on all other hosts
+  hosts: all
+  gather_facts: no
+  any_errors_fatal: yes
+  tasks:
+    - name: Wait for connectivity on port 22 on all other hosts
+      wait_for:
+        host: "{{ ansible_ssh_host }}"
+        port: 22
+        search_regex: "OpenSSH"
+        delay: 5
+        timeout: 300
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['ansible_ssh_host'] }}"
