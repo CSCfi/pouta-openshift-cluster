@@ -1,0 +1,93 @@
+kind: List
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: grafana
+    namespace: monitoring-infra
+  spec:
+    to:
+      name: grafana
+    tls:
+      termination: Edge
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: grafana
+    namespace: monitoring-infra
+  spec:
+    ports:
+    - name: grafana
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: grafana
+
+# Here we create a Grafana deployment using prebuild image.
+# We deploy the pod on masters (running only our infrastructure pods).
+#
+# Grafana image is based on https://github.com/OpenShiftDemos/grafana-openshift
+# and built with
+#   oc new-build https://github.com/OpenShiftDemos/grafana-openshift
+#
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    labels:
+      app: grafana
+    name: grafana
+    namespace: monitoring-infra
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: grafana
+    template:
+      metadata:
+        labels:
+          app: grafana
+        name: grafana
+      spec:
+        nodeSelector:
+          type: master
+        containers:
+        - name: grafana
+          image: {{ monitoring_grafana_image }}
+          ports:
+          - containerPort: 8080
+            name: internal
+          env:
+          - name: GF_SERVER_HTTP_PORT
+            value: "8080"
+          - name: GF_PATHS_DATA
+            value: "/grafana-data"
+          - name: GF_AUTH_ANONYMOUS_ENABLED
+            value: "false"
+          - name: GF_SECURITY_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: monitoring-token
+                key: token
+          volumeMounts:
+          - mountPath: /grafana-data
+            name: data-volume
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+              scheme: HTTP
+          resources:
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+        restartPolicy: Always
+        volumes:
+        - name: monitoring-token
+          secret:
+            secretName: monitoring-token
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: "grafana-data"

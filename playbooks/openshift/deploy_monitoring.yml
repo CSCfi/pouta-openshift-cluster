@@ -1,0 +1,154 @@
+---
+
+- name: Deploy monitoring
+  hosts: masters[0]
+  tasks:
+    - include: environment_context.yml
+
+    - name: install python-passlib
+      yum:
+        name: python-passlib
+        state: present
+
+    - name: create temp directory for templating
+      command: mktemp -d
+      register: mktemp
+      changed_when: False
+
+    - name: check if monitoring project exists
+      shell: oc get project monitoring-infra
+      register: existing_monitoring_project
+      changed_when: false
+      failed_when: false
+
+    - name: create project definition
+      template:
+        src: infra-project.yaml.j2
+        dest: "{{ mktemp.stdout }}/infra-project.yaml"
+      vars:
+        name: monitoring-infra
+        labels: {}
+        annotations:
+          openshift.io/node-selector: "type=master"
+      changed_when: no
+
+    - name: create project monitoring-infra
+      shell: oc create -f "{{ mktemp.stdout }}/infra-project.yaml"
+      when: existing_monitoring_project.stdout_lines | length == 0
+
+    - name: create htpasswd access token file
+      htpasswd:
+        path: "{{ mktemp.stdout }}/proxy-htpasswd"
+        name: token
+        password: "{{ monitoring_access_token }}"
+
+    - name: register htpasswd contents
+      slurp:
+        src: "{{ mktemp.stdout }}/proxy-htpasswd"
+      register: proxy_htpasswd
+
+    - name: upsert secret
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: monitoring-infra
+        template_base_name: secret.yaml
+        name: monitoring-token
+        labels: {}
+        data:
+          htpasswd: "{{ proxy_htpasswd['content'] }}"
+          token: "{{ monitoring_access_token | b64encode }}"
+
+    - name: upsert prometheus data volume
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: monitoring-infra
+        template_base_name: pvc.yaml
+        name: prometheus-data
+        labels: {}
+        size: "10Gi"
+        upsert_replace: false
+
+    - name: upsert prometheus deployment
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: monitoring-infra
+        template_base_name: prometheus.yaml
+        name: prometheus
+
+    - name: upsert grafana data volume
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: monitoring-infra
+        template_base_name: pvc.yaml
+        name: grafana-data
+        labels: {}
+        size: "1Gi"
+        upsert_replace: false
+
+    - name: upsert grafana deployment
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: monitoring-infra
+        template_base_name: grafana.yaml
+        name: grafana
+
+- name: Populate grafana
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - include: environment_context.yml
+
+    - name: wait for grafana to start responding
+      uri:
+        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/health
+        method: GET
+        user: admin
+        password: "{{ monitoring_access_token }}"
+        force_basic_auth: yes
+      failed_when: false
+      register: grafana_up
+      until: grafana_up.status == 200
+      retries: 120
+
+    - name: check if datasource exists already
+      uri:
+        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/datasources/name/local
+        method: GET
+        user: admin
+        password: "{{ monitoring_access_token }}"
+        force_basic_auth: yes
+        status_code:
+        - 200
+        - 404
+      register: existing_datasource
+
+    - name: add prometheus as data source
+      uri:
+        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/datasources
+        method: POST
+        user: admin
+        password: "{{ monitoring_access_token }}"
+        body: "{{ lookup('template','grafana_prometheus_ds.json.j2') }}"
+        force_basic_auth: yes
+        status_code: 200
+        body_format: json
+      when: existing_datasource.status != 200
+
+    - name: add or update k8s dashboard
+      uri:
+        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/dashboards/db
+        method: POST
+        user: admin
+        password: "{{ monitoring_access_token }}"
+        body: "{{ lookup('file','files/grafana_k8s_dashboard.json') }}"
+        force_basic_auth: yes
+        status_code: 200
+        body_format: json
+
+    - name: delete temp directory
+      file:
+        path: mktemp.stdout
+        state: absent
+      changed_when: False
+      check_mode: no
