@@ -1,0 +1,21 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+fi
+
+# Define colour macros and utility functions for our custom bash prompt
+YELLOW="$(tput setaf 3)"
+GREEN="$(tput setaf 2)"
+RESET="$(tput sgr0)"
+parse_git_branch() {
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+short_cwd() {
+    echo $PWD | sed -e "s|^$HOME|~|g"
+}
+
+export PS1='${YELLOW}${ENV_NAME}${RESET} $(short_cwd)${GREEN}$(parse_git_branch)${RESET}> '
+
+source init_env.bash
