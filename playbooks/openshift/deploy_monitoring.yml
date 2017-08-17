@@ -34,7 +34,6 @@
 
     - name: create project monitoring-infra
       shell: oc create -f "{{ mktemp.stdout }}/infra-project.yaml"
-#      shell: oc new-project monitoring-infra && oc project default
       when: existing_monitoring_project.stdout_lines | length == 0
 
     - name: create htpasswd access token file
@@ -48,99 +47,50 @@
         src: "{{ mktemp.stdout }}/proxy-htpasswd"
       register: proxy_htpasswd
 
-    - name: create secret definition
-      template:
-        src: secret.yaml.j2
-        dest: "{{ mktemp.stdout }}/secret.yaml"
+    - name: upsert secret
+      include: tasks/upsert_k8s_object.yml
       vars:
+        namespace: monitoring-infra
+        template_base_name: secret.yaml
         name: monitoring-token
         labels: {}
         data:
           htpasswd: "{{ proxy_htpasswd['content'] }}"
           token: "{{ monitoring_access_token | b64encode }}"
-      changed_when: no
 
-    - name: check if secret has been created already
-      shell: oc get secret -n monitoring-infra monitoring-token
-      register: existing_secret
-      changed_when: false
-      failed_when: false
-
-    - name: create htpasswd secret
-      shell: oc create -n monitoring-infra -f {{ mktemp.stdout }}/secret.yaml
-      when: existing_secret.stdout_lines | length == 0
-
-    - name: replace htpasswd secret
-      shell: oc replace -n monitoring-infra -f {{ mktemp.stdout }}/secret.yaml
-      when: existing_secret.stdout_lines | length > 0
-
-    - name: list existing pvcs
-      shell: oc get pvc -n monitoring-infra
-      register: existing_pvcs
-      changed_when: false
-      failed_when: false
-
-    - name: create prometheus data volume definition
-      template:
-        src: pvc.yaml.j2
-        dest: /home/cloud-user/prometheus-data-pvc.yaml
+    - name: upsert prometheus data volume
+      include: tasks/upsert_k8s_object.yml
       vars:
+        namespace: monitoring-infra
+        template_base_name: pvc.yaml
         name: prometheus-data
         labels: {}
         size: "10Gi"
+        upsert_replace: false
 
-    - name: create prometheus data volume
-      shell: oc create -n monitoring-infra -f /home/cloud-user/prometheus-data-pvc.yaml
-      when: "'prometheus-data' not in existing_pvcs.stdout"
-
-    - name: create prometheus deployment template
-      template:
-        src: "templates/prometheus.yaml.j2"
-        dest: /home/cloud-user/prometheus.yaml
-      register: copy_prometheus_template
-
-    - name: create prometheus deployment
-      shell: oc create -n monitoring-infra -f /home/cloud-user/prometheus.yaml
-      when: existing_monitoring_project.stdout_lines | length == 0
-
-    - name: update prometheus deployment
-      shell: oc replace -n monitoring-infra -f /home/cloud-user/prometheus.yaml
-      failed_when: false
-      changed_when: true
-      when:
-      - copy_prometheus_template.changed
-      - existing_monitoring_project.stdout_lines | length > 0
-
-    - name: create grafana data volume definition
-      template:
-        src: pvc.yaml.j2
-        dest: /home/cloud-user/grafana-data-pvc.yaml
+    - name: upsert prometheus deployment
+      include: tasks/upsert_k8s_object.yml
       vars:
+        namespace: monitoring-infra
+        template_base_name: prometheus.yaml
+        name: prometheus
+
+    - name: upsert grafana data volume
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: monitoring-infra
+        template_base_name: pvc.yaml
         name: grafana-data
         labels: {}
         size: "1Gi"
+        upsert_replace: false
 
-    - name: create grafana data volume
-      shell: oc create -n monitoring-infra -f /home/cloud-user/grafana-data-pvc.yaml
-      when: "'grafana-data' not in existing_pvcs.stdout"
-
-    - name: create grafana deployment template
-      template:
-        src: "templates/grafana.yaml.j2"
-        dest: /home/cloud-user/grafana.yaml
-      register: copy_grafana_template
-
-    - name: create grafana deployment
-      shell: oc create -n monitoring-infra -f /home/cloud-user/grafana.yaml
-      when: existing_monitoring_project.stdout_lines | length == 0
-
-    - name: update grafana deployment
-      shell: oc replace -n monitoring-infra -f /home/cloud-user/grafana.yaml
-      failed_when: false
-      changed_when: true
-      when:
-      - copy_grafana_template.changed
-      - existing_monitoring_project.stdout_lines | length > 0
+    - name: upsert grafana deployment
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: monitoring-infra
+        template_base_name: grafana.yaml
+        name: grafana
 
 - name: Populate grafana
   hosts: localhost
