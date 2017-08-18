@@ -94,43 +94,48 @@
         floating_ip_address: "{{ bastion_public_ip }}"
     - name: Refresh dynamic inventory
       meta: refresh_inventory
-    - name: add global ssh config
+    - set_fact: ssh_config_file={{lookup('env', 'HOME')}}/.ssh/config
+    - name: create $HOME/.ssh/
+      file:
+        dest: "{{lookup('env', 'HOME')}}/.ssh/"
+        state: directory
+    - name: add cluster common ssh config
       blockinfile:
         create: yes
         mode: '0600'
-        dest: "/tmp/pac.ssh.config"
+        dest: "{{ ssh_config_file }}"
         block: |
-          Host *
+          Host {% for host in groups.all %}{{ host }} {{ hostvars[host].ansible_ssh_host }} {% endfor %}{{ bastion_public_ip }}
+            User cloud-user
             ForwardAgent no
             GSSAPIAuthentication no
             StrictHostKeyChecking no
             UserKnownHostsFile /dev/null
-        marker: "# {mark} ANSIBLE MANAGED BLOCK for global PAC options"
+            IdentityFile /dev/shm/{{ cluster_name }}/id_rsa
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }} common"
     - name: add ssh config entry for bastion
       blockinfile:
         create: yes
         mode: '0600'
-        dest: "/tmp/pac.ssh.config"
+        dest: "{{ ssh_config_file }}"
         block: |
           Host {{ item }} {{ hostvars[item].ansible_ssh_host }} {{ bastion_public_ip }}
               HostName {{ bastion_public_ip }}
-              IdentityFile /dev/shm/{{ cluster_name }}/id_rsa
         marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
       with_items: "{{ groups.bastion }}"
     - name: add ssh config entries for hosts
       blockinfile:
         create: yes
         mode: '0600'
-        dest: "/tmp/pac.ssh.config"
+        dest: "{{ ssh_config_file }}"
         block: |
           Host {{ item }} {{ hostvars[item].ansible_ssh_host }}
+              ProxyCommand ssh -q cloud-user@{{ bastion_public_ip }} nc %h %p
               HostName {{ hostvars[item].ansible_ssh_host }}
-              IdentityFile /dev/shm/{{ cluster_name }}/id_rsa
-              ProxyCommand ssh -F /tmp/pac.ssh.config -q cloud-user@{{ bastion_public_ip }} nc %h %p
         marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
       when:
       - item != "localhost"
-      - item != "{{ cluster_name }}-bastion"
+      - item != cluster_name + "-bastion"
       with_items: "{{ groups.all }}"
     - name: Wait for connectivity on port 22 on the bastion
       wait_for:
@@ -140,7 +145,7 @@
         delay: 5
         timeout: 900
     - name: Wait for SSH to work
-      shell: ssh -F /tmp/pac.ssh.config cloud-user@{{ bastion_public_ip }} 'echo success'
+      shell: ssh {{ bastion_public_ip }} 'echo success'
       register: result
       until: result.stdout.find('success') != -1
       retries: 30
