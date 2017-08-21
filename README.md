@@ -163,7 +163,10 @@ initialization playbook does not have to ask it interactively:
 Once you have all of this configured, running the actual installation is simple.
 To launch a shell in a temporary container for deploying environment 'oso-devel-singlemaster', run
 
-    sudo scripts/run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm/secret/vaultpass
+    sudo scripts/run_deployment_container.bash \
+      -e oso-devel-singlemaster \
+      -p /dev/shm/secret/vaultpass \
+      -i
 
 Run site.yml to provision infrastructure on OpenStack and install OpenShift on this infrastructure:
     
