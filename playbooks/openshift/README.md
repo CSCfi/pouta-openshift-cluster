@@ -20,10 +20,11 @@ is done with the official [installer playbook](https://github.com/openshift/open
 ### provision.yml
 
 - takes care of creating the resources in cPouta project
-    - VMs with optionally booting from volume
-    - volumes for persistent storage
-    - common and master security groups
-- uses OpenStack Heat
+    - VMs
+    - volumes
+    - security groups
+    - networks 
+- uses OpenStack Heat for provisioning
 
 ### pre_install.yml
 
@@ -38,10 +39,9 @@ is done with the official [installer playbook](https://github.com/openshift/open
 - creates persistent volumes for OpenShift
 - puts the registry on persistent storage
 - customizes the default project template
+- optionally deploys default www page and Prometheus based monitoring
 
 ## Prerequisites
-
-TODO: Fix when poc-deployer is updated (repo cloning, vault secret initialization, ...)
 
 All that is needed is 
 - a working docker installation
