@@ -3,10 +3,19 @@
 These playbooks can be used to assist deploying an OpenShift Origin cluster in cPouta. The bulk of installation
 is done with the official [installer playbook](https://github.com/openshift/openshift-ansible).
 
-*NOTE:* This document is not a complete guide, but mostly a checklist for persons already knowing
-what to do or willing to learn. Do not expect that after completing the steps you have a usable OpenShift environment.
-
 ## Playbooks
+
+### init_ramdisk.yml
+
+- extracts environment specific data to ramdisk for further installation steps
+
+### site.yml
+
+- aggregates all installation steps into a single playbook
+
+### deprovision.yml
+
+- used to tear the cluster resources down
 
 ### provision.yml
 
@@ -26,63 +35,50 @@ what to do or willing to learn. Do not expect that after completing the steps yo
 
 ### post_install.yml
 
-- creates NFS volumes for OpenShift
+- creates persistent volumes for OpenShift
 - puts the registry on persistent storage
 - customizes the default project template
 
-### deprovision.yml
-
-- used to tear the cluster resources down
-
-### site.yml
-
-- aggregates all installation steps after provisioning into a single playbook
-
-## Example installation process
-
-This is a log of an example installation of a proof of concept cluster with
-
-- one master
-    - public IP
-    - two persistent volumes, one for docker + swap, one for NFS persistent storage
-- four nodes
-    - one persistent volume for docker + swap
-
-### Prerequisites
+## Prerequisites
 
 TODO: Fix when poc-deployer is updated (repo cloning, vault secret initialization, ...)
 
+All that is needed is 
+- a working docker installation
+- git client
+- access to repositories
+
+Clone POC and openshift-ansible -installer.
+
+    mkdir -p ~/git
+    cd ~/git
+    git clone https://gitlab.csc.fi/c14n/poc
+    git clone https://gitlab.csc.fi/c14n/openshift-environments
+    git clone https://github.com/openshift/openshift-ansible
+
+Check out a revision of openshift-ansible that matches the version of openshift you are
+installing (see https://github.com/openshift/openshift-ansible#getting-the-correct-version)
+
+    cd ~/git/openshift-ansible
+    git checkout release-1.5
+
 We have a deployment container with all dependencies preinstalled. To build the container, 
-check out POC git repo (see below) and run the build script located in `container-src/poc-deployer`:
+run the build script located in `poc/container-src/poc-deployer`:
  
     cd ~/git/poc/container-src/poc-deployer 
     sudo ./build.bash
-    
-To launch a shell in a temporary container for deployment, run
 
-    cd ~/git/poc/playbooks/openshift
-    sudo ./run_deployment_container.bash
-
-The script assumes that the environments directory is called openshift-environments and located
-in a sibling directory next to POC. If Docker containers can be launched without 'sudo',
-that can be left out in the commands above.
+If Docker containers can be launched without 'sudo', that can be left out in the commands above.
 
 __Note on SELinux__: If you are running under SELinux enforcing mode, the container processes
 may not be able to access the volumes by default. To enable access from containerized 
 processes, change the labels on the mounted directories:
  
-    chcon -Rt svirt_sandbox_file_t \
-        poc openshift-ansible openshift-environments
+    cd ~/git
+    chcon -Rt svirt_sandbox_file_t poc openshift-ansible openshift-environments
 
-### Deployment
-
-You will need to fulfill the prerequisites and clone the same repositories as
-mentioned in the example installation instructions above. The recommended way 
-is to use the containerized environment. In addition, you will
-need to provide installation information via a separate repository/directory
-instead of using cluster_vars.yml.
-
-The format of this repository/directory is as follows:
+Installation data is contained in the openshift-environments repository. The format of the repository/directory 
+is as follows:
 
 ```
 environments
@@ -143,40 +139,50 @@ For initialize_ramdisk.yml to work, you will need to populate the following vari
   * openshift_cloudprovider_openstack_tenant_name
   * openshift_cloudprovider_openstack_region
 
+If you want to automate the process or repeat running single actions containerized, you
+can create a vault password file and loopback mount it to the container so that
+initialization playbook does not have to ask it interactively:
+
+    # Create a directory on ramdisk
+    mkdir -p /dev/shm/secret
+    chmod 750 /dev/shm/secret
+    
+    # Change the group to match the gid of user 'deployer' in the container
+    sudo chgrp 29295 /dev/shm/secret
+    
+    # Prepare the password file
+    touch /dev/shm/secret/vaultpass
+    chmod 640 /dev/shm/secret/vaultpass
+    chcon -Rt svirt_sandbox_file_t /dev/shm/secret/vaultpass
+    
+    # Populate the password from a password manager with xclip:
+    xclip -o > /dev/shm/secret/vaultpass
+
+## Provisioning
+
 Once you have all of this configured, running the actual installation is simple.
+To launch a shell in a temporary container for deploying environment 'oso-devel-singlemaster', run
 
-e when using containerized deployment:
+    cd ~/git/poc/playbooks/openshift
+    sudo ./run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm/secret/vaultpass
 
-    $ cd /opt/deployment/pouta-ansible-cluster/playbooks/openshift
+Run site.yml to provision infrastructure on OpenStack and install OpenShift on this infrastructure:
+    
+    cd poc/playbooks/openshift
+    ansible-playbook site.yml
 
-Extract site specific data under /dev/shm/<cluster-name> by running 
+Single step alternative for non-interactive runs:
 
-    $ SKIP_DYNAMIC_INVENTORY=1 ansible-playbook initialize_ramdisk.yml \
-    -i <path-to-environment-dir> \
-    --ask-vault-pass
+    cd ~/git/poc/playbooks/openshift
+    sudo ./run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm/secret/vaultpass \
+      ./run_playbook.bash site.yml
 
-Source the extracted OpenStack credentials:
+## Deprovisioning
 
-    $ source /dev/shm/<cluster-name>/openrc.sh
+From the deployment container, run
 
-Then run heat_site.yml to provision infrastructure on OpenStack and install
-OpenShift on this infrastructure:
-
-    $ time ansible-playbook heat_site.yml \
-    -i <path-to-environment-dir> \
-    --ask-vault-pass
-
-## Further actions
-
-- open security groups
-- start testing and learning
-- get a proper certificate for master
-
-### Deprovisioning
-
-    $ ansible-playbook heat_deprovision.yml \
-    -i <inventory directory/file> \
-    --ask-vault-pass
+    cd poc/playbooks/openshift
+    ansible-playbook deprovision.yml
 
 Partial deletes are not currently supported, as the Heat stack update process
 does not nicely replace missing resources. This may be possible in newer
