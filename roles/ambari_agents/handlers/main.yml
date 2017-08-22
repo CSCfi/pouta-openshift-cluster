@@ -1,4 +1,0 @@
----
-
-- name: restart ambari-agent
-  service: name=ambari-agent state=restarted
