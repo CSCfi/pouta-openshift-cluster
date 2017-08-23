@@ -94,49 +94,13 @@
         floating_ip_address: "{{ bastion_public_ip }}"
     - name: Refresh dynamic inventory
       meta: refresh_inventory
-    - set_fact: ssh_config_file={{lookup('env', 'HOME')}}/.ssh/config
-    - name: create $HOME/.ssh/
-      file:
-        dest: "{{lookup('env', 'HOME')}}/.ssh/"
-        state: directory
-    - name: add cluster common ssh config
-      blockinfile:
-        create: yes
-        mode: '0600'
-        dest: "{{ ssh_config_file }}"
-        block: |
-          Host {% for host in groups.all %}{{ host }} {{ hostvars[host].ansible_ssh_host }} {% endfor %}{{ bastion_public_ip }}
-            User cloud-user
-            ForwardAgent no
-            GSSAPIAuthentication no
-            StrictHostKeyChecking no
-            UserKnownHostsFile /dev/null
-            IdentityFile /dev/shm/{{ cluster_name }}/id_rsa
-        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }} common"
-    - name: add ssh config entry for bastion
-      blockinfile:
-        create: yes
-        mode: '0600'
-        dest: "{{ ssh_config_file }}"
-        block: |
-          Host {{ item }} {{ hostvars[item].ansible_ssh_host }} {{ bastion_public_ip }}
-              HostName {{ bastion_public_ip }}
-        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
-      with_items: "{{ groups.bastion }}"
-    - name: add ssh config entries for hosts
-      blockinfile:
-        create: yes
-        mode: '0600'
-        dest: "{{ ssh_config_file }}"
-        block: |
-          Host {{ item }} {{ hostvars[item].ansible_ssh_host }}
-              ProxyCommand ssh -q cloud-user@{{ bastion_public_ip }} nc %h %p
-              HostName {{ hostvars[item].ansible_ssh_host }}
-        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ cluster_name }}: {{ item }}"
-      when:
-      - item != "localhost"
-      - item != cluster_name + "-bastion"
-      with_items: "{{ groups.all }}"
+
+- include: generate_ssh_config.yml
+
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  tasks:
     - name: Wait for connectivity on port 22 on the bastion
       wait_for:
         host: "{{ bastion_public_ip }}"
