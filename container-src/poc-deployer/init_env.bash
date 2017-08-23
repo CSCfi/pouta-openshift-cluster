@@ -18,7 +18,7 @@ fi
 export ANSIBLE_INVENTORY=$HOME/openshift-environments/$env_name
 echo "ANSIBLE_INVENTORY set to $ANSIBLE_INVENTORY"
 
-pushd /opt/deployment/poc/playbooks/openshift
+pushd /opt/deployment/poc/playbooks
 
 SKIP_DYNAMIC_INVENTORY=1 ansible-playbook initialize_ramdisk.yml
 

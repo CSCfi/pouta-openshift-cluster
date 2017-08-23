@@ -8,7 +8,7 @@ POC_BRANCH=$(cd /opt/deployment/poc && parse_git_branch)
 OE_BRANCH=$(cd /opt/deployment/openshift-environments && parse_git_branch)
 OA_BRANCH=$(cd /opt/deployment/openshift-ansible && parse_git_branch)
 
-pushd /opt/deployment/poc/playbooks/openshift
+pushd /opt/deployment/poc/playbooks
 
 echo
 echo "-------------------------------------------------------------------------------"

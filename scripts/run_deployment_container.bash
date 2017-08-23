@@ -4,6 +4,8 @@
 # playbooks/openshift directory. Use sudo if that is required for
 # launching docker.
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 print_usage_and_exit()
 {
     me=$(basename "$0")
@@ -43,8 +45,8 @@ if [ ! -z "$docker_opts" ]; then
 fi
 
 docker run -it --rm --name poc-deployer \
-    -v $PWD/../../../openshift-environments:/opt/deployment/openshift-environments:ro \
-    -v $PWD/../../../poc:/opt/deployment/poc:ro \
-    -v $PWD/../../../openshift-ansible:/opt/deployment/openshift-ansible:ro \
+    -v $SCRIPT_DIR/../../openshift-environments:/opt/deployment/openshift-environments:ro \
+    -v $SCRIPT_DIR/../../poc:/opt/deployment/poc:ro \
+    -v $SCRIPT_DIR/../../openshift-ansible:/opt/deployment/openshift-ansible:ro \
     $docker_opts \
     cscfi/poc-deployer $*
