@@ -1,4 +1,0 @@
----
-
-- name: restart_dnsmasq
-  service: name=dnsmasq state=restarted

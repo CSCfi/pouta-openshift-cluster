@@ -18,6 +18,13 @@
     - bzip2
     - iptables
     - iptables-services
+    - NetworkManager
+
+- name: start NetworkManager
+  service:
+    name: NetworkManager
+    state: started
+    enabled: yes
 
 - name: stop cloud-init managing /etc/hosts
   lineinfile:

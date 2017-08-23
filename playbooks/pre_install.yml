@@ -10,13 +10,6 @@
     - base
     - cluster_common
 
-- name: Configure cluster masters
-  hosts:
-    - masters
-  become: yes
-  roles:
-    - cluster_master
-
 - name: Configure openshift VMs
   hosts:
     - masters
