@@ -40,7 +40,7 @@ docker_image_build_job:
   stage: docker_build
   script:
     - cd container-src/poc-deployer
-    - docker pull $IMAGE_TAG
+    - docker pull $IMAGE_TAG || true
     - docker build --pull=true --cache-from $IMAGE_TAG -t $IMAGE_TAG .
     - docker push $IMAGE_TAG
 
