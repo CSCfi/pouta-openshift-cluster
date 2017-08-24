@@ -17,7 +17,7 @@ print_usage_and_exit()
 
 docker_opts=''
 
-while getopts "p:P:e:i:h" opt; do
+while getopts "p:P:e:ih" opt; do
     case $opt in
         p)
             passfile=$OPTARG
