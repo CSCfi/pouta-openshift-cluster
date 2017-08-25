@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
+set -e
+
 env_name=$ENV_NAME
 
 echo "Initializing environment for $env_name"
+echo
 
 if [ ! -e /dev/shm/secret/vaultpass ]; then
     mkdir -p /dev/shm/secret/
@@ -19,11 +22,20 @@ fi
 
 export ANSIBLE_INVENTORY=$HOME/openshift-environments/$env_name
 echo "ANSIBLE_INVENTORY set to $ANSIBLE_INVENTORY"
+echo
 
 pushd /opt/deployment/poc/playbooks
 
+echo "Initializing ramdisk contents"
+echo
 SKIP_DYNAMIC_INVENTORY=1 ansible-playbook initialize_ramdisk.yml
+source /dev/shm/$env_name/openrc.sh
+
+echo
+echo "Generating ssh config entries"
+echo
+ansible-playbook generate_ssh_config.yml
 
 popd
 
-source /dev/shm/$env_name/openrc.sh
+set +e

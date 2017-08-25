@@ -179,6 +179,9 @@ Single step alternative for non-interactive runs:
     sudo scripts/run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm/secret/vaultpass \
       ./run_playbook.bash site.yml
 
+If you run the above from terminal locally while developing, add '-i' option to attach the terminal 
+to the process for the color coding and ctrl+c to work.
+
 ## Deprovisioning
 
 From the deployment container, run
