@@ -23,5 +23,7 @@ echo "--------------------------------------------------------------------------
 echo
 
 ansible-playbook $*
+result=$?
 
 popd
+exit $result
