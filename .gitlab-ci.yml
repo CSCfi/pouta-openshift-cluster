@@ -6,6 +6,7 @@ variables:
   OPENSHIFT_ANSIBLE_REPO_URL: https://github.com/openshift/openshift-ansible.git
   OPENSHIFT_ANSIBLE_VERSION: release-1.5
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
+  GITHUB_MIRROR: git@github.com:CSCfi/pouta-openshift-cluster.git
 
 services:
   - docker:dind
@@ -30,11 +31,11 @@ before_script:
   - 'stat -t ../openshift-ansible || (git clone $OPENSHIFT_ANSIBLE_REPO_URL ../openshift-ansible)'
   - '(cd ../openshift-ansible; git checkout $OPENSHIFT_ANSIBLE_VERSION; git pull)'
 
-
 stages:
   - docker_build
   - ci_env_deploy
   - cleanup
+  - mirroring
 
 docker_image_build_job:
   stage: docker_build
@@ -60,3 +61,9 @@ deprovision_ci_openshift_job:
     - docker tag $IMAGE_TAG cscfi/poc-deployer
     - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash deprovision.yml
   when: always
+
+mirror_to_github:
+  stage: mirroring
+  script:
+    - 'stat -t ../poc-bare || (git clone --bare $CI_REPOSITORY_URL ../poc-bare)'
+    - '(cd ../poc-bare; git push --mirror $GITHUB_MIRROR)'
