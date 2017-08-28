@@ -31,10 +31,16 @@ echo
 SKIP_DYNAMIC_INVENTORY=1 ansible-playbook initialize_ramdisk.yml
 source /dev/shm/$env_name/openrc.sh
 
-echo
-echo "Generating ssh config entries"
-echo
-ansible-playbook generate_ssh_config.yml
+if [ "$SKIP_SSH_CONFIG" == "1" ]; then
+    echo
+    echo "Skipping ssh config generation"
+    echo
+else
+    echo
+    echo "Generating ssh config entries"
+    echo
+    ansible-playbook generate_ssh_config.yml
+fi
 
 popd
 

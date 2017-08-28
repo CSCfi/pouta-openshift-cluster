@@ -10,14 +10,21 @@ print_usage_and_exit()
 {
     me=$(basename "$0")
     echo
-    echo "Usage: $me [-p vault_password_file] [-P vault_password_file] [-e environment_name] [-i] [container arguments]"
-    echo
+    echo "Usage: $me [options] [container arguments]"
+    echo "  where options are"
+    echo "  -p vault_password_file  path to file containing vault password"
+    echo "                          mounted to /dev/shm/secrets/vaultpass"
+    echo "  -P vault_password_file  path to file containing vault password"
+    echo "                          exposed as environment variable VAULT_PASS"
+    echo "  -e environment_name     environment to deploy"
+    echo "  -i                      open interactive session"
+    echo "  -s                      skip ssh config generation (useful when debugging broken installations)"
     exit 1
 }
 
 docker_opts=''
 
-while getopts "p:P:e:ih" opt; do
+while getopts "p:P:e:ish" opt; do
     case $opt in
         p)
             passfile=$OPTARG
@@ -41,6 +48,9 @@ while getopts "p:P:e:ih" opt; do
         i)
             docker_opts="$docker_opts -it"
             ;;
+        s)
+            docker_opts="$docker_opts -e SKIP_SSH_CONFIG=1"
+            ;;
         *)
             print_usage_and_exit
             ;;
@@ -48,7 +58,7 @@ while getopts "p:P:e:ih" opt; do
 done
 shift "$((OPTIND-1))"
 
-docker run --rm --name poc-deployer \
+docker run --rm \
     -v $SCRIPT_DIR/../../openshift-environments:/opt/deployment/openshift-environments:ro \
     -v $SCRIPT_DIR/../../poc:/opt/deployment/poc:ro \
     -v $SCRIPT_DIR/../../openshift-ansible:/opt/deployment/openshift-ansible:ro \
