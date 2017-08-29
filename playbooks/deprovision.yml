@@ -9,19 +9,17 @@
       register: ssh_result
       failed_when: false
       delegate_to: localhost
-    - name: remove registry and its PVC
+
+    # We remove PVCs and delete all pods to release the PVCs so that
+    # Cinder driver can detach PVs from node hosts
+    - name: remove PVCs from projects
       shell: "{{ item }}"
       with_items:
-      - oc delete dc docker-registry -n default
-      - oc delete pvc registry -n default
+      - oc get namespace -o jsonpath='{.items[*].metadata.name}' | xargs -n 1 oc delete pvc --all -n
+      - oc get namespace -o jsonpath='{.items[*].metadata.name}' | xargs -n 1 oc delete pod --all -n
       failed_when: false
       when: ssh_result.stdout.find('success') == 0
-    - name: remove projects, this will release the PVCs too
-      shell: "{{ item }}"
-      with_items:
-      - oc delete projects --all
-      failed_when: false
-      when: ssh_result.stdout.find('success') == 0
+
     - name: wait for recycler pod to remove the dynamically provisioned PVs
       shell: oc get pv -o jsonpath='{.items[*].spec.cinder}'
       register: result
@@ -36,27 +34,32 @@
   connection: local
   tasks:
     - include: environment_context.yml
+
     - name: Disassociate floating IP from bastion
       os_floating_ip:
         server: "{{ cluster_name }}-bastion"
         floating_ip_address: "{{ bastion_public_ip }}"
         state: absent
+
     - name: Disassociate floating IP from first LB node
       os_floating_ip:
         server: "{{ cluster_name }}-lb-0"
         floating_ip_address: "{{ openshift_public_ip }}"
         state: absent
       when: master_vm_group_size > 1
+
     - name: Disassociate floating IP from first master node
       os_floating_ip:
         server: "{{ cluster_name }}-master-0"
         floating_ip_address: "{{ openshift_public_ip }}"
         state: absent
       when: master_vm_group_size == 1
+
     - name: Delete public key
       os_keypair:
         state: absent
         name: "{{ cluster_name }}"
+
     - name: Delete stack {{ cluster_name }}
       os_stack:
         name: "{{ cluster_name }}"

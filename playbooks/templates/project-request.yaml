@@ -4,7 +4,7 @@ metadata:
   creationTimestamp: null
   name: project-request-default
 objects:
-- apiVersion: v1
+- apiVersion: project.openshift.io/v1
   kind: Project
   metadata:
     annotations:
@@ -15,7 +15,7 @@ objects:
     name: ${PROJECT_NAME}
   spec: {}
   status: {}
-- apiVersion: v1
+- apiVersion: authorization.openshift.io/v1
   groupNames:
   - system:serviceaccounts:${PROJECT_NAME}
   kind: RoleBinding
@@ -29,7 +29,7 @@ objects:
   - kind: SystemGroup
     name: system:serviceaccounts:${PROJECT_NAME}
   userNames: null
-- apiVersion: v1
+- apiVersion: authorization.openshift.io/v1
   groupNames: null
   kind: RoleBinding
   metadata:
@@ -43,7 +43,7 @@ objects:
     name: builder
   userNames:
   - system:serviceaccount:${PROJECT_NAME}:builder
-- apiVersion: v1
+- apiVersion: authorization.openshift.io/v1
   groupNames: null
   kind: RoleBinding
   metadata:
@@ -57,7 +57,7 @@ objects:
     name: deployer
   userNames:
   - system:serviceaccount:${PROJECT_NAME}:deployer
-- apiVersion: v1
+- apiVersion: authorization.openshift.io/v1
   groupNames: null
   kind: RoleBinding
   metadata:
