@@ -4,7 +4,7 @@ image: docker:latest
 variables:
   DOCKER_DRIVER: overlay
   OPENSHIFT_ANSIBLE_REPO_URL: https://github.com/openshift/openshift-ansible.git
-  OPENSHIFT_ANSIBLE_VERSION: release-1.5
+  OPENSHIFT_ANSIBLE_VERSION: release-3.6
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
   GITHUB_MIRROR: git@github.com:CSCfi/pouta-openshift-cluster.git
 
