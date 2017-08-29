@@ -65,5 +65,7 @@ deprovision_ci_openshift_job:
 mirror_to_github:
   stage: mirroring
   script:
-    - 'stat -t ../poc-bare || (git clone --bare $CI_REPOSITORY_URL ../poc-bare)'
-    - '(cd ../poc-bare; git push --mirror $GITHUB_MIRROR)'
+    - rm -rf ../poc-bare
+    - git clone --bare $CI_REPOSITORY_URL ../poc-bare
+    - cd ../poc-bare
+    - git push --mirror $GITHUB_MIRROR
