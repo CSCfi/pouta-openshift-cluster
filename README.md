@@ -147,13 +147,13 @@ initialization playbook does not have to ask it interactively:
     mkdir -p /dev/shm/secret
     chmod 750 /dev/shm/secret
     
-    # Change the group to match the gid of user 'deployer' in the container
-    sudo chgrp 29295 /dev/shm/secret
-    
     # Prepare the password file
     touch /dev/shm/secret/vaultpass
     chmod 640 /dev/shm/secret/vaultpass
     chcon -Rt svirt_sandbox_file_t /dev/shm/secret/vaultpass
+
+    # Change the group to match the gid of user 'deployer' in the container
+    sudo chgrp -R 29295 /dev/shm/secret
     
     # Populate the password from a password manager with xclip:
     xclip -o > /dev/shm/secret/vaultpass
