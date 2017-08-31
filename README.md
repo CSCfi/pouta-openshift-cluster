@@ -25,6 +25,7 @@ is done with the official [installer playbook](https://github.com/openshift/open
     - security groups
     - networks 
 - uses OpenStack Heat for provisioning
+- optionally updates existing Heat stacks
 
 ### pre_install.yml
 
@@ -181,6 +182,14 @@ Single step alternative for non-interactive runs:
 
 If you run the above from terminal locally while developing, add '-i' option to attach the terminal 
 to the process for the color coding and ctrl+c to work.
+
+### Heat stack updates
+
+If you want to update an existing Heat stack to, say, add more minion nodes,
+then you can set allow_heat_stack_update to true when running the provisioning
+or the site playbooks:
+
+    ansible-playbook site.yml -e "allow_heat_stack_update=true"
 
 ## Deprovisioning
 
