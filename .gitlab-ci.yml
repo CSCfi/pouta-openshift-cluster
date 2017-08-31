@@ -77,6 +77,8 @@ deploy_qa_openshift_job:
     name: oso-qa
   only:
     - master
+  tags:
+    - oso-qa
 
 mirror_to_github:
   stage: mirroring
