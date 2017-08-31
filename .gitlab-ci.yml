@@ -36,6 +36,7 @@ stages:
   - docker_build
   - ci_env_deploy
   - cleanup
+  - qa_env_deploy
   - mirroring
 
 docker_image_build_job:
@@ -53,6 +54,8 @@ deploy_ci_openshift_job:
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
     - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
+  environment:
+    name: oso-ci
 
 deprovision_ci_openshift_job:
   stage: cleanup
@@ -62,6 +65,18 @@ deprovision_ci_openshift_job:
     - docker tag $IMAGE_TAG cscfi/poc-deployer
     - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash deprovision.yml
   when: always
+
+deploy_qa_openshift_job:
+  stage: qa_env_deploy
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
+  environment:
+    name: oso-qa
+  only:
+    - master
 
 mirror_to_github:
   stage: mirroring
