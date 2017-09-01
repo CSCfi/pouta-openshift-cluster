@@ -24,7 +24,7 @@ export ANSIBLE_INVENTORY=$HOME/openshift-environments/$env_name
 echo "ANSIBLE_INVENTORY set to $ANSIBLE_INVENTORY"
 echo
 
-pushd /opt/deployment/poc/playbooks
+pushd /opt/deployment/poc/playbooks > /dev/null
 
 echo "Initializing ramdisk contents"
 echo
@@ -42,6 +42,6 @@ else
     ansible-playbook generate_ssh_config.yml
 fi
 
-popd
+popd > /dev/null
 
 set +e
