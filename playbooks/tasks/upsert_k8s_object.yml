@@ -6,7 +6,7 @@
 
 - name: instantiate template to object definition ({{ name }})
   template:
-    src: "{{ template_base_name }}.j2"
+    src: "{{ template_sub_dir|default('') }}{{ template_base_name }}"
     dest: "{{ upsert_mktemp.stdout }}/{{ template_base_name }}"
   changed_when: no
 

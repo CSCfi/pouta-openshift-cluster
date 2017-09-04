@@ -51,7 +51,7 @@
       include: tasks/upsert_k8s_object.yml
       vars:
         namespace: monitoring-infra
-        template_base_name: secret.yaml
+        template_base_name: secret.yaml.j2
         name: monitoring-token
         labels: {}
         data:
@@ -62,7 +62,7 @@
       include: tasks/upsert_k8s_object.yml
       vars:
         namespace: monitoring-infra
-        template_base_name: pvc.yaml
+        template_base_name: pvc.yaml.j2
         name: prometheus-data
         labels: {}
         size: "10Gi"
@@ -72,14 +72,14 @@
       include: tasks/upsert_k8s_object.yml
       vars:
         namespace: monitoring-infra
-        template_base_name: prometheus.yaml
+        template_base_name: prometheus.yaml.j2
         name: prometheus
 
     - name: upsert grafana data volume
       include: tasks/upsert_k8s_object.yml
       vars:
         namespace: monitoring-infra
-        template_base_name: pvc.yaml
+        template_base_name: pvc.yaml.j2
         name: grafana-data
         labels: {}
         size: "1Gi"
@@ -89,7 +89,7 @@
       include: tasks/upsert_k8s_object.yml
       vars:
         namespace: monitoring-infra
-        template_base_name: grafana.yaml
+        template_base_name: grafana.yaml.j2
         name: grafana
 
 - name: Populate grafana
