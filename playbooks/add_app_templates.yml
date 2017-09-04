@@ -1,0 +1,19 @@
+# Add extra app templates and related objects that can be used by end users to
+# the OpenShift namespace.
+---
+- name: Add app templates
+  hosts: masters[0]
+  tasks:
+    - include: environment_context.yml
+
+    - name: upsert app templates
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: openshift
+        template_base_name: "{{ item | basename }}"
+        template_sub_dir: "apps/"
+        name: "{{ item | basename }}"
+        labels: {}
+        upsert_replace: true
+      with_fileglob:
+        - "templates/apps/*"

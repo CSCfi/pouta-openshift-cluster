@@ -111,3 +111,7 @@
 - name: Deploy monitoring
   include: deploy_monitoring.yml
   when: deploy_monitoring|default(false)|bool
+
+- name: Deploy app templates and related objects
+  include: add_app_templates.yml
+  when: add_app_templates|default(true)|bool
