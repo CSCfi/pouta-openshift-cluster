@@ -1,0 +1,13 @@
+---
+- name: Create local fork of public cloud image
+  hosts: localhost
+  gather_facts: no
+  connection: local
+  tasks:
+    - include: environment_context.yml
+
+    - name: fork image if needed
+      include: tasks/fork_public_image.yml
+      vars:
+        forked_image_name: "{{ default_base_image }}"
+        public_image_name: "{{ default_public_image }}"
