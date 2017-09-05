@@ -35,8 +35,10 @@ before_script:
 stages:
   - docker_build
   - ci_env_deploy
+  - ci_run_tests
   - cleanup
   - qa_env_deploy
+  - qa_run_tests
   - mirroring
 
 docker_image_build_job:
@@ -57,6 +59,14 @@ deploy_ci_openshift_job:
   environment:
     name: oso-ci
 
+run_ci_tests_openshift_job:
+  stage: ci_run_tests
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash ../tests/site.yml
+
 deprovision_ci_openshift_job:
   stage: cleanup
   script:
@@ -75,6 +85,18 @@ deploy_qa_openshift_job:
     - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
   environment:
     name: oso-qa
+  only:
+    - master
+  tags:
+    - oso-qa
+
+run_qa_tests_openshift_job:
+  stage: qa_run_tests
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash ../tests/site.yml
   only:
     - master
   tags:
