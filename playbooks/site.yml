@@ -1,4 +1,7 @@
 ---
+- name: Fork public image to be used as base image for VMs if needed
+  include: fork_public_image.yml
+
 - name: Provision resources for OpenShift using Heat
   include: provision.yml
 
