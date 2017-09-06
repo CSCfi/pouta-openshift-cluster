@@ -9,13 +9,26 @@ fi
 YELLOW="$(tput setaf 3)"
 GREEN="$(tput setaf 2)"
 RESET="$(tput sgr0)"
+
 parse_git_branch() {
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/*\(.*\)/\1/' -e 's/ //g'
 }
+
 short_cwd() {
     echo $PWD | sed -e "s|^$HOME|~|g"
 }
 
-export PS1='${YELLOW}${ENV_NAME}${RESET} $(short_cwd)${GREEN}$(parse_git_branch)${RESET}> '
+branch-info() {
+    for repo in openshift-ansible openshift-environments poc; do
+        branch=$(cd /opt/deployment/$repo && parse_git_branch)
+        printf "%23s: %s\n" $repo $branch
+    done
+}
+
+export PS1='${YELLOW}${ENV_NAME}${RESET} $(short_cwd) ${GREEN}($(parse_git_branch))${RESET} > '
 
 source init_env.bash
+
+echo
+branch-info
+echo
