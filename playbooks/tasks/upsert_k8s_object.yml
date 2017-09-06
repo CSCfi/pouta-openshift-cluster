@@ -1,35 +1,37 @@
 ---
-- name: create temp directory for templating ({{ name }})
-  command: mktemp -d
-  register: upsert_mktemp
-  changed_when: False
+- block:
+  - name: create temp directory for templating ({{ name }})
+    command: mktemp -d
+    register: upsert_mktemp
+    changed_when: False
 
-- name: instantiate template to object definition ({{ name }})
-  template:
-    src: "{{ template_sub_dir|default('') }}{{ template_base_name }}"
-    dest: "{{ upsert_mktemp.stdout }}/{{ template_base_name }}"
-  changed_when: no
+  - name: instantiate template to object definition ({{ name }})
+    template:
+      src: "{{ template_sub_dir|default('') }}{{ template_base_name }}"
+      dest: "{{ upsert_mktemp.stdout }}/{{ template_base_name }}"
+    changed_when: no
 
-- name: check if object has been created already ({{ name }})
-  shell: oc get -n {{ namespace }} -f {{ upsert_mktemp.stdout }}/{{ template_base_name }}
-  register: upsert_existing_object
-  changed_when: false
-  failed_when: false
+  - name: check if object has been created already ({{ name }})
+    shell: oc get -n {{ namespace }} -f {{ upsert_mktemp.stdout }}/{{ template_base_name }}
+    register: upsert_existing_object
+    changed_when: false
+    failed_when: false
 
-- name: create object ({{ name }})
-  shell: oc create -n {{ namespace }} -f {{ upsert_mktemp.stdout }}/{{ template_base_name }}
-  when: upsert_existing_object.stdout_lines | length == 0
+  - name: create object ({{ name }})
+    shell: oc create -n {{ namespace }} -f {{ upsert_mktemp.stdout }}/{{ template_base_name }}
+    when: upsert_existing_object.stdout_lines | length == 0
 
-- name: replace object ({{ name }})
-  shell: oc replace -n {{ namespace }} -f {{ upsert_mktemp.stdout }}/{{ template_base_name }}
-  when:
-  - upsert_existing_object.stdout_lines | length > 0
-  - upsert_replace|default(true)|bool
-  failed_when: false
+  - name: replace object ({{ name }})
+    shell: oc replace -n {{ namespace }} -f {{ upsert_mktemp.stdout }}/{{ template_base_name }}
+    when:
+    - upsert_existing_object.stdout_lines | length > 0
+    - upsert_replace|default(true)|bool
+    failed_when: false
 
-- name: delete temp directory
-  file:
-    path: upsert_mktemp.stdout
-    state: absent
-  changed_when: False
-  check_mode: no
+  always:
+  - name: delete temp directory
+    file:
+      path: "{{ upsert_mktemp.stdout }}"
+      state: absent
+    changed_when: False
+    check_mode: no
