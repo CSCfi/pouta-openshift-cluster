@@ -1,0 +1,6 @@
+---
+- name: open port 4730 for gearman
+  lineinfile:
+    line: "-A INPUT -p tcp -m tcp -s {{ monitoring_server_ip }} --dport 4730 -j ACCEPT"
+    dest: /etc/sysconfig/iptables
+    insertbefore: '^-A INPUT'
