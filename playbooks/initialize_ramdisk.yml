@@ -26,7 +26,7 @@
         dest: "/dev/shm/{{ cluster_name }}/ext_ca.crt"
         content: "{{ tls_ca_certificate }}"
         mode: 0600
-    - name: Create OpenStack openrc.sh
+    - name: Create OpenStack openrc.sh for Keystone API v3
       copy:
         dest: "/dev/shm/{{ cluster_name }}/openrc.sh"
         mode: 0600
@@ -39,6 +39,19 @@
           export OS_TENANT_ID="{{ openshift_cloudprovider_openstack_tenant_id }}"
           export OS_TENANT_NAME="{{ openshift_cloudprovider_openstack_tenant_name }}"
           export OS_REGION="{{ openshift_cloudprovider_openstack_region }}"
+      when: openshift_cloudprovider_openstack_auth_url|regex_search('(/v3)')
+    - name: Create OpenStack openrc.sh for Keystone API v2.0
+      copy:
+        dest: "/dev/shm/{{ cluster_name }}/openrc.sh"
+        mode: 0600
+        content: |
+          export OS_AUTH_URL="{{ openshift_cloudprovider_openstack_auth_url }}"
+          export OS_USERNAME="{{ openshift_cloudprovider_openstack_username }}"
+          export OS_PASSWORD="{{ openshift_cloudprovider_openstack_password }}"
+          export OS_TENANT_ID="{{ openshift_cloudprovider_openstack_tenant_id }}"
+          export OS_TENANT_NAME="{{ openshift_cloudprovider_openstack_tenant_name }}"
+          export OS_REGION="{{ openshift_cloudprovider_openstack_region }}"
+      when: openshift_cloudprovider_openstack_auth_url|regex_search('(/v2.0)')
     - name: Copy ssh private key
       copy:
         dest: "/dev/shm/{{ cluster_name }}/id_rsa"
