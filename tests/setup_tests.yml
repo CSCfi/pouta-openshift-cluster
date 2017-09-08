@@ -1,0 +1,20 @@
+- name: Setup tests on masters
+  hosts: masters
+  tasks:
+    - name: install bats
+      yum:
+        name: bats
+        state: present
+
+    - name: create test directory
+      file:
+        dest: /tmp/poc/tests
+        state: directory
+        owner: cloud-user
+
+    - name: copy test files
+      copy:
+        src: files/
+        dest: /tmp/poc/tests/
+        owner: cloud-user
+        mode: "0755"

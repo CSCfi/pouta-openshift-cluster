@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: scanner
+spec:
+  parallelism: 1
+  template:
+    metadata:
+      name: scanner
+    spec:
+      containers:
+      - name: scanner
+        image: docker-registry.default.svc:5000/__PROJECT_NAME__/scanner
+        command:
+        - nmap
+        - -Pn
+        - -i/opt/scanner/targets
+        - -T4
+        - --min-parallelism=10
+        - --max-rtt-timeout=50ms
+        - --max-retries=0
+        volumeMounts:
+        - name: scanner-config
+          mountPath: /opt/scanner
+
+      restartPolicy: Never
+      volumes:
+      - name: scanner-config
+        configMap:
+          name: scanner-config
+          items:
+          - key: targets
+            path: targets
