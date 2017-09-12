@@ -25,6 +25,7 @@
           parameters:
             env_name: "{{ cluster_name }}"
             bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
+            bastion_allow_ports: "{{ bastion_allow_ports }}"
             secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
             openshift_network_cidr: "{{ openshift_network_cidr }}"
             openshift_router: "{{ openshift_router }}"
@@ -68,6 +69,7 @@
           parameters:
             env_name: "{{ cluster_name }}"
             bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
+            bastion_allow_ports: "{{ bastion_allow_ports }}"
             secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
             openshift_network_cidr: "{{ openshift_network_cidr }}"
             openshift_router: "{{ openshift_router }}"

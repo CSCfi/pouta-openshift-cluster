@@ -24,6 +24,7 @@
 - name: authorize ssh with the downloaded key
   authorized_key: user=cloud-user key="{{ lookup('file', '/tmp/ansible/public_keys/{{ item }}/.ssh/id_rsa.pub') }}"
   with_items: "{{ groups.masters }}"
+  when: inventory_hostname not in groups.bastion
 
 - name: set SELinux state
   selinux: state="{{ selinux_state }}"
