@@ -1,0 +1,167 @@
+---
+heat_template_version: newton
+
+description: >
+  Provision base resources for multimaster OpenShift stacks
+
+parameters:
+  env_name:
+    description: >
+      A name for the OpenShift environment to be used for naming resources.
+    type: string
+    default: { get_param: 'OS::stack_name' }
+  key_name:
+    description: >
+      The name of the SSH key to initially insert into VMs.
+    type: string
+  bastion_allow_ports:
+    description: >
+      Which ports to allow connections to on the bastion host.
+    type: comma_delimited_list
+    default: '22'
+  bastion_allow_cidrs:
+    description: >
+      The CIDRs of the networks where the bastion host should be accessible
+      from.
+    type: comma_delimited_list
+    default: '0.0.0.0/0'
+  openshift_network_cidr:
+    description: >
+      What CIDR to use for the dedicated cluster network.
+    type: string
+    default: '192.168.10.0/24'
+  openshift_network_dns_servers:
+    description: >
+      What DNS servers to use in the dedicated cluster network.
+    type: comma_delimited_list
+    default: '193.166.4.24,193.166.4.25'
+  openshift_router:
+    description: >
+      The router to which the dedicated cluster network should be connected to
+      for external access.
+    type: string
+  bastion_vm_image:
+    description: >
+      What OpenStack image to use for the bastion host.
+    type: string
+  bastion_vm_flavor:
+    description: >
+      What OpenStack flavor to use for the bastion host.
+    type: string
+  bastion_cloud_config:
+    description: >
+      Configuration for cloud-init for the bastion host.
+    type: json
+
+resources:
+
+  #-----------------------------------
+  # Security groups
+  #-----------------------------------
+
+  secgroup_bastion:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: "bastion"
+      rules:
+        repeat:
+          for_each:
+            <%port%>: { get_param: bastion_allow_ports }
+            <%cidr%>: { get_param: bastion_allow_cidrs }
+          template:
+            protocol: tcp
+            port_range_min: <%port%>
+            port_range_max: <%port%>
+            remote_ip_prefix: <%cidr%>
+
+  secgroup_common:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: "common"
+      rules:
+        - remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_bastion }
+        - remote_mode: remote_group_id
+          protocol: icmp
+        - remote_mode: remote_group_id
+          protocol: udp
+          port_range_min: 4789
+          port_range_max: 4789
+
+  secgroup_infra:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: infra
+      rules:
+        - remote_mode: remote_group_id
+
+  #-----------------------------------
+  # Dedicated cluster network
+  #-----------------------------------
+
+  openshift_network:
+    type: OS::Neutron::Net
+    properties:
+       name:
+         str_replace:
+            template: env_name-name_suffix
+            params:
+              env_name: { get_param: env_name }
+              name_suffix: "network"
+
+  openshift_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: openshift_network }
+      cidr: { get_param: openshift_network_cidr }
+      dns_nameservers: { get_param: openshift_network_dns_servers }
+
+  openshift_subnet_router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: { get_param: openshift_router }
+      subnet: { get_resource: openshift_subnet }
+
+
+  #-----------------------------------
+  # Bastion VM
+  #-----------------------------------
+
+  bastion_cloud_config_resource:
+    type: "OS::Heat::CloudConfig"
+    properties:
+      cloud_config: { get_param: bastion_cloud_config }
+
+  bastion:
+    type: OS::Nova::Server
+    depends_on: "openshift_subnet"
+    properties:
+      name:
+        str_replace:
+          template: env_name-name_suffix
+          params:
+            env_name: { get_param: env_name }
+            name_suffix: "bastion"
+      image: { get_param: bastion_vm_image }
+      networks:
+        - network: { get_resource: openshift_network }
+      flavor: { get_param: bastion_vm_flavor }
+      metadata:
+        group: "bastion"
+        stack: { get_param: env_name }
+      key_name: { get_param: key_name }
+      security_groups:
+        - { get_resource: secgroup_bastion }
+      user_data: { get_resource: bastion_cloud_config_resource }
+      user_data_format: RAW
+
+
+outputs:
+  resources:
+    value:
+      secgroup_id_common: { get_resource: secgroup_common }
+      secgroup_id_infra: { get_resource: secgroup_infra }
+      network_id: { get_resource: openshift_network }

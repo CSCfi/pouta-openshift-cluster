@@ -1,0 +1,83 @@
+---
+heat_template_version: newton
+
+description: >
+  Provision etcd cluster VMs for OpenShift
+
+parameters:
+  env_name:
+    description: >
+      A name for the OpenShift environment to be used for naming resources.
+    type: string
+    default: { get_param: 'OS::stack_name' }
+  key_name:
+    description: >
+      The name of the SSH key to initially insert into VMs.
+    type: string
+  etcd_vm_group_size:
+    description: >
+      How many virtual machines to put in the etcd cluster.
+    type: number
+  etcd_vm_image:
+    description: >
+      What OpenStack image to use for etcd hosts.
+    type: string
+  etcd_vm_flavor:
+    description: >
+      What OpenStack flavor to use for etcd hosts.
+    type: string
+  secgroup_id_infra:
+    description: >
+      Id of infra security group
+    type: string
+  secgroup_id_common:
+    description: >
+      Id of common security group
+    type: string
+  network_id:
+    description: >
+      Id of cluster network
+    type: string
+
+resources:
+
+  #-----------------------------------
+  # Nova server groups (anti-affinity)
+  #-----------------------------------
+
+  etcd:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: etcd
+      policies: ['anti-affinity']
+
+  #-----------------------------------
+  # VM resource groups
+  #-----------------------------------
+
+  etcd_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: etcd_vm_group_size }
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "etcd"
+          image: { get_param: etcd_vm_image }
+          networks:
+            - network: { get_param: network_id }
+          flavor: { get_param: etcd_vm_flavor }
+          metadata:
+            group: "etcd"
+            stack: { get_param: env_name }
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_param: secgroup_id_infra }
+            - { get_param: secgroup_id_common }
+          scheduler_hints:
+            group: { get_resource: etcd }

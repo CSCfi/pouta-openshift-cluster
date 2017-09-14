@@ -1,5 +1,5 @@
 ---
-heat_template_version: 2015-10-15
+heat_template_version: newton
 
 description: >
   Provision resources for OpenShift.
@@ -10,64 +10,14 @@ parameters:
       A name for the OpenShift environment to be used for naming resources.
     type: string
     default: { get_param: 'OS::stack_name' }
-  bastion_allow_ports:
-    description: >
-      Which ports to allow connections to on the bastion host.
-    type: comma_delimited_list
-    default: '22'
-  bastion_allow_cidrs:
-    description: >
-      The CIDRs of the networks where the bastion host should be accessible
-      from.
-    type: comma_delimited_list
-    default: '0.0.0.0/0'
-  secgroup_ext_access_rules:
-    description: >
-      Rules for the security group that governs external access to the system.
-    type: json
-  openshift_network_cidr:
-    description: >
-      What CIDR to use for the dedicated cluster network.
-    type: string
-    default: '192.168.10.0/24'
-  openshift_network_dns_servers:
-    description: >
-      What DNS servers to use in the dedicated cluster network.
-    type: comma_delimited_list
-    default: '193.166.4.24,193.166.4.25'
-  openshift_router:
-    description: >
-      The router to which the dedicated cluster network should be connected to
-      for external access.
-    type: string
   key_name:
     description: >
       The name of the SSH key to initially insert into VMs.
     type: string
-  bastion_vm_image:
+  secgroup_ext_access_rules:
     description: >
-      What OpenStack image to use for the bastion host.
-    type: string
-  bastion_vm_flavor:
-    description: >
-      What OpenStack flavor to use for the bastion host.
-    type: string
-  bastion_cloud_config:
-    description: >
-      Configuration for cloud-init for the bastion host.
+      Rules for the security group that governs external access to the system.
     type: json
-  etcd_vm_group_size:
-    description: >
-      How many virtual machines to put in the etcd cluster.
-    type: number
-  etcd_vm_image:
-    description: >
-      What OpenStack image to use for etcd hosts.
-    type: string
-  etcd_vm_flavor:
-    description: >
-      What OpenStack flavor to use for etcd hosts.
-    type: string
   lb_vm_group_size:
     description: >
       How many load balancer VMs to start.
@@ -124,51 +74,24 @@ parameters:
     description: >
       What OpenStack flavor to use for SSD node VMs.
     type: string
+  secgroup_id_infra:
+    description: >
+      Id of infra security group
+    type: string
+  secgroup_id_common:
+    description: >
+      Id of common security group
+    type: string
+  network_id:
+    description: >
+      Id of cluster network
+    type: string
 
 resources:
 
   #-----------------------------------
   # Security groups
   #-----------------------------------
-
-  secgroup_bastion:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: "bastion"
-      rules:
-        repeat:
-          for_each:
-            <%port%>: { get_param: bastion_allow_ports }
-            <%cidr%>: { get_param: bastion_allow_cidrs }
-          template:
-            protocol: tcp
-            port_range_min: <%port%>
-            port_range_max: <%port%>
-            remote_ip_prefix: <%cidr%>
-
-  secgroup_common:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: "common"
-      rules:
-        - remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_bastion }
-        - remote_mode: remote_group_id
-          protocol: icmp
-        - remote_mode: remote_group_id
-          protocol: udp
-          port_range_min: 4789
-          port_range_max: 4789
-
-  secgroup_infra:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: infra
-      rules:
-        - remote_mode: remote_group_id
 
   secgroup_lb:
     type: secgroup.yaml
@@ -180,17 +103,17 @@ resources:
           port_range_min: 80
           port_range_max: 80
           remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
         - protocol: tcp
           port_range_min: 443
           port_range_max: 443
           remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
         - protocol: tcp
           port_range_min: 8443
           port_range_max: 8443
           remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
 
   secgroup_ext_access:
     type: secgroup.yaml
@@ -205,21 +128,21 @@ resources:
       env_name: { get_param: env_name }
       name_suffix: master
       rules:
-       - protocol: udp
-         port_range_min: 53
-         port_range_max: 53
-         remote_mode: remote_group_id
-         remote_group_id: { get_resource: secgroup_common }
-       - protocol: tcp
-         port_range_min: 53
-         port_range_max: 53
-         remote_mode: remote_group_id
-         remote_group_id: { get_resource: secgroup_common }
-       - protocol: tcp
-         port_range_min: 8443
-         port_range_max: 8443
-         remote_mode: remote_group_id
-         remote_group_id: { get_resource: secgroup_common }
+        - protocol: udp
+          port_range_min: 53
+          port_range_max: 53
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+        - protocol: tcp
+          port_range_min: 53
+          port_range_max: 53
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+        - protocol: tcp
+          port_range_min: 8443
+          port_range_max: 8443
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
 
   secgroup_nfs:
     type: secgroup.yaml
@@ -228,7 +151,7 @@ resources:
       name_suffix: nfs
       rules:
         - remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
           protocol: tcp
           port_range_min: 2049
           port_range_max: 2049
@@ -240,76 +163,11 @@ resources:
       name_suffix: node
       rules:
         - remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_infra }
-
-  #-----------------------------------
-  # Dedicated cluster network
-  #-----------------------------------
-
-  openshift_network:
-    type: OS::Neutron::Net
-    properties:
-       name:
-         str_replace:
-            template: env_name-name_suffix
-            params:
-              env_name: { get_param: env_name }
-              name_suffix: "network"
-
-  openshift_subnet:
-    type: OS::Neutron::Subnet
-    properties:
-      network_id: { get_resource: openshift_network }
-      cidr: { get_param: openshift_network_cidr }
-      dns_nameservers: { get_param: openshift_network_dns_servers }
-
-  openshift_subnet_router_interface:
-    type: OS::Neutron::RouterInterface
-    properties:
-      router: { get_param: openshift_router }
-      subnet: { get_resource: openshift_subnet }
-
-  #-----------------------------------
-  # Bastion VM
-  #-----------------------------------
-
-  bastion_cloud_config_resource:
-    type: "OS::Heat::CloudConfig"
-    properties:
-      cloud_config: { get_param: bastion_cloud_config }
-
-  bastion:
-    type: OS::Nova::Server
-    depends_on: "openshift_subnet"
-    properties:
-      name:
-        str_replace:
-          template: env_name-name_suffix
-          params:
-            env_name: { get_param: env_name }
-            name_suffix: "bastion"
-      image: { get_param: bastion_vm_image }
-      networks:
-        - network: { get_resource: openshift_network }
-      flavor: { get_param: bastion_vm_flavor }
-      metadata:
-        group: "bastion"
-        stack: { get_param: env_name }
-      key_name: { get_param: key_name }
-      security_groups:
-        - { get_resource: secgroup_bastion }
-      user_data: { get_resource: bastion_cloud_config_resource }
-      user_data_format: RAW
+          remote_group_id: { get_param: secgroup_id_infra }
 
   #-----------------------------------
   # Nova server groups (anti-affinity)
   #-----------------------------------
-
-  etcd:
-    type: OS::Nova::ServerGroup
-    properties:
-      name: etcd
-      policies: ['anti-affinity']
 
   lb:
     type: OS::Nova::ServerGroup
@@ -339,37 +197,8 @@ resources:
   # VM resource groups
   #-----------------------------------
 
-  etcd_vm_group:
-    type: OS::Heat::ResourceGroup
-    depends_on: "openshift_subnet"
-    properties:
-      count: { get_param: etcd_vm_group_size }
-      resource_def:
-        type: OS::Nova::Server
-        properties:
-          name:
-            str_replace:
-              template: env_name-name_suffix-%index%
-              params:
-                env_name: { get_param: env_name }
-                name_suffix: "etcd"
-          image: { get_param: etcd_vm_image }
-          networks:
-            - network: { get_resource: openshift_network }
-          flavor: { get_param: etcd_vm_flavor }
-          metadata:
-            group: "etcd"
-            stack: { get_param: env_name }
-          key_name: { get_param: key_name }
-          security_groups:
-            - { get_resource: secgroup_infra }
-            - { get_resource: secgroup_common }
-          scheduler_hints:
-            group: { get_resource: etcd }
-
   lb_vm_group:
     type: OS::Heat::ResourceGroup
-    depends_on: "openshift_subnet"
     properties:
       count: { get_param: lb_vm_group_size }
       resource_def:
@@ -383,7 +212,7 @@ resources:
                 name_suffix: "lb"
           image: { get_param: lb_vm_image }
           networks:
-            - network: { get_resource: openshift_network }
+            - network: { get_param: network_id }
           flavor: { get_param: lb_vm_flavor }
           metadata:
             groups: "lb,node_lbs"
@@ -392,8 +221,8 @@ resources:
           security_groups:
             - { get_resource: secgroup_lb }
             - { get_resource: secgroup_ext_access }
-            - { get_resource: secgroup_infra }
-            - { get_resource: secgroup_common }
+            - { get_param: secgroup_id_infra }
+            - { get_param: secgroup_id_common }
           scheduler_hints:
             group: { get_resource: lb }
           vol_name_suffix: "data"
@@ -401,7 +230,6 @@ resources:
 
   nfs_vm_group:
     type: OS::Heat::ResourceGroup
-    depends_on: "openshift_subnet"
     properties:
       count: { get_param: nfs_vm_group_size }
       resource_def:
@@ -415,7 +243,7 @@ resources:
                 name_suffix: "nfs"
           image: { get_param: nfs_vm_image }
           networks:
-            - network: { get_resource: openshift_network }
+            - network: { get_param: network_id }
           flavor: { get_param: nfs_vm_flavor }
           metadata:
             group: "nfsservers"
@@ -423,8 +251,8 @@ resources:
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_nfs }
-            - { get_resource: secgroup_infra }
-            - { get_resource: secgroup_common }
+            - { get_param: secgroup_id_infra }
+            - { get_param: secgroup_id_common }
           scheduler_hints:
             group: { get_resource: nfs }
           vol_name_suffix: "pvol"
@@ -432,7 +260,6 @@ resources:
 
   master_vm_group:
     type: OS::Heat::ResourceGroup
-    depends_on: "openshift_subnet"
     properties:
       count: { get_param: master_vm_group_size }
       resource_def:
@@ -446,22 +273,21 @@ resources:
                 name_suffix: "master"
           image: { get_param: master_vm_image }
           networks:
-            - network: { get_resource: openshift_network }
+            - network: { get_param: network_id }
           flavor: { get_param: master_vm_flavor }
           metadata:
             groups: "masters,node_masters"
             stack: { get_param: env_name }
           key_name: { get_param: key_name }
           security_groups:
-            - { get_resource: secgroup_infra }
-            - { get_resource: secgroup_common }
+            - { get_param: secgroup_id_infra }
+            - { get_param: secgroup_id_common }
             - { get_resource: secgroup_master }
           scheduler_hints:
             group: { get_resource: master }
 
   node_ssd_vm_group:
     type: OS::Heat::ResourceGroup
-    depends_on: "openshift_subnet"
     properties:
       count: { get_param: node_ssd_vm_group_size }
       resource_def:
@@ -475,7 +301,7 @@ resources:
                 name_suffix: "ssd"
           image: { get_param: node_ssd_vm_image }
           networks:
-            - network: { get_resource: openshift_network }
+            - network: { get_param: network_id }
           flavor: { get_param: node_ssd_vm_flavor }
           metadata:
             group: "ssd"
@@ -483,8 +309,6 @@ resources:
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_node }
-            - { get_resource: secgroup_common }
+            - { get_param: secgroup_id_common }
           scheduler_hints:
             group: { get_resource: node_ssd }
-
-outputs:
