@@ -35,6 +35,18 @@ parameters:
       What DNS servers to use in the dedicated cluster network.
     type: comma_delimited_list
     default: '193.166.4.24,193.166.4.25'
+  openshift_network_allocation_pool_start:
+    description: >
+      Start address for the allocation pool of the OpenShift network. The
+      allocation pool is for dynamically reserved IP addresses.
+    type: string
+    default: '192.168.10.60'
+  openshift_network_allocation_pool_end:
+    description: >
+      End address for the allocation pool of the OpenShift network. The
+      allocation pool is for dynamically reserved IP addresses.
+    type: string
+    default: '192.168.10.254'
   openshift_router:
     description: >
       The router to which the dedicated cluster network should be connected to
@@ -84,6 +96,27 @@ parameters:
     description: >
       What OpenStack flavor to use for SSD node VMs.
     type: string
+  network_prefix:
+    description: >
+      The first two (/16) or three (/24) octets of a private network CIDR.
+    type: string
+    default: "192.168"
+  master_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the master
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "3."
+  node_ssd_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the SSD minion
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "5."
 
 resources:
 
@@ -222,6 +255,9 @@ resources:
       network_id: { get_resource: openshift_network }
       cidr: { get_param: openshift_network_cidr }
       dns_nameservers: { get_param: openshift_network_dns_servers }
+      allocation_pools:
+        - start: { get_param: openshift_network_allocation_pool_start }
+          end: { get_param: openshift_network_allocation_pool_end }
 
   openshift_subnet_router_interface:
     type: OS::Neutron::RouterInterface
@@ -286,6 +322,7 @@ resources:
     depends_on: "openshift_subnet"
     properties:
       count: { get_param: master_vm_group_size }
+      removal_policies: [{'resource_list': ['0']}]
       resource_def:
         type: vm_with_volume.yaml
         properties:
@@ -298,6 +335,12 @@ resources:
           image: { get_param: master_vm_image }
           networks:
             - network: { get_resource: openshift_network }
+              fixed_ip:
+                str_replace:
+                  template: network_prefix.master_resource_group_identifier%index%
+                  params:
+                    network_prefix: { get_param: network_prefix }
+                    master_resource_group_identifier: { get_param: master_resource_group_identifier }
           flavor: { get_param: master_vm_flavor }
           metadata:
             groups: "masters,node_masters,nfsservers"
@@ -319,6 +362,7 @@ resources:
     depends_on: "openshift_subnet"
     properties:
       count: { get_param: node_ssd_vm_group_size }
+      removal_policies: [{'resource_list': ['0']}]
       resource_def:
         type: OS::Nova::Server
         properties:
@@ -331,6 +375,12 @@ resources:
           image: { get_param: node_ssd_vm_image }
           networks:
             - network: { get_resource: openshift_network }
+              fixed_ip:
+                str_replace:
+                  template: network_prefix.node_ssd_resource_group_identifier%index%
+                  params:
+                    network_prefix: { get_param: network_prefix }
+                    node_ssd_resource_group_identifier: { get_param: node_ssd_resource_group_identifier }
           flavor: { get_param: node_ssd_vm_flavor }
           metadata:
             group: "ssd"
