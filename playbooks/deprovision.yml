@@ -86,3 +86,8 @@
         name: "{{ cluster_name }}-base"
         state: absent
         wait: yes
+
+    - name: Remove inventory cache
+      file:
+        path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
+        state: absent
