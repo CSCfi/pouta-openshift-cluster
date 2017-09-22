@@ -50,10 +50,15 @@
             bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
             bastion_allow_ports: "{{ bastion_allow_ports }}"
             openshift_network_cidr: "{{ openshift_network_cidr }}"
+            openshift_network_allocation_pool_start: "{{ openshift_network_allocation_pool_start }}"
+            openshift_network_allocation_pool_end: "{{ openshift_network_allocation_pool_end }}"
             openshift_router: "{{ openshift_router }}"
             bastion_vm_image: "{{ bastion_vm_image }}"
             bastion_vm_flavor: "{{ bastion_vm_flavor }}"
             bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
+        when:
+          - stack_output_base.stderr.find('Stack not found') != -1 or
+            allow_heat_stack_update|default(false)|bool
 
       - name: Build/update the OpenShift Heat stack (etcd)
         os_stack:
@@ -70,6 +75,8 @@
             secgroup_id_common: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_common }}"
             secgroup_id_infra: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_infra }}"
             network_id: "{{ heat_stack_base.stack.outputs[0].output_value.network_id}}"
+            network_prefix: "{{ openshift_network_prefix }}"
+            resource_group_identifier: "{{ etcd_resource_group_identifier }}"
         when:
           - stack_output_etcd.stderr.find('Stack not found') != -1 or
             allow_heat_stack_update_etcd|default(false)|bool
@@ -101,10 +108,19 @@
             secgroup_id_common: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_common }}"
             secgroup_id_infra: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_infra }}"
             network_id: "{{ heat_stack_base.stack.outputs[0].output_value.network_id}}"
+            network_prefix: "{{ openshift_network_prefix }}"
+            lb_resource_group_identifier: "{{ lb_resource_group_identifier }}"
+            master_resource_group_identifier: "{{ master_resource_group_identifier }}"
+            nfs_resource_group_identifier: "{{ nfs_resource_group_identifier }}"
+            node_ssd_resource_group_identifier: "{{ node_ssd_resource_group_identifier }}"
+
+        when:
+          - stack_output_cluster.stderr.find('Stack not found') != -1 or
+            allow_heat_stack_update|default(false)|bool
 
       - name: Associate floating IP with first LB node
         os_floating_ip:
-          server: "{{ cluster_name }}-lb-0"
+          server: "{{ cluster_name }}-lb-1"
           floating_ip_address: "{{ openshift_public_ip }}"
 
       - name: Associate floating IP with bastion host
@@ -116,9 +132,12 @@
         meta: refresh_inventory
 
       when:
-      - master_vm_group_size > 1
-      - stack_output_base.stderr.find('Stack not found') != -1 or
-        allow_heat_stack_update|default(false)|bool
+        - master_vm_group_size > 1
+        - allow_heat_stack_update|default(false)|bool or
+          allow_heat_stack_update_etcd|default(false)|bool or
+          stack_output_base.stderr.find('Stack not found') != -1 or
+          stack_output_etcd.stderr.find('Stack not found') != -1 or
+          stack_output_cluster.stderr.find('Stack not found') != -1
 
     - block:
       - name: Build/update the OpenShift Heat stack (minimal)
@@ -146,10 +165,15 @@
             node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
             node_ssd_vm_image: "{{ node_ssd_vm_image }}"
             node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
+            openshift_network_allocation_pool_start: "{{ openshift_network_allocation_pool_start }}"
+            openshift_network_allocation_pool_end: "{{ openshift_network_allocation_pool_end }}"
+            network_prefix: "{{ openshift_network_prefix }}"
+            master_resource_group_identifier: "{{ master_resource_group_identifier }}"
+            node_ssd_resource_group_identifier: "{{ node_ssd_resource_group_identifier }}"
 
       - name: Associate floating IP with master
         os_floating_ip:
-          server: "{{ cluster_name }}-master-0"
+          server: "{{ cluster_name }}-master-1"
           floating_ip_address: "{{ openshift_public_ip }}"
       when:
       - master_vm_group_size == 1

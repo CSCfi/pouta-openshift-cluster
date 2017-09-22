@@ -86,6 +86,43 @@ parameters:
     description: >
       Id of cluster network
     type: string
+  network_prefix:
+    description: >
+      The first two (/16) or three (/24) octets of a private network CIDR.
+    type: string
+    default: "192.168"
+  lb_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the LB
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "2."
+  master_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the master
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "3."
+  nfs_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the NFS
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "4."
+  node_ssd_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the SSD minion
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "5."
 
 resources:
 
@@ -201,6 +238,7 @@ resources:
     type: OS::Heat::ResourceGroup
     properties:
       count: { get_param: lb_vm_group_size }
+      removal_policies: [{'resource_list': ['0']}]
       resource_def:
         type: vm_with_volume.yaml
         properties:
@@ -213,6 +251,12 @@ resources:
           image: { get_param: lb_vm_image }
           networks:
             - network: { get_param: network_id }
+              fixed_ip:
+                str_replace:
+                  template: network_prefix.lb_resource_group_identifier%index%
+                  params:
+                    network_prefix: { get_param: network_prefix }
+                    lb_resource_group_identifier: { get_param: lb_resource_group_identifier }
           flavor: { get_param: lb_vm_flavor }
           metadata:
             groups: "lb,node_lbs"
@@ -232,6 +276,7 @@ resources:
     type: OS::Heat::ResourceGroup
     properties:
       count: { get_param: nfs_vm_group_size }
+      removal_policies: [{'resource_list': ['0']}]
       resource_def:
         type: vm_with_volume.yaml
         properties:
@@ -244,6 +289,12 @@ resources:
           image: { get_param: nfs_vm_image }
           networks:
             - network: { get_param: network_id }
+              fixed_ip:
+                str_replace:
+                  template: network_prefix.nfs_resource_group_identifier%index%
+                  params:
+                    network_prefix: { get_param: network_prefix }
+                    nfs_resource_group_identifier: { get_param: nfs_resource_group_identifier }
           flavor: { get_param: nfs_vm_flavor }
           metadata:
             group: "nfsservers"
@@ -262,6 +313,7 @@ resources:
     type: OS::Heat::ResourceGroup
     properties:
       count: { get_param: master_vm_group_size }
+      removal_policies: [{'resource_list': ['0']}]
       resource_def:
         type: OS::Nova::Server
         properties:
@@ -274,6 +326,12 @@ resources:
           image: { get_param: master_vm_image }
           networks:
             - network: { get_param: network_id }
+              fixed_ip:
+                str_replace:
+                  template: network_prefix.master_resource_group_identifier%index%
+                  params:
+                    network_prefix: { get_param: network_prefix }
+                    master_resource_group_identifier: { get_param: master_resource_group_identifier }
           flavor: { get_param: master_vm_flavor }
           metadata:
             groups: "masters,node_masters"
@@ -290,6 +348,7 @@ resources:
     type: OS::Heat::ResourceGroup
     properties:
       count: { get_param: node_ssd_vm_group_size }
+      removal_policies: [{'resource_list': ['0']}]
       resource_def:
         type: OS::Nova::Server
         properties:
@@ -302,6 +361,12 @@ resources:
           image: { get_param: node_ssd_vm_image }
           networks:
             - network: { get_param: network_id }
+              fixed_ip:
+                str_replace:
+                  template: network_prefix.node_ssd_resource_group_identifier%index%
+                  params:
+                    network_prefix: { get_param: network_prefix }
+                    node_ssd_resource_group_identifier: { get_param: node_ssd_resource_group_identifier }
           flavor: { get_param: node_ssd_vm_flavor }
           metadata:
             group: "ssd"

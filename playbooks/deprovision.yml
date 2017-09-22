@@ -5,7 +5,7 @@
   hosts: masters[0]
   tasks:
     - name: Check if SSH works
-      shell: ssh -o ConnectTimeout=10 {{ cluster_name }}-master-0 'echo success'
+      shell: ssh -o ConnectTimeout=10 {{ cluster_name }}-master-1 'echo success'
       register: ssh_result
       failed_when: false
       delegate_to: localhost
@@ -44,7 +44,7 @@
 
     - name: Disassociate floating IP from first LB node
       os_floating_ip:
-        server: "{{ cluster_name }}-lb-0"
+        server: "{{ cluster_name }}-lb-1"
         floating_ip_address: "{{ openshift_public_ip }}"
         state: absent
       failed_when: false
@@ -52,7 +52,7 @@
 
     - name: Disassociate floating IP from first master node
       os_floating_ip:
-        server: "{{ cluster_name }}-master-0"
+        server: "{{ cluster_name }}-master-1"
         floating_ip_address: "{{ openshift_public_ip }}"
         state: absent
       failed_when: false

@@ -35,6 +35,18 @@ parameters:
       What DNS servers to use in the dedicated cluster network.
     type: comma_delimited_list
     default: '193.166.4.24,193.166.4.25'
+  openshift_network_allocation_pool_start:
+    description: >
+      Start address for the allocation pool of the OpenShift network. The
+      allocation pool is for dynamically reserved IP addresses.
+    type: string
+    default: '192.168.10.60'
+  openshift_network_allocation_pool_end:
+    description: >
+      End address for the allocation pool of the OpenShift network. The
+      allocation pool is for dynamically reserved IP addresses.
+    type: string
+    default: '192.168.10.254'
   openshift_router:
     description: >
       The router to which the dedicated cluster network should be connected to
@@ -118,6 +130,9 @@ resources:
       network_id: { get_resource: openshift_network }
       cidr: { get_param: openshift_network_cidr }
       dns_nameservers: { get_param: openshift_network_dns_servers }
+      allocation_pools:
+        - start: { get_param: openshift_network_allocation_pool_start }
+          end: { get_param: openshift_network_allocation_pool_end }
 
   openshift_subnet_router_interface:
     type: OS::Neutron::RouterInterface
