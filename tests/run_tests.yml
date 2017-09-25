@@ -1,8 +1,9 @@
-- name: Run tests on masters
-  hosts: masters
+---
+- name: Run tests on bastion
+  hosts: bastion
   tasks:
     - name: run bats tests
-      shell: './bats_wrapper.bash bats_test*'
+      shell: './generic_bats_wrapper.bash bats_test_bastion*'
       args:
         chdir: '/tmp/poc/tests'
       register: test_output
@@ -10,3 +11,14 @@
     - name: print test output in human readable format
       debug: var=test_output.stdout.split('\n')
 
+- name: Run OpenShift tests on masters
+  hosts: masters
+  tasks:
+    - name: run bats tests
+      shell: './openshift_bats_wrapper.bash bats_test_master*'
+      args:
+        chdir: '/tmp/poc/tests'
+      register: test_output
+
+    - name: print test output in human readable format
+      debug: var=test_output.stdout.split('\n')
