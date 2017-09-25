@@ -1,2 +1,55 @@
 ---
+
+- name: Check if hosts have been installed previously
+  hosts: all
+  become: yes
+  tasks:
+    - name: check for installation flag file
+      stat:
+        path: "/var/lib/POC_INSTALLED"
+      register: check_poc_installed
+
+    - name: set poc_installed
+      set_fact:
+        poc_installed: True
+      when: check_poc_installed.stat.exists
+
+- name: Collect install flags and populate new_nodes
+  hosts: localhost
+  tasks:
+    - set_fact:
+        poc_installed_masters: []
+
+    - name: populate poc_installed_masters
+      set_fact:
+        poc_installed_masters: "{{ poc_installed_masters + [item] }}"
+      when: hostvars[item].poc_installed|default(False)|bool
+      with_items: "{{ groups['masters'] }}"
+
+    - name: populate new_nodes -group for scaleup
+      add_host:
+        name: "{{ item }}"
+        groups: new_nodes
+      when:
+        - hostvars[item].poc_installed|default(False)|bool == False
+        - allow_openshift_node_scaleup | default(False) | bool
+      with_items: "{{ groups['nodes'] }}"
+
 - include: "{{ os_ansible_path|default('../../openshift-ansible') }}/playbooks/byo/config.yml"
+  when: hostvars['localhost']['poc_installed_masters']|length == 0
+
+- include: "{{ os_ansible_path|default('../../openshift-ansible') }}/playbooks/byo/openshift-node/scaleup.yml"
+  when:
+    - allow_openshift_node_scaleup | default(False) | bool
+    - groups['new_nodes']|default([])|length>0
+
+- name: Set install flags
+  hosts: all
+  become: yes
+  tasks:
+    - name: set installation flag
+      copy:
+        dest: "/var/lib/POC_INSTALLED"
+        content: |
+          POC installed this host at {{ ansible_date_time['iso8601'] }}
+      when: poc_installed | default(False) | bool == False
