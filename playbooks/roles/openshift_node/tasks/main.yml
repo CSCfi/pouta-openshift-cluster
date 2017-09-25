@@ -6,6 +6,13 @@
   when: "'masters' not in group_names"
   notify: restart iptables
 
+- name: allow connections to the NRPE daemons in the cluster
+  lineinfile:
+    dest: /etc/sysconfig/iptables
+    insertbefore: '^-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT'
+    line: '-A INPUT -s 192.168.0.0/16 -d 192.168.0.0/16 -p tcp -m tcp --dport 5666 -j ACCEPT'
+  notify: restart iptables
+
 - name: block access from SDN to internal network (INPUT)
   blockinfile:
     dest: /etc/sysconfig/iptables
