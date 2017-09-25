@@ -128,6 +128,11 @@
           server: "{{ cluster_name }}-bastion"
           floating_ip_address: "{{ bastion_public_ip }}"
 
+      - name: Remove inventory cache
+        file:
+          path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
+          state: absent
+
       - name: Refresh dynamic inventory
         meta: refresh_inventory
 
@@ -175,6 +180,12 @@
         os_floating_ip:
           server: "{{ cluster_name }}-master-1"
           floating_ip_address: "{{ openshift_public_ip }}"
+
+      - name: Remove inventory cache
+        file:
+          path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
+          state: absent
+
       when:
       - master_vm_group_size == 1
       - stack_output_minimal.stderr.find('Stack not found') != -1 or
