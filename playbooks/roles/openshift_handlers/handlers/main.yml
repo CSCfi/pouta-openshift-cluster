@@ -1,0 +1,26 @@
+---
+- name: restart master
+  systemd: name=origin-master state=restarted
+  when: install_type == 'singlemaster'
+  notify: verify API server
+
+- name: restart master api
+  systemd: name=origin-master-api state=restarted
+  when: install_type == 'multimaster'
+  notify: verify API server
+
+- name: restart master controllers
+  systemd: name=origin-master-controllers state=restarted
+  when: install_type == 'multimaster'
+
+- name: verify API server
+  command: >
+    curl --silent --tlsv1.2 --insecure
+    https://localhost:8443/healthz/ready
+  args:
+    warn: no
+  register: api_available_output
+  until: api_available_output.stdout == 'ok'
+  retries: 120
+  delay: 1
+  changed_when: false

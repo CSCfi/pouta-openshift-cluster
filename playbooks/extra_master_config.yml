@@ -1,0 +1,10 @@
+# Additional configuration for masters.
+# Currently configures:
+#  - GitHub OAuth integration
+---
+- name: Additional master configuration
+  hosts: masters
+  serial: 1
+  roles:
+    - role: openshift_auth_providers
+      when: configure_auth|default(true)|bool
