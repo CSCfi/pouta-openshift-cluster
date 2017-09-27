@@ -108,6 +108,9 @@
       - deploy_default_www_app | default(false) | bool
       - default_www_app_image is defined
 
+- name: Additional master configuration
+  include: extra_master_config.yml
+
 - name: Deploy monitoring
   include: deploy_monitoring.yml
   when: deploy_monitoring|default(false)|bool
