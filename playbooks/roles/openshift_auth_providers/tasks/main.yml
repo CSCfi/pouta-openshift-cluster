@@ -4,7 +4,7 @@
     src: "{{ openshift_master_config_file }}"
     key: oauthConfig.identityProviders
     value: |
-      - name: OpenShift account
+      - name: Local account
         login: true
         mappingMethod: add
         challenge: true
@@ -12,7 +12,7 @@
           apiVersion: v1
           file: /etc/origin/master/htpasswd
           kind: HTPasswdPasswordIdentityProvider
-      {% if deploy_github_auth | d() | bool == true %}
+      {% if deploy_github_auth | d() | bool == true -%}
       - name: GitHub
         challenge: false
         login: true
@@ -23,10 +23,22 @@
           clientID: "{{ github_oauth_client_id }}"
           clientSecret: "{{ github_oauth_client_secret }}"
           organizations:
-          {% for org in github_allowed_auth_orgs %}
+      {% for org in github_allowed_auth_orgs %}
             - {{ org }}
-          {% endfor %}
-      {% endif %}
+      {% endfor %}
+      {%- endif %}
+      {% if deploy_gitlab_auth | d() | bool == true -%}
+      - name: "{{ gitlab_oauth_provider_name }}"
+        challenge: true
+        login: true
+        mappingMethod: add
+        provider:
+          apiVersion: v1
+          kind: GitLabIdentityProvider
+          url: "{{ gitlab_url }}"
+          clientID: "{{ gitlab_oauth_client_id }}"
+          clientSecret: "{{ gitlab_oauth_client_secret }}"
+      {%- endif %}
   notify:
     - restart master
     - restart master api
