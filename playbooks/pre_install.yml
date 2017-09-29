@@ -13,7 +13,6 @@
     - etcd
     - lbs
     - nfsservers
-    - bastion
   become: yes
   roles:
     - base
@@ -23,6 +22,8 @@
   hosts: bastion
   become: yes
   roles:
+    - base
+    - cluster_common
     - bastion
     - ansible-role-mod_gearman
 
