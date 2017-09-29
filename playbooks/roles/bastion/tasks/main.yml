@@ -4,3 +4,8 @@
     line: "-A INPUT -p tcp -m tcp -s {{ monitoring_server_ip }} --dport 4730 -j ACCEPT"
     dest: /etc/sysconfig/iptables
     insertbefore: '^-A INPUT'
+
+- name: install nmap for connectivity testing
+  yum:
+    pkg: nmap
+    state: present
