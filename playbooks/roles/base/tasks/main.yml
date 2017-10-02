@@ -20,6 +20,17 @@
     - iptables-services
     - NetworkManager
 
+- name: disable kdump
+  service:
+    name: kdump
+    state: stopped
+    enabled: no
+  register: kdump_status
+
+- name: reset failed units in systemd if needed
+  command: systemctl reset-failed
+  when: kdump_status.changed
+
 - name: start NetworkManager
   service:
     name: NetworkManager
