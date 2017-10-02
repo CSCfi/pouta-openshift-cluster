@@ -1,9 +1,13 @@
 ---
-- name: open port 4730 for gearman
+- name: allow connections from the monitoring server to monitoring daemons
   lineinfile:
-    line: "-A INPUT -p tcp -m tcp -s {{ monitoring_server_ip }} --dport 4730 -j ACCEPT"
+    line: "-A INPUT -p tcp -m tcp -s {{ monitoring_server_ip }} --dport {{ item }} -j ACCEPT"
     dest: /etc/sysconfig/iptables
     insertbefore: '^-A INPUT'
+  with_items:
+    - "4730" # Gearman
+    - "5666" # NRPE
+  notify: restart iptables
 
 - name: install nmap for connectivity testing
   yum:
