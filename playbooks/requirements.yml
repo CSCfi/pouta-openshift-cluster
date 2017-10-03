@@ -7,7 +7,7 @@
 - src: https://github.com/CSCfi/ansible-role-nrpe-plugins.git
   scm: git
   path: galaxy-roles
-  version: v1.0.0
+  version: 9415e36
 
 - src: https://github.com/CSCfi/ansible-role-mod_gearman.git
   scm: git
