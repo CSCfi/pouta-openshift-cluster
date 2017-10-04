@@ -19,6 +19,7 @@
     - iptables
     - iptables-services
     - NetworkManager
+    - jq
 
 - name: disable kdump
   service:

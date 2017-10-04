@@ -2,23 +2,52 @@
 - name: Run tests on bastion
   hosts: bastion
   tasks:
-    - name: run bats tests
-      shell: './generic_bats_wrapper.bash bats_test_bastion*'
-      args:
-        chdir: '/tmp/poc/tests'
-      register: test_output
+    - block:
+        - name: run bats tests
+          shell: './generic_bats_wrapper.bash bats_test_bastion*'
+          args:
+            chdir: '/tmp/poc/tests'
+          register: test_output
+          failed_when: false
 
-    - name: print test output in human readable format
-      debug: var=test_output.stdout.split('\n')
+        - name: print test output in human readable format
+          debug: var=test_output.stdout.split('\n')
+          failed_when: test_output.rc != 0
+      always:
+        - name: cleanup test files
+          file:
+            path: /tmp/poc
+            state: absent
+          when: test_cleanup|default(true)|bool == true
 
-- name: Run OpenShift tests on masters
+- name: Run tests on masters
   hosts: masters
   tasks:
-    - name: run bats tests
-      shell: './openshift_bats_wrapper.bash bats_test_master*'
-      args:
-        chdir: '/tmp/poc/tests'
-      register: test_output
+    - block:
+        - name: run bats tests
+          shell: './generic_bats_wrapper.bash bats_test_master*'
+          args:
+            chdir: '/tmp/poc/tests'
+          register: test_output
+          failed_when: false
 
-    - name: print test output in human readable format
-      debug: var=test_output.stdout.split('\n')
+        - name: print test output in human readable format
+          debug: var=test_output.stdout.split('\n')
+          failed_when: test_output.rc != 0
+
+        - name: run bats tests from OpenShift project context
+          shell: './openshift_bats_wrapper.bash bats_test_openshift*'
+          args:
+            chdir: '/tmp/poc/tests'
+          register: test_output
+          failed_when: false
+
+        - name: print test output in human readable format
+          debug: var=test_output.stdout.split('\n')
+          failed_when: test_output.rc != 0
+      always:
+        - name: cleanup test files
+          file:
+            path: /tmp/poc
+            state: absent
+          when: test_cleanup|default(true)|bool == true
