@@ -1,0 +1,118 @@
+---
+- name: Add host(s) to etcd_backup group
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Add etcd hosts in a multimaster installation
+      add_host:
+        name: "{{ item }}"
+        groups: etcd_backup
+      with_items: "{{ groups['etcd'] }}"
+      when: install_type == 'multimaster'
+    - name: Add master host in a singlemaster installation
+      add_host:
+        name: "{{ item }}"
+        groups: etcd_backup
+      with_items: "{{ groups['masters'] }}"
+      when: install_type == 'singlemaster'
+
+- name: Ensure backup base dirs exist on bastion
+  hosts: bastion
+  gather_facts: no
+  tasks:
+    - name: ensure backup base dirs exist on bastion
+      file:
+        path: "{{ bastion_backup_base_dir }}/{{ item }}"
+        state: directory
+        owner: "{{ ansible_ssh_user }}"
+        group: "{{ ansible_ssh_user }}"
+        mode: 0750
+      with_items:
+        - "{{ groups['masters'] }}"
+        - "{{ groups['etcd_backup'] }}"
+
+- name: Backup etcd
+  hosts: etcd_backup
+  become: yes
+  gather_facts: yes
+  vars:
+    - r_etcd_common_action: "backup"
+    - r_etcd_common_backup_tag: "{{ cluster_name }}"
+    - r_etcd_common_backup_sufix_name: "/{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}"
+    - r_etcd_common_embedded_etcd: "{{ True if install_type == 'singlemaster' else False }}"
+    - etcd_backup_root: "{{ '/var/lib/origin/openshift.local.etcd' if install_type == 'singlemaster' else '/var/lib/etcd' }}"
+  roles:
+    - etcd_common
+  tasks:
+    - name: archive /etc/etcd
+      archive:
+        path: "/etc/etcd"
+        dest: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
+    - name: sync etcd backup to bastion
+      synchronize:
+        src: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}"
+        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}"
+        mode: pull
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+    - name: sync /etc/etcd archive to bastion
+      synchronize:
+        src: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
+        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/etc-etcd-{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}.tar.gz"
+        mode: pull
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+    - name: remove etcd backup from etcd host
+      file:
+        path: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}"
+        state: absent
+    - name: remove /etc/etcd backup from etcd host
+      file:
+        path: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
+        state: absent
+
+- name: Backup masters
+  hosts: masters
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: archive certs and keys
+      archive:
+        path: [ '/etc/origin/master/*.key', '/etc/origin/master/*.crt' ]
+        dest: "/etc/origin/master/certs-and-keys-{{ inventory_hostname }}.tar.gz"
+    - name: sync certs and keys to bastion
+      synchronize:
+        src: "/etc/origin/master/certs-and-keys-{{ inventory_hostname }}.tar.gz"
+        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/certs-and-keys-{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}.tar.gz"
+        mode: pull
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+- name: Clean up old backup data from bastion
+  hosts: bastion
+  gather_facts: no
+  vars:
+    - l_backup_retention_time: "{{ backup_retention_time|default('1w') }}"
+  tasks:
+    - name: get backup dirs older than {{ l_backup_retention_time }}
+      find:
+        path: "{{ bastion_backup_base_dir }}"
+        age: "{{ l_backup_retention_time }}"
+        recurse: yes
+        file_type: directory
+      register: old_backup_dirs
+    - name: remove old backup dirs
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ old_backup_dirs.files }}"
+    - name: get backup files older than {{ l_backup_retention_time }}
+      find:
+        path: "{{ bastion_backup_base_dir }}"
+        age: "{{ l_backup_retention_time }}"
+        recurse: yes
+        file_type: file
+      register: old_backup_files
+    - name: remove old backup files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ old_backup_files.files }}"

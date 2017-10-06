@@ -6,6 +6,15 @@
     - ansible-role-nrpe
     - ansible-role-nrpe-plugins
 
+- name: Configure bastion
+  hosts: bastion
+  become: yes
+  roles:
+    - base
+    - cluster_common
+    - bastion
+    - ansible-role-mod_gearman
+
 - name: Configure cluster common parts
   hosts:
     - masters
@@ -17,15 +26,6 @@
   roles:
     - base
     - cluster_common
-
-- name: Configure bastion
-  hosts: bastion
-  become: yes
-  roles:
-    - base
-    - cluster_common
-    - bastion
-    - ansible-role-mod_gearman
 
 - name: Configure openshift VMs
   hosts:
