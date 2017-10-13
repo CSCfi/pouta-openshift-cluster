@@ -1,0 +1,11 @@
+---
+- name: Set install flags
+  hosts: all
+  become: yes
+  tasks:
+    - name: set installation flag
+      copy:
+        dest: "/var/lib/POC_INSTALLED"
+        content: |
+          POC installed this host at {{ ansible_date_time['iso8601'] }}
+      when: poc_installed | default(False) | bool == False
