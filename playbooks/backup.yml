@@ -37,33 +37,42 @@
   become: yes
   gather_facts: yes
   vars:
+    - backup_time: "{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}"
     - r_etcd_common_action: "backup"
     - r_etcd_common_backup_tag: "{{ cluster_name }}"
-    - r_etcd_common_backup_sufix_name: "/{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}"
+    - r_etcd_common_backup_sufix_name: "/{{ backup_time }}"
     - r_etcd_common_embedded_etcd: "{{ True if install_type == 'singlemaster' else False }}"
     - etcd_backup_root: "{{ '/var/lib/origin/openshift.local.etcd' if install_type == 'singlemaster' else '/var/lib/etcd' }}"
   roles:
     - etcd_common
   tasks:
+    - name: archive etcd backup
+      archive:
+        path: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}"
+        dest: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}.tar.gz"
     - name: archive /etc/etcd
       archive:
         path: "/etc/etcd"
         dest: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
     - name: sync etcd backup to bastion
       synchronize:
-        src: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}"
-        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}"
+        src: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}.tar.gz"
+        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/openshift-backup-{{ cluster_name }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
     - name: sync /etc/etcd archive to bastion
       synchronize:
         src: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
-        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/etc-etcd-{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}.tar.gz"
+        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/etc-etcd-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
     - name: remove etcd backup from etcd host
       file:
         path: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}"
+        state: absent
+    - name: remove etcd backup archive from etcd host
+      file:
+        path: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}.tar.gz"
         state: absent
     - name: remove /etc/etcd backup from etcd host
       file:
@@ -74,17 +83,23 @@
   hosts: masters
   become: yes
   gather_facts: no
+  vars:
+    - backup_time: "{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}"
   tasks:
-    - name: archive certs and keys
+    - name: archive /etc/origin
       archive:
-        path: [ '/etc/origin/master/*.key', '/etc/origin/master/*.crt' ]
-        dest: "/etc/origin/master/certs-and-keys-{{ inventory_hostname }}.tar.gz"
-    - name: sync certs and keys to bastion
+        path: '/etc/origin'
+        dest: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
+    - name: sync /etc/origin archive to bastion
       synchronize:
-        src: "/etc/origin/master/certs-and-keys-{{ inventory_hostname }}.tar.gz"
-        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/certs-and-keys-{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}.tar.gz"
+        src: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
+        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/etc-origin-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+    - name: remove /etc/origin archive from master
+      file:
+        path: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
+        state: absent
 
 - name: Clean up old backup data from bastion
   hosts: bastion
