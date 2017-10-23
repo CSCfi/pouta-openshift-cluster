@@ -92,6 +92,13 @@
         template_base_name: grafana.yaml.j2
         name: grafana
 
+    - name: delete temp directory
+      file:
+        path: "{{ mktemp.stdout }}"
+        state: absent
+      changed_when: False
+      check_mode: no
+
 - name: Populate grafana
   hosts: localhost
   connection: local
@@ -145,10 +152,3 @@
         force_basic_auth: yes
         status_code: 200
         body_format: json
-
-    - name: delete temp directory
-      file:
-        path: mktemp.stdout
-        state: absent
-      changed_when: False
-      check_mode: no
