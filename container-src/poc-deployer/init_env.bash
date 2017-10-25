@@ -25,7 +25,8 @@ echo "ANSIBLE_INVENTORY set to $ANSIBLE_INVENTORY"
 echo
 
 export ANSIBLE_LIBRARY="/usr/share/ansible:\
-$HOME/openshift-ansible/roles/lib_utils/library"
+$HOME/openshift-ansible/roles/lib_utils/library:\
+$HOME/openshift-ansible/roles/lib_openshift/library"
 echo "ANSIBLE_LIBRARY set to $ANSIBLE_LIBRARY"
 
 pushd /opt/deployment/poc/playbooks > /dev/null

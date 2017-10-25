@@ -1,0 +1,107 @@
+---
+- name: Do additional Docker registry configuration
+  hosts: masters[0]
+  tasks:
+    - name: update Docker image used for the registry
+      oc_edit:
+        name: docker-registry
+        namespace: default
+        kind: dc
+        content:
+          spec.template.spec.containers[0].image: "{{ registry_docker_image }}"
+
+    - name: get certificate for registry
+      slurp:
+        src: '/etc/origin/master/registry.crt'
+      register: registry_cert_file
+
+    - name: put registry certificate content into variable
+      set_fact:
+        registry_dest_cert: "{{ registry_cert_file['content'] | b64decode }}"
+
+    - name: create a re-encrypt route with a proper cert for the registry
+      oc_route:
+        name: docker-registry-reencrypt
+        namespace: default
+        cert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
+        key_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key"
+        cacert_path: "/etc/origin/master/named_certificates/ext_ca.crt"
+        dest_cacert_content: "{{ registry_dest_cert }}"
+        service_name: "docker-registry"
+        port: "5000"
+        host: "docker-registry.{{ openshift_public_hostname }}"
+        tls_termination: "reencrypt"
+      run_once: true
+
+    - name: update registry URL in registry console
+      oc_env:
+        state: present
+        name: registry-console
+        namespace: default
+        kind: dc
+        env_vars:
+          REGISTRY_HOST: docker-registry.{{ openshift_public_hostname }}
+      run_once: true
+
+    - name: check if we already have registry-console.cert created
+      stat:
+        path: /etc/origin/master/registry-console.cert
+      register: registry_console_cert
+
+    - name: create registry console cert file with a proper cert+key
+      shell: >
+        cat /etc/origin/master/{{ openshift_public_hostname }}.crt
+        /etc/origin/master/{{ openshift_public_hostname }}.key
+        > /etc/origin/master/registry-console.cert
+      when: registry_console_cert.stat.exists == False
+
+    - name: set access rights for registry-console.cert
+      file:
+        path: /etc/origin/master/registry-console.cert
+        owner: root
+        group: root
+        mode: 0640
+
+    - name: create cert secret for registry console
+      oc_secret:
+        state: present
+        namespace: default
+        name: console-secret
+        files:
+          - name: registry-console.cert
+            path: '/etc/origin/master/registry-console.cert'
+      run_once: true
+
+    - name: add cert secret as a volume to dc/registry-console
+      oc_volume:
+        state: present
+        name: registry-console
+        namespace: default
+        kind: dc
+        mount_type: secret
+        secret_name: console-secret
+        vol_name: console-secret-vol
+        mount_path: /etc/cockpit/ws-certs.d
+      run_once: true
+
+    - name: check if registry PVC exists
+      shell: oc get pvc -n default registry
+      register: existing_registry_pv
+      changed_when: false
+      failed_when: false
+
+    - name: create and attach a persistent volume for registry
+      shell: >
+        oc volume -n default dc/docker-registry --add
+        --mount-path=/registry --overwrite
+        --name=registry-storage
+        --claim-name=registry
+        -t pvc --claim-size=200Gi
+      when: existing_registry_pv.stdout_lines | length == 0
+
+    - name: attach the existing persistent volume for registry
+      shell: >
+        oc volume -n default dc/docker-registry --add
+        --mount-path=/registry --overwrite
+        --name=registry-storage --claim-name=registry
+      when: existing_registry_pv.stdout_lines | length > 0

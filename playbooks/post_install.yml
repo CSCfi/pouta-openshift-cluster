@@ -55,20 +55,12 @@
       when: existing_storageclass.stdout_lines | length > 0
       changed_when: storageclass_template.changed
 
-    - name: check if registry PVC exists
-      shell: oc get pvc -n default registry
-      register: existing_registry_pv
-      changed_when: false
-      failed_when: false
+- name: Additional Docker registry configuration
+  include: registry_config.yml
 
-    - name: create and attach a persistent volume for registry
-      shell: oc volume -n default dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi --claim-name=registry
-      when: existing_registry_pv.stdout_lines | length == 0
-
-    - name: attach the existing persistent volume for registry
-      shell: oc volume -n default dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage --claim-name=registry
-      when: existing_registry_pv.stdout_lines | length > 0
-
+- name: Setup default www app
+  hosts: masters[0]
+  tasks:
     # block for conditionally deploying default-www-app
     - block:
       - name: check if project default-www exists
