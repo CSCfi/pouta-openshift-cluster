@@ -41,3 +41,13 @@
     line: '-A INPUT -s 192.168.0.0/16 -d 192.168.0.0/16 -p tcp -m tcp --dport 5666 -j ACCEPT'
   notify: restart iptables
   when: inventory_hostname not in groups.bastion
+
+- name: ensure /mnt is not mounted
+  mount:
+    path: '/mnt'
+    state: unmounted
+
+- name: ensure /mnt mount is not listed in fstab
+  mount:
+    path: '/mnt'
+    state: absent
