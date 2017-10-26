@@ -1,0 +1,51 @@
+---
+- name: Check if hosts have been installed previously
+  hosts: all
+  become: yes
+  tasks:
+    - name: check for installation flag file
+      stat:
+        path: "/var/lib/POC_INSTALLED"
+      register: check_poc_installed
+
+    - name: set poc_installed
+      set_fact:
+        poc_installed: True
+      when: check_poc_installed.stat.exists
+
+- name: Collect install flags and populate new_nodes
+  hosts: localhost
+  tasks:
+    - name: populate new_masters -group for scaleup and detecting new installation
+      add_host:
+        name: "{{ item }}"
+        groups: new_masters
+      when:
+        - hostvars[item].poc_installed|default(False)|bool == False
+      with_items: "{{ groups['masters']|default([]) }}"
+
+    - name: safety for first master scaleup
+      fail:
+        msg: >
+          Please set allow_first_master_scaleup to true to acknowledge that you have restored the
+          certificates from backup before running scaleup based recovery on the first master.
+      when:
+        - cluster_name + '-master-1' in groups['new_masters']|default([])
+        - groups['new_masters']|default([])|length < groups['masters']|default([])|length
+        - allow_first_master_scaleup|default(False)|bool == False
+
+    - name: populate new_etcd -group for scaleup
+      add_host:
+        name: "{{ item }}"
+        groups: new_etcd
+      when:
+        - hostvars[item].poc_installed|default(False)|bool == False
+      with_items: "{{ groups['etcd']|default([]) }}"
+
+    - name: populate new_nodes -group for scaleup
+      add_host:
+        name: "{{ item }}"
+        groups: new_nodes
+      when:
+        - hostvars[item].poc_installed|default(False)|bool == False
+      with_items: "{{ groups['nodes']|default([]) }}"

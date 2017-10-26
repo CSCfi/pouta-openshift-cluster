@@ -61,9 +61,13 @@
       changed_when: false
       failed_when: false
 
-    - name: add a persistent volume to the registry
+    - name: create and attach a persistent volume for registry
       shell: oc volume -n default dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage -t pvc --claim-size=200Gi --claim-name=registry
       when: existing_registry_pv.stdout_lines | length == 0
+
+    - name: attach the existing persistent volume for registry
+      shell: oc volume -n default dc/docker-registry --add --mount-path=/registry --overwrite --name=registry-storage --claim-name=registry
+      when: existing_registry_pv.stdout_lines | length > 0
 
     # block for conditionally deploying default-www-app
     - block:

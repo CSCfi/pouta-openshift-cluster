@@ -42,6 +42,21 @@ is done with the official [installer playbook](https://github.com/openshift/open
 - customizes the default project template
 - optionally deploys default www page and Prometheus based monitoring
 
+
+### scaleup.yml
+
+Running OpenShift Ansible scaleup playbooks for any host that does not 
+have /var/lib/POC_INSTALLED flag on them. The playbooks are
+    
+    playbooks/byo/openshift-master/scaleup.yml
+    playbooks/byo/openshift-node/scaleup.yml
+    playbooks/byo/openshift-etcd/scaleup.yml
+
+NOTE: Set flag 'allow_first_master_scaleup' to true to allow 
+replacing/recovering first master. This is a special case as the first 
+master has the files for local CA, thus you must restore /etc/origin/master 
+first from backup before configuring it with scaleup.
+
 ## Prerequisites
 
 All that is needed is 
