@@ -9,6 +9,11 @@
 #       It has not been tested in other scenarios. Use with caution.
 #
 
+if [ -z $PUBLIC_IP ]; then
+    echo "Set PUBLIC_IP before running the script"
+    sleep 1
+    exit 1
+fi
 
 set -e
 

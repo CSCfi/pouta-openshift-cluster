@@ -217,6 +217,11 @@ Partial deletes are not currently supported, as the Heat stack update process
 does not nicely replace missing resources. This may be possible in newer
 OpenStack versions.
 
+## Recovery
+
+See [docs/full_restore.md](docs/full_restore.md) and 
+[docs/recover_single_vm_failure.md](docs/recover_single_vm_failure.md) for recovering from failures.
+
 ## Security groups
 
 - common
