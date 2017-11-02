@@ -1,0 +1,89 @@
+---
+- name: Copy etcd tarballs
+  hosts: etcd
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: list the backup contents (openshift-backup)
+      find:
+        paths: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}"
+        patterns: "openshift-backup*"
+      register: openshift_backup_tarballs
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: find out the latest file (openshift-backup)
+      set_fact:
+        latest_openshift_backup_tarball: "{{ (openshift_backup_tarballs.files | sort(attribute='mtime') | last).path }}"
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: sync backup from bastion to etcd (openshift-backup)
+      synchronize:
+        src: "{{ latest_openshift_backup_tarball }}"
+        dest: "/tmp/openshift-backup-latest.tar.gz"
+        mode: push
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: list the backup contents (etc-etcd)
+      find:
+        paths: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}"
+        patterns: "etc-etcd*"
+      register: etc_tarballs
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: find out the latest file (etc-etcd)
+      set_fact:
+        latest_etc_etcd_tarball: "{{ (etc_tarballs.files | sort(attribute='mtime') | last).path }}"
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: sync backup from bastion to etcd (etc-etcd)
+      synchronize:
+        src: "{{ latest_etc_etcd_tarball }}"
+        dest: "/tmp/etc-etcd-latest.tar.gz"
+        mode: push
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+- name: Copy master tarballs
+  hosts: masters
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: list the backup contents (etc-origin)
+      find:
+        paths: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}"
+        patterns: "etc-origin*"
+      register: etc_tarballs
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: find out the latest file (etc-origin)
+      set_fact:
+        latest_etc_tarball: "{{ (etc_tarballs.files | sort(attribute='mtime') | last).path }}"
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: sync backup from bastion to etcd (etc-origin)
+      synchronize:
+        src: "{{ latest_etc_tarball }}"
+        dest: "/tmp/etc-origin-latest.tar.gz"
+        mode: push
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+- name: Untar etc backups (etcd)
+  hosts: etcd
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: untar etc backup
+      unarchive:
+        src: /tmp/etc-etcd-latest.tar.gz
+        dest: /etc
+        remote_src: yes
+
+- name: Untar etc backups (masters)
+  hosts: masters
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: untar etc backup
+      unarchive:
+        src: /tmp/etc-origin-latest.tar.gz
+        dest: /etc
+        remote_src: yes

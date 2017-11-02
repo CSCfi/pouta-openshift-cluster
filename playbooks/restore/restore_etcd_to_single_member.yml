@@ -1,0 +1,51 @@
+---
+- name: Untar etc data on etcd-master-1
+  hosts: etcd[0]
+  become: yes
+  tasks:
+    - name: untar etc backup
+      shell: |
+        tar xvf /tmp/openshift-backup-latest.tar.gz -C /tmp
+        mv /var/lib/etcd /var/lib/etcd.orig
+        mv /tmp/openshift-backup-*/* /var/lib/etcd
+        chcon -R --reference /var/lib/etcd.orig /var/lib/etcd
+        chown -R etcd.etcd /var/lib/etcd
+
+    - name: modify the systemd unit to start a new, single host cluster
+      shell: |
+        sed -i -e '/ExecStart/s/$/  --force-new-cluster/' /etc/systemd/system/etcd_container.service
+        systemctl daemon-reload
+        systemctl show etcd_container.service --property ExecStart --no-pager | grep force-new-cluster
+        systemctl start etcd_container
+        sleep 20
+
+    - name: check that it works
+      shell: >
+        etcdctl -endpoints https://{{ ansible_hostname }}:2379
+          --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key cluster-health
+
+    - name: update the peer address
+      shell: >
+        local_id=$(etcdctl -endpoints https://{{ ansible_hostname }}:2379
+          --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key member list |
+          cut -f 1 -d ":"
+        );
+        etcdctl -endpoints https://{{ ansible_hostname }}:2379
+          --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key
+          member update $local_id https://{{ ansible_default_ipv4.address }}:2380
+        ;
+        etcdctl -endpoints https://{{ ansible_hostname }}:2379
+          --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key member list
+
+    - name: remove the modifications from systemd unit
+      shell: |
+        sed -i -e '/ExecStart/s/  --force-new-cluster//' /etc/systemd/system/etcd_container.service
+        systemctl daemon-reload
+        systemctl show etcd_container.service --property ExecStart --no-pager | grep force-new-cluster
+        systemctl restart etcd_container
+        sleep 20
+
+    - name: single node etcd should be healthy
+      shell: >
+        etcdctl -endpoints https://{{ ansible_hostname }}:2379
+        --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key cluster-health
