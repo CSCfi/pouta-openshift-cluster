@@ -2,7 +2,9 @@
 
 # Script to run a temporary deployment container. Should be executed in
 # playbooks/openshift directory. Use sudo if that is required for
-# launching docker.
+# launching docker. Further sessions can be opened by running
+#
+#  docker exec -it [environment_name]-deployer bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -43,7 +45,8 @@ while getopts "p:P:e:ish" opt; do
             docker_opts="$docker_opts -e VAULT_PASS=$(cat $passfile)"
             ;;
         e)
-            docker_opts="$docker_opts -e ENV_NAME=$OPTARG"
+            env_name=$OPTARG
+            docker_opts="$docker_opts -e ENV_NAME=$env_name"
             ;;
         i)
             docker_opts="$docker_opts -it"
@@ -62,5 +65,6 @@ docker run --rm \
     -v $SCRIPT_DIR/../../openshift-environments:/opt/deployment/openshift-environments:ro \
     -v $SCRIPT_DIR/../../poc:/opt/deployment/poc:ro \
     -v $SCRIPT_DIR/../../openshift-ansible:/opt/deployment/openshift-ansible:ro \
+    --name ${env_name}-deployer \
     $docker_opts \
     cscfi/poc-deployer $*
