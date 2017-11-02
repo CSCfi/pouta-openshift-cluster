@@ -24,6 +24,9 @@ RUN pip install --no-cache-dir -r /root/requirements.txt
 RUN groupadd -g 29295 deployer
 RUN useradd -u 29295 -g deployer -d /opt/deployment deployer
 
+# set POC ansible.cfg as the default
+ENV ANSIBLE_CONFIG=/opt/deployment/poc/playbooks/ansible.cfg
+
 USER 29295
 
 WORKDIR /opt/deployment
