@@ -57,6 +57,11 @@ replacing/recovering first master. This is a special case as the first
 master has the files for local CA, thus you must restore /etc/origin/master 
 first from backup before configuring it with scaleup.
 
+The complete process of scaling up would include editing the resource group size 
+in the inventory and running provisioning, preinstall and scaleup:
+
+    ansible-playbook -v -e allow_heat_stack_update=1 site_scaleup.yml
+
 ## Prerequisites
 
 All that is needed is 
