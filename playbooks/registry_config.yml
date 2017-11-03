@@ -25,7 +25,7 @@
         namespace: default
         cert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
         key_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key"
-        cacert_path: "/etc/origin/master/named_certificates/ext_ca.crt"
+        cacert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}_ext_ca.crt"
         dest_cacert_content: "{{ registry_dest_cert }}"
         service_name: "docker-registry"
         port: "5000"
@@ -50,10 +50,12 @@
 
     - name: create registry console cert file with a proper cert+key
       shell: >
-        cat /etc/origin/master/{{ openshift_public_hostname }}.crt
-        /etc/origin/master/{{ openshift_public_hostname }}.key
+        cat
+        /etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt
+        /etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key
         > /etc/origin/master/registry-console.cert
-      when: registry_console_cert.stat.exists == False
+      when: registry_console_cert.stat.exists == False or
+            replace_registry_console_cert|default(False) == True
 
     - name: set access rights for registry-console.cert
       file:
@@ -83,6 +85,31 @@
         vol_name: console-secret-vol
         mount_path: /etc/cockpit/ws-certs.d
       run_once: true
+
+    - name: modify route to registry console to be in the API domain
+      oc_route:
+        state: present
+        name: registry-console
+        namespace: default
+        service_name: registry-console
+        tls_termination: passthrough
+        host: registry-console.{{ openshift_public_hostname }}
+
+    - name: add redirect rule for insecure URL to registry console route
+      oc_edit:
+        kind: routes
+        name: registry-console
+        namespace: default
+        content:
+          spec.tls.insecureEdgeTerminationPolicy: Redirect
+
+    - name: modify OAuthClient config for the registry console
+      shell: >
+        oc get oauthclient
+        cockpit-oauth-client -o json |
+        jq '.redirectURIs[0] |=
+        "https://registry-console.{{ openshift_public_hostname }}"' |
+        oc replace -f -
 
     - name: check if registry PVC exists
       shell: oc get pvc -n default registry

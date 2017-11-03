@@ -84,18 +84,35 @@
         - PLATFORM_APP_BASE_NAME={{ openshift_public_hostname }}
         when: existing_default_www_app.stdout_lines | length == 0
 
-      - name: create routes
-        shell: |
-          oc create route edge default-www-{{ item.name }} \
-          -n default-www \
-          --service default-www-app --insecure-policy=Redirect \
-          --hostname {{ item.hostname|default(item.name + "." + openshift_public_hostname) }}
+      - name: create default www app routes
+        oc_route:
+          state: present
+          name: "default-www-{{ item.name }}"
+          namespace: default-www
+          service_name: default-www-app
+          cert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
+          key_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key"
+          cacert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}_ext_ca.crt"
+          host: "{{ item.hostname|default(item.name + '.' + openshift_public_hostname) }}"
+          tls_termination: edge
         with_items:
         - name: default
           hostname: "{{ openshift_public_hostname }}"
         - name: www
         - name: admin
         failed_when: false
+
+      - name: add redirect rule to default www app routes
+        oc_edit:
+          kind: routes
+          name: "default-www-{{ item }}"
+          namespace: default-www
+          content:
+            spec.tls.insecureEdgeTerminationPolicy: Redirect
+        with_items:
+        - default
+        - www
+        - admin
       when:
       - deploy_default_www_app | default(false) | bool
       - default_www_app_image is defined

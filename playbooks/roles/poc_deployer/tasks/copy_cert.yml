@@ -1,0 +1,19 @@
+---
+- name: Copy TLS certificate for {{ item.domain }}
+  copy:
+    dest: "/dev/shm/{{ cluster_name }}/{{ item.domain }}.crt"
+    content: "{{ item.tls_certificate }}"
+    mode: 0600
+  when: item.domain is defined
+- name: Copy TLS key for {{ item.domain }}
+  copy:
+    dest: "/dev/shm/{{ cluster_name }}/{{ item.domain }}.key"
+    content: "{{ item.tls_secret_key }}"
+    mode: 0600
+  when: item.domain is defined
+- name: Copy CA cert for {{ item.domain }}
+  copy:
+    dest: "/dev/shm/{{ cluster_name }}/{{ item.domain }}_ext_ca.crt"
+    content: "{{ item.tls_ca_certificate }}"
+    mode: 0600
+  when: item.domain is defined
