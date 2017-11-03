@@ -34,6 +34,9 @@
       shell: oc replace -n default -f /home/cloud-user/project-request.yaml
       when: existing_template.stdout_lines | length > 0
 
+    - name: delete storage classes
+      shell: oc delete storageclass --all
+
     - name: upsert storage classes
       include: tasks/upsert_k8s_object.yml
       vars:

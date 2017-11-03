@@ -22,20 +22,20 @@
     - name: check that it works
       shell: >
         etcdctl -endpoints https://{{ ansible_hostname }}:2379
-          --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key cluster-health
+        --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key cluster-health
 
     - name: update the peer address
       shell: >
         local_id=$(etcdctl -endpoints https://{{ ansible_hostname }}:2379
-          --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key member list |
-          cut -f 1 -d ":"
+        --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key member list |
+        cut -f 1 -d ":"
         );
         etcdctl -endpoints https://{{ ansible_hostname }}:2379
-          --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key
-          member update $local_id https://{{ ansible_default_ipv4.address }}:2380
+        --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key
+        member update $local_id https://{{ ansible_default_ipv4.address }}:2380
         ;
         etcdctl -endpoints https://{{ ansible_hostname }}:2379
-          --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key member list
+        --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key member list
 
     - name: remove the modifications from systemd unit
       shell: |

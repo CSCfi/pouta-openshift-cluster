@@ -51,17 +51,26 @@ ansible ${ENV_NAME}-etcd-2,${ENV_NAME}-etcd-3 -b \
 ansible-playbook -v -l localhost,etcd scaleup.yml
 if [ $? != 0 ]; then echo "failed"; exit 1; fi
 
+header Restore glusterfs config and state
+ansible-playbook -v restore/restore_glusterfs.yml
+
 header Continue installing the cluster
 # (the playbook may fail in glusterfs installation, but worry not)
-ansible-playbook -v -t etcd,loadbalancer,master,glusterfs ../../openshift-ansible/playbooks/byo/config.yml
+ansible-playbook -v -t etcd,loadbalancer,master ../../openshift-ansible/playbooks/byo/config.yml
 
 header Delete old node and router objects, restart remaining nodes to re-register
 ansible ${ENV_NAME}-master-1 -a 'oc delete nodes --all'
 ansible ${ENV_NAME}-master-1 -a 'oc -n default delete dc router'
 ansible nodes -a 'systemctl restart origin-node'
 
-header Run the rest of the installation
-ansible-playbook -v install.yml post_install.yml
+header Install nodes
+ansible-playbook -v -t node ../../openshift-ansible/playbooks/byo/config.yml
+
+header Install glusterfs
+ansible-playbook -v ../../openshift-ansible/playbooks/byo/openshift-glusterfs/config.yml
+
+header "Run the rest of the installation (skip glusterfs, it is not re-entrant)"
+ansible-playbook -v --skip-tags glusterfs install.yml post_install.yml
 if [ $? != 0 ]; then echo "failed"; exit 1; fi
 
 header Done

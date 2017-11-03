@@ -39,6 +39,13 @@
       changed_when: false
       no_log: True
 
+    - name: Check if stack has been provisioned already (glusterfs)
+      shell: openstack stack show {{ cluster_name }}-glusterfs
+      register: stack_output_glusterfs
+      failed_when: false
+      changed_when: false
+      no_log: True
+
     # multimaster block
     - block:
 
@@ -175,6 +182,28 @@
         - stack_output_minimal.stderr.find('Stack not found') != -1 or
           allow_heat_stack_update|default(false)|bool
     # end singlemaster block
+
+    - name: Build/update the OpenShift Heat stack (glusterfs)
+      os_stack:
+        name: "{{ cluster_name }}-glusterfs"
+        state: present
+        template: "files/openshift-heat-stack-glusterfs.yml"
+        wait: yes
+        parameters:
+          env_name: "{{ cluster_name }}"
+          key_name: "{{ cluster_name }}"
+          glusterfs_vm_group_size: "{{ glusterfs_vm_group_size }}"
+          glusterfs_vm_image: "{{ glusterfs_vm_image }}"
+          glusterfs_vm_flavor: "{{ glusterfs_vm_flavor }}"
+          glusterfs_vol_size: "{{ glusterfs_vol_size }}"
+          secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+          secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+          network_id: "{{ base_stack_outputs.network_id }}"
+          network_prefix: "{{ openshift_network_prefix }}"
+          resource_group_identifier: "{{ glusterfs_resource_group_identifier }}"
+      when:
+        - stack_output_glusterfs.stderr.find('Stack not found') != -1 or
+          allow_heat_stack_update_glusterfs|default(false)|bool
 
     - name: Build/update compute node stack(s)
       os_stack:
