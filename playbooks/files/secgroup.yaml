@@ -1,5 +1,5 @@
 ---
-heat_template_version: 2015-10-15
+heat_template_version: newton
 
 parameters:
   env_name:
