@@ -89,5 +89,9 @@ items:
           secret:
             secretName: monitoring-token
         - name: data-volume
+{% if skip_pvc|default(false) %}
+          emptyDir: {}
+{% else %}
           persistentVolumeClaim:
             claimName: "grafana-data"
+{% endif %}

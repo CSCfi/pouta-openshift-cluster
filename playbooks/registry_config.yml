@@ -97,11 +97,15 @@
         --name=registry-storage
         --claim-name=registry
         -t pvc --claim-size={{ registry_claim_size|default('200Gi') }}
-      when: existing_registry_pv.stdout_lines | length == 0
+      when:
+        - existing_registry_pv.stdout_lines | length == 0
+        - skip_pvc|default(false) == false
 
     - name: attach the existing persistent volume for registry
       shell: >
         oc volume -n default dc/docker-registry --add
         --mount-path=/registry --overwrite
         --name=registry-storage --claim-name=registry
-      when: existing_registry_pv.stdout_lines | length > 0
+      when:
+        - existing_registry_pv.stdout_lines | length > 0
+        - skip_pvc|default(false) == false
