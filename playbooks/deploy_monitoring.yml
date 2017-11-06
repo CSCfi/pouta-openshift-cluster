@@ -67,6 +67,7 @@
         labels: {}
         size: "10Gi"
         upsert_replace: false
+      when: skip_pvc|default(false) == False
 
     - name: upsert prometheus deployment
       include: tasks/upsert_k8s_object.yml
@@ -84,6 +85,7 @@
         labels: {}
         size: "1Gi"
         upsert_replace: false
+      when: skip_pvc|default(false) == False
 
     - name: upsert grafana deployment
       include: tasks/upsert_k8s_object.yml

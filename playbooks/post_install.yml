@@ -39,6 +39,8 @@
         src: "templates/cinder-storageclass.yaml.j2"
         dest: /home/cloud-user/cinder-storageclass.yaml
       register: storageclass_template
+      when:
+        - skip_pvc|default(false) == false
 
     - name: check if StorageClass exists
       shell: "oc get storageclass -n default {{ storage_class_name }}"
@@ -48,12 +50,16 @@
 
     - name: create StorageClass object
       shell: oc create -n default -f /home/cloud-user/cinder-storageclass.yaml
-      when: existing_storageclass.stdout_lines | length == 0
+      when:
+        - existing_storageclass.stdout_lines | length == 0
+        - skip_pvc|default(false) == false
 
     - name: update StorageClass object
       shell: oc replace -n default -f /home/cloud-user/cinder-storageclass.yaml
-      when: existing_storageclass.stdout_lines | length > 0
       changed_when: storageclass_template.changed
+      when:
+        - existing_storageclass.stdout_lines | length > 0
+        - skip_pvc|default(false) == false
 
 - name: Additional Docker registry configuration
   include: registry_config.yml

@@ -120,8 +120,12 @@ items:
             defaultMode: 420
             name: prometheus
         - name: data-volume
+{% if skip_pvc|default(false) %}
+          emptyDir: {}
+{% else %}
           persistentVolumeClaim:
             claimName: "prometheus-data"
+{% endif %}
         - name: monitoring-token
           secret:
             secretName: monitoring-token
