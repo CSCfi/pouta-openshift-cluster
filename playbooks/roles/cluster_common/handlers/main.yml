@@ -1,0 +1,7 @@
+# Send a signal to dnsmasq to trigger reloading of /etc/hosts using shell commands, also checking if it is enabled.
+# Currently ansible systemd -module does not support that, and dnsmasq systemd unit does not support reload.
+- name: reload dnsmasq
+  shell: >
+    if systemctl -q is-active dnsmasq; then
+      systemctl kill -s HUP dnsmasq;
+    fi

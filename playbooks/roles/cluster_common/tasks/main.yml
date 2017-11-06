@@ -6,6 +6,7 @@
     line: "{{ hostvars[item]['ansible_ssh_host'] }} {{ item }}.novalocal {{ item }}"
   when: hostvars[item]['ansible_ssh_host'] is defined
   with_items: "{{ groups['all'] }}"
+  notify: reload dnsmasq
 
 - name: add default iptables persistent state file
   template:

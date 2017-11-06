@@ -51,10 +51,10 @@ ansible-playbook -v -l [vm_to_replace],bastion pre_install.yml
 
 ## Nodes
 
-A failed node can be configured simply by running scaleup.yml:
+A failed node can be configured simply by running site_scaleup.yml:
 
 ```bash
-ansible-playbook -v scaleup.yml
+ansible-playbook -v site_scaleup.yml
 ```
 
 ## Secondary and Tertiary masters
@@ -62,7 +62,7 @@ ansible-playbook -v scaleup.yml
 Same procedure as for nodes
 
 ```bash
-ansible-playbook -v scaleup.yml
+ansible-playbook -v site_scaleup.yml
 ```
 
 Check the node state on the master after running the playbook and set it schedulable
@@ -82,7 +82,7 @@ Before running 'site.yml', restore '/etc/origin' from the latest backup.
 Then, run ansible with an additional safety flag turned on:
 
 ```bash
-ansible-playbook -v -e allow_first_master_scaleup=1 scaleup.yml
+ansible-playbook -v -e allow_first_master_scaleup=1 site_scaleup.yml
 ```
 
 The additional safety is in place because running scaleup against an empty master-1 will create
@@ -94,7 +94,7 @@ Load balancers are infra nodes that run HAProxy routers for customer traffic. Th
 traffic to the API on masters. First, recover the node part: 
 
 ```bash
-ansible-playbook -v scaleup.yml
+ansible-playbook -v site_scaleup.yml
 ```
 
 After this, application traffic should already work on the lb. However, to forward API traffic too, 
@@ -106,7 +106,7 @@ in the future.
 ```bash
 ansible-playbook -v -t loadbalancer ../../openshift-ansible/playbooks/byo/config.yml
 ```
- 
+
 ## Etcd
 
 Etcd recovery is fairly straight forward. Etcd-1 is a bit more involved, because
@@ -130,12 +130,11 @@ sudo etcdctl -endpoints https://[cluster-name]-etcd-1:2379 \
   member remove [id_of_the_failed_member]
 ```
 
-Then run site.yml with scaleup:
+Then run site_scaleup.yml:
 
 ```bash
-ansible-playbook -v scaleup.yml
+ansible-playbook -v site_scaleup.yml
 ```
 
 If you are replacing etcd-1, change the endpoint host and add 
 '-e override_etcd_ca_host=[surviving member]' in the playbook command above.
-
