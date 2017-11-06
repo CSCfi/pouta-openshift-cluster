@@ -100,7 +100,6 @@
           hostname: "{{ openshift_public_hostname }}"
         - name: www
         - name: admin
-        failed_when: false
 
       - name: add redirect rule to default www app routes
         oc_edit:
