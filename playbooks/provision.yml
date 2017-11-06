@@ -16,24 +16,28 @@
       register: stack_output_minimal
       failed_when: false
       changed_when: false
+      no_log: True
 
     - name: Check if stack has been provisioned already (base)
       shell: openstack stack show {{ cluster_name }}-base
       register: stack_output_base
       failed_when: false
       changed_when: false
+      no_log: True
 
     - name: Check if stack has been provisioned already (etcd)
       shell: openstack stack show {{ cluster_name }}-etcd
       register: stack_output_etcd
       failed_when: false
       changed_when: false
+      no_log: True
 
     - name: Check if stack has been provisioned already (cluster)
       shell: openstack stack show {{ cluster_name }}-cluster
       register: stack_output_cluster
       failed_when: false
       changed_when: false
+      no_log: True
 
     - block:
 
