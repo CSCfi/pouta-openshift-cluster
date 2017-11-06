@@ -62,18 +62,6 @@ parameters:
     description: >
       What OpenStack flavor to use for master VMs.
     type: string
-  node_ssd_vm_group_size:
-    description: >
-      How many SSD node VMs to start.
-    type: number
-  node_ssd_vm_image:
-    description: >
-      What OpenStack image to use for SSD nodes.
-    type: string
-  node_ssd_vm_flavor:
-    description: >
-      What OpenStack flavor to use for SSD node VMs.
-    type: string
   secgroup_id_infra:
     description: >
       Id of infra security group
@@ -115,14 +103,6 @@ parameters:
       /24).
     type: string
     default: "4."
-  node_ssd_resource_group_identifier:
-    description: >
-      The part of the cluster IP address that differentiates the SSD minion
-      resource group. Comes after network prefix but before index (1-9). Ends
-      with a dot (when cluster network is /16) or not (when cluster network is
-      /24).
-    type: string
-    default: "5."
 
 resources:
 
@@ -193,15 +173,6 @@ resources:
           port_range_min: 2049
           port_range_max: 2049
 
-  secgroup_node:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: node
-      rules:
-        - remote_mode: remote_group_id
-          remote_group_id: { get_param: secgroup_id_infra }
-
   #-----------------------------------
   # Nova server groups (anti-affinity)
   #-----------------------------------
@@ -222,12 +193,6 @@ resources:
     type: OS::Nova::ServerGroup
     properties:
       name: master
-      policies: ['anti-affinity']
-
-  node_ssd:
-    type: OS::Nova::ServerGroup
-    properties:
-      name: node_ssd
       policies: ['anti-affinity']
 
   #-----------------------------------
@@ -343,37 +308,3 @@ resources:
             - { get_resource: secgroup_master }
           scheduler_hints:
             group: { get_resource: master }
-
-  node_ssd_vm_group:
-    type: OS::Heat::ResourceGroup
-    properties:
-      count: { get_param: node_ssd_vm_group_size }
-      removal_policies: [{'resource_list': ['0']}]
-      resource_def:
-        type: OS::Nova::Server
-        properties:
-          name:
-            str_replace:
-              template: env_name-name_suffix-%index%
-              params:
-                env_name: { get_param: env_name }
-                name_suffix: "ssd"
-          image: { get_param: node_ssd_vm_image }
-          networks:
-            - network: { get_param: network_id }
-              fixed_ip:
-                str_replace:
-                  template: network_prefix.node_ssd_resource_group_identifier%index%
-                  params:
-                    network_prefix: { get_param: network_prefix }
-                    node_ssd_resource_group_identifier: { get_param: node_ssd_resource_group_identifier }
-          flavor: { get_param: node_ssd_vm_flavor }
-          metadata:
-            group: "ssd"
-            stack: { get_param: env_name }
-          key_name: { get_param: key_name }
-          security_groups:
-            - { get_resource: secgroup_node }
-            - { get_param: secgroup_id_common }
-          scheduler_hints:
-            group: { get_resource: node_ssd }

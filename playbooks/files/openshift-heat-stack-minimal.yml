@@ -84,18 +84,6 @@ parameters:
     description: >
       The size of the Cinder volume to attach to NFS VMs.
     type: number
-  node_ssd_vm_group_size:
-    description: >
-      How many SSD node VMs to start.
-    type: number
-  node_ssd_vm_image:
-    description: >
-      What OpenStack image to use for SSD nodes.
-    type: string
-  node_ssd_vm_flavor:
-    description: >
-      What OpenStack flavor to use for SSD node VMs.
-    type: string
   network_prefix:
     description: >
       The first two (/16) or three (/24) octets of a private network CIDR.
@@ -109,14 +97,6 @@ parameters:
       /24).
     type: string
     default: "3."
-  node_ssd_resource_group_identifier:
-    description: >
-      The part of the cluster IP address that differentiates the SSD minion
-      resource group. Comes after network prefix but before index (1-9). Ends
-      with a dot (when cluster network is /16) or not (when cluster network is
-      /24).
-    type: string
-    default: "5."
 
 resources:
 
@@ -226,15 +206,6 @@ resources:
           port_range_min: 2049
           port_range_max: 2049
 
-  secgroup_node:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: node
-      rules:
-        - remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_infra }
-
   #-----------------------------------
   # Dedicated cluster network
   #-----------------------------------
@@ -307,12 +278,6 @@ resources:
       name: master
       policies: ['anti-affinity']
 
-  node_ssd:
-    type: OS::Nova::ServerGroup
-    properties:
-      name: node_ssd
-      policies: ['anti-affinity']
-
   #-----------------------------------
   # VM resource groups
   #-----------------------------------
@@ -357,39 +322,9 @@ resources:
           vol_name_suffix: "data"
           vol_size: { get_param: master_vm_vol_size }
 
-  node_ssd_vm_group:
-    type: OS::Heat::ResourceGroup
-    depends_on: "openshift_subnet"
-    properties:
-      count: { get_param: node_ssd_vm_group_size }
-      removal_policies: [{'resource_list': ['0']}]
-      resource_def:
-        type: OS::Nova::Server
-        properties:
-          name:
-            str_replace:
-              template: env_name-name_suffix-%index%
-              params:
-                env_name: { get_param: env_name }
-                name_suffix: "ssd"
-          image: { get_param: node_ssd_vm_image }
-          networks:
-            - network: { get_resource: openshift_network }
-              fixed_ip:
-                str_replace:
-                  template: network_prefix.node_ssd_resource_group_identifier%index%
-                  params:
-                    network_prefix: { get_param: network_prefix }
-                    node_ssd_resource_group_identifier: { get_param: node_ssd_resource_group_identifier }
-          flavor: { get_param: node_ssd_vm_flavor }
-          metadata:
-            group: "ssd"
-            stack: { get_param: env_name }
-          key_name: { get_param: key_name }
-          security_groups:
-            - { get_resource: secgroup_node }
-            - { get_resource: secgroup_common }
-          scheduler_hints:
-            group: { get_resource: node_ssd }
-
 outputs:
+  resources:
+    value:
+      secgroup_id_common: { get_resource: secgroup_common }
+      secgroup_id_infra: { get_resource: secgroup_infra }
+      network_id: { get_resource: openshift_network }

@@ -63,11 +63,12 @@
         state: absent
         name: "{{ cluster_name }}"
 
-    - name: Delete stack {{ cluster_name }} (singlemaster)
+    - name: Delete compute nodes stacks
       os_stack:
-        name: "{{ cluster_name }}"
+        name: "{{ cluster_name }}-{{ item.stack_name }}"
         state: absent
         wait: yes
+      with_items: "{{ compute_node_groups }}"
 
     - name: Delete stack {{ cluster_name }}-etcd (multimaster)
       os_stack:
@@ -84,6 +85,12 @@
     - name: Delete stack {{ cluster_name }}-base (multimaster)
       os_stack:
         name: "{{ cluster_name }}-base"
+        state: absent
+        wait: yes
+
+    - name: Delete stack {{ cluster_name }} (singlemaster)
+      os_stack:
+        name: "{{ cluster_name }}"
         state: absent
         wait: yes
 
