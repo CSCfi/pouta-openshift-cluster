@@ -39,6 +39,7 @@
       changed_when: false
       no_log: True
 
+    # multimaster block
     - block:
 
       - name: Build/update the OpenShift Heat stack (base)
@@ -131,7 +132,9 @@
           stack_output_base.stderr.find('Stack not found') != -1 or
           stack_output_etcd.stderr.find('Stack not found') != -1 or
           stack_output_cluster.stderr.find('Stack not found') != -1
+    # end multimaster block
 
+    # singlemaster block
     - block:
       - name: Build/update the OpenShift Heat stack (minimal)
         register: heat_stack
@@ -168,9 +171,10 @@
             network_id: "{{ heat_stack.stack.outputs[0].output_value.network_id }}"
 
       when:
-      - master_vm_group_size == 1
-      - stack_output_minimal.stderr.find('Stack not found') != -1 or
-        allow_heat_stack_update|default(false)|bool
+        - master_vm_group_size == 1
+        - stack_output_minimal.stderr.find('Stack not found') != -1 or
+          allow_heat_stack_update|default(false)|bool
+    # end singlemaster block
 
     - name: Build/update compute node stack(s)
       os_stack:
@@ -180,6 +184,9 @@
         wait: yes
         parameters: "{{ item.heat_parameters | combine(base_stack_outputs) }}"
       with_items: "{{ compute_node_groups }}"
+      # this is true if we are provisioning a new cluster or allow_heat_stack_update is true
+      when:
+        - base_stack_outputs is defined
 
     - name: Remove inventory cache
       file:
