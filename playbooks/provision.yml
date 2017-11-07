@@ -64,6 +64,13 @@
           - stack_output_base.stderr.find('Stack not found') != -1 or
             allow_heat_stack_update|default(false)|bool
 
+      - name: Put base stack output into a dict
+        set_fact:
+          base_stack_outputs:
+            secgroup_id_common: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_common }}"
+            secgroup_id_infra: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_infra }}"
+            network_id: "{{ heat_stack_base.stack.outputs[0].output_value.network_id }}"
+
       - name: Build/update the OpenShift Heat stack (etcd)
         os_stack:
           name: "{{ cluster_name }}-etcd"
@@ -76,9 +83,9 @@
             etcd_vm_group_size: "{{ etcd_vm_group_size }}"
             etcd_vm_image: "{{ etcd_vm_image }}"
             etcd_vm_flavor: "{{ etcd_vm_flavor }}"
-            secgroup_id_common: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_common }}"
-            secgroup_id_infra: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_infra }}"
-            network_id: "{{ heat_stack_base.stack.outputs[0].output_value.network_id}}"
+            secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+            secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+            network_id: "{{ base_stack_outputs.network_id}}"
             network_prefix: "{{ openshift_network_prefix }}"
             resource_group_identifier: "{{ etcd_resource_group_identifier }}"
         when:
@@ -106,28 +113,16 @@
             master_vm_group_size: "{{ master_vm_group_size }}"
             master_vm_image: "{{ master_vm_image }}"
             master_vm_flavor: "{{ master_vm_flavor }}"
-            node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
-            node_ssd_vm_image: "{{ node_ssd_vm_image }}"
-            node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
-            secgroup_id_common: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_common }}"
-            secgroup_id_infra: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_infra }}"
-            network_id: "{{ heat_stack_base.stack.outputs[0].output_value.network_id}}"
+            secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+            secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+            network_id: "{{ base_stack_outputs.network_id }}"
             network_prefix: "{{ openshift_network_prefix }}"
             lb_resource_group_identifier: "{{ lb_resource_group_identifier }}"
             master_resource_group_identifier: "{{ master_resource_group_identifier }}"
             nfs_resource_group_identifier: "{{ nfs_resource_group_identifier }}"
-            node_ssd_resource_group_identifier: "{{ node_ssd_resource_group_identifier }}"
         when:
           - stack_output_cluster.stderr.find('Stack not found') != -1 or
             allow_heat_stack_update|default(false)|bool
-
-      - name: Remove inventory cache
-        file:
-          path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
-          state: absent
-
-      - name: Refresh dynamic inventory
-        meta: refresh_inventory
 
       when:
         - master_vm_group_size > 1
@@ -160,24 +155,39 @@
             master_vm_image: "{{ master_vm_image }}"
             master_vm_flavor: "{{ master_vm_flavor }}"
             master_vm_vol_size: "{{ master_vm_vol_size }}"
-            node_ssd_vm_group_size: "{{ node_ssd_vm_group_size }}"
-            node_ssd_vm_image: "{{ node_ssd_vm_image }}"
-            node_ssd_vm_flavor: "{{ node_ssd_vm_flavor }}"
             openshift_network_allocation_pool_start: "{{ openshift_network_allocation_pool_start }}"
             openshift_network_allocation_pool_end: "{{ openshift_network_allocation_pool_end }}"
             network_prefix: "{{ openshift_network_prefix }}"
             master_resource_group_identifier: "{{ master_resource_group_identifier }}"
-            node_ssd_resource_group_identifier: "{{ node_ssd_resource_group_identifier }}"
 
-      - name: Remove inventory cache
-        file:
-          path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
-          state: absent
+      - name: Put minimal stack outputs into dict
+        set_fact:
+          base_stack_outputs:
+            secgroup_id_common: "{{ heat_stack.stack.outputs[0].output_value.secgroup_id_common }}"
+            secgroup_id_infra: "{{ heat_stack.stack.outputs[0].output_value.secgroup_id_infra }}"
+            network_id: "{{ heat_stack.stack.outputs[0].output_value.network_id }}"
 
       when:
       - master_vm_group_size == 1
       - stack_output_minimal.stderr.find('Stack not found') != -1 or
         allow_heat_stack_update|default(false)|bool
+
+    - name: Build/update compute node stack(s)
+      os_stack:
+        name: "{{ cluster_name }}-{{ item.stack_name }}"
+        state: present
+        template: "files/openshift-heat-stack-compute-nodes.yml"
+        wait: yes
+        parameters: "{{ item.heat_parameters | combine(base_stack_outputs) }}"
+      with_items: "{{ compute_node_groups }}"
+
+    - name: Remove inventory cache
+      file:
+        path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
+        state: absent
+
+    - name: Refresh dynamic inventory
+      meta: refresh_inventory
 
     - name: Associate floating IP with master
       os_floating_ip:
