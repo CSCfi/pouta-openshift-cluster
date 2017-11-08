@@ -31,6 +31,7 @@
       with_items:
         - "{{ groups['masters'] }}"
         - "{{ groups['etcd_backup'] }}"
+        - "{{ groups['glusterfs'] }}"
 
 - name: Backup etcd
   hosts: etcd_backup
@@ -99,6 +100,34 @@
     - name: remove /etc/origin archive from master
       file:
         path: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
+        state: absent
+
+- name: Backup glusterfs
+  hosts: glusterfs
+  become: yes
+  gather_facts: no
+  vars:
+    - backup_time: "{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}"
+  tasks:
+    # here we have to use tar directly because archive module does not handle broken symlinks
+    # properly
+    - name: archive glusterfs and heketi config
+      shell: >
+        tar cfz /tmp/glusterfs-{{ inventory_hostname }}.tar.gz
+        /etc/glusterfs
+        /var/lib/glusterd
+        /var/lib/heketi
+
+    - name: sync glusterfs archive to bastion
+      synchronize:
+        src: "/tmp/glusterfs-{{ inventory_hostname }}.tar.gz"
+        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/glusterfs-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
+        mode: pull
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: remove glusterfs archive from master
+      file:
+        path: "/tmp/glusterfs-{{ inventory_hostname }}.tar.gz"
         state: absent
 
 - name: Clean up old backup data from bastion

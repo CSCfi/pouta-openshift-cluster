@@ -1,0 +1,31 @@
+---
+- name: Copy and unarchive glusterfs tarballs
+  hosts: glusterfs
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: list the backup contents (glusterfs)
+      find:
+        paths: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}"
+        patterns: "glusterfs*"
+      register: glusterfs_tarballs
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: find out the latest file (glusterfs)
+      set_fact:
+        latest_glusterfs_tarball: "{{ (glusterfs_tarballs.files | sort(attribute='mtime') | last).path }}"
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: sync backup from bastion to glusterfs (glusterfs)
+      synchronize:
+        src: "{{ latest_glusterfs_tarball }}"
+        dest: "/tmp/glusterfs-latest.tar.gz"
+        mode: push
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: untar etc backup if /var/lib/glusterd is not present yet
+      unarchive:
+        src: /tmp/glusterfs-latest.tar.gz
+        dest: /
+        remote_src: yes
+        creates: /var/lib/glusterd

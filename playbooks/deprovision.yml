@@ -93,6 +93,12 @@
         state: absent
         wait: yes
 
+    - name: Delete stack {{ cluster_name }}-glusterfs
+      os_stack:
+        name: "{{ cluster_name }}-glusterfs"
+        state: absent
+        wait: yes
+
     - name: Delete stack {{ cluster_name }}-base (multimaster)
       os_stack:
         name: "{{ cluster_name }}-base"
