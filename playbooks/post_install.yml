@@ -4,6 +4,18 @@
 - name: Import objects through first master
   hosts: masters[0]
   tasks:
+    - name: update storage classes
+      oc_storageclass:
+        name: "{{ item.name }}"
+        state: present
+        default_storage_class: "{{ item.default_storage_class|default(omit) }}"
+        provisioner: "{{ item.provisioner }}"
+        parameters: "{{ item.parameters|default([]) }}"
+      with_items: "{{ storage_classes|default([]) }}"
+      when:
+        - skip_pvc|default(false) == false
+        - item.name in active_storage_classes
+
     - name: copy nfs_pv definitions to first master
       copy:
         src: /tmp/nfs_pv
@@ -33,23 +45,6 @@
     - name: update project template
       shell: oc replace -n default -f /home/cloud-user/project-request.yaml
       when: existing_template.stdout_lines | length > 0
-
-    - name: delete storage classes
-      shell: oc delete storageclass --all
-
-    - name: upsert storage classes
-      include: tasks/upsert_k8s_object.yml
-      vars:
-        template_base_name: storageclass.yaml.j2
-        namespace: default
-        name: "{{ item.name }}"
-        annotations: "{{ item.annotations|default([]) }}"
-        provisioner: "{{ item.provisioner }}"
-        parameters: "{{ item.parameters|default([]) }}"
-      with_items: "{{ storage_classes|default([]) }}"
-      when:
-        - skip_pvc|default(false) == false
-        - item.name in active_storage_classes
 
 - name: Additional Docker registry configuration
   include: registry_config.yml
