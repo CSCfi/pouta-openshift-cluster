@@ -1,4 +1,15 @@
 ---
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  tasks:
+    - include: environment_context.yml
+
+    - name: make sure we are allowed to deprovision
+      assert:
+        that:
+          - "{{ deprovision_allowed|default(False) }} == True"
+        msg: "Must set deprovision_allowed to True to deprovision"
 
 - name: Remove projects and persistent volumes still in use
   gather_facts: no
