@@ -26,10 +26,16 @@ parameters:
     description: >
       What OpenStack flavor to use for glusterfs hosts.
     type: string
-  glusterfs_vol_size:
+  glusterfs_vol_1_size:
     description: >
-      The size of the Cinder volume to attach to glusterfs VMs.
+      The size of the Cinder volume 1 to attach to glusterfs VMs.
     type: number
+    default: "0"
+  glusterfs_vol_2_size:
+    description: >
+      The size of the Cinder volume 2 to attach to glusterfs VMs.
+    type: number
+    default: "0"
   secgroup_id_infra:
     description: >
       Id of infra security group
@@ -121,7 +127,7 @@ resources:
             - { get_param: secgroup_id_infra }
           scheduler_hints:
             group: { get_resource: glusterfs }
-          vol_name_suffix_1: "docker"
-          vol_size_1: "10"
-          vol_name_suffix_2: "data"
-          vol_size_2: { get_param: glusterfs_vol_size }
+          vol_name_suffix_1: "vol-1"
+          vol_size_1: { get_param: glusterfs_vol_1_size }
+          vol_name_suffix_2: "vol-2"
+          vol_size_2: { get_param: glusterfs_vol_2_size }

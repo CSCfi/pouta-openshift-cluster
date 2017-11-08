@@ -55,7 +55,6 @@ header Restore glusterfs config and state
 ansible-playbook -v restore/restore_glusterfs.yml
 
 header Continue installing the cluster
-# (the playbook may fail in glusterfs installation, but worry not)
 ansible-playbook -v -t etcd,loadbalancer,master ../../openshift-ansible/playbooks/byo/config.yml
 
 header Delete old node and router objects, restart remaining nodes to re-register

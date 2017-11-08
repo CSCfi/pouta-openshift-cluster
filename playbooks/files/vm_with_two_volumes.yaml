@@ -50,14 +50,16 @@ resources:
         list_join: ['-', [{ get_param: vm_name }, { get_param: vol_name_suffix_1 }]]
       size: { get_param: vol_size_1 }
 
-  volume_attachment:
+  volume_attachment_1:
     type: OS::Cinder::VolumeAttachment
     properties:
       instance_uuid: { get_resource: vm }
       volume_id: { get_resource: volume_1 }
+      mountpoint: /dev/vdb
 
   volume_2:
     type: OS::Cinder::Volume
+    depends_on: volume_attachment_1
     properties:
       name:
         list_join: ['-', [{ get_param: vm_name }, { get_param: vol_name_suffix_2 }]]
@@ -68,3 +70,4 @@ resources:
     properties:
       instance_uuid: { get_resource: vm }
       volume_id: { get_resource: volume_2 }
+      mountpoint: /dev/vdc

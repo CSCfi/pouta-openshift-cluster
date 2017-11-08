@@ -4,10 +4,6 @@
   become: yes
   gather_facts: no
   tasks:
-    - name: check if glusterfs state exists already
-      file:
-        path: /var/lib
-
     - name: list the backup contents (glusterfs)
       find:
         paths: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}"
