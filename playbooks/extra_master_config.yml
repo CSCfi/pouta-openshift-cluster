@@ -1,6 +1,7 @@
 # Additional configuration for masters.
 # Currently configures:
 #  - GitHub OAuth integration
+#  - oc bash-completion
 ---
 - name: Additional master configuration
   hosts: masters
@@ -8,3 +9,8 @@
   roles:
     - role: openshift_auth_providers
       when: configure_auth|default(true)|bool
+  tasks:
+    - name: generate bash completion with oc
+      shell: oc completion bash > /etc/bash_completion.d/oc
+      args:
+        creates: /etc/bash_completion.d/oc
