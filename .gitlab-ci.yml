@@ -42,6 +42,7 @@ stages:
   - qa_env_deploy
   - qa_run_tests
   - mirroring
+  - prod_deploy
 
 docker_image_build_job:
   stage: docker_build
@@ -111,3 +112,18 @@ mirror_to_github:
     - git clone --bare $CI_REPOSITORY_URL ../poc-bare
     - cd ../poc-bare
     - git push --mirror $GITHUB_MIRROR
+
+deploy_rahti_int_job:
+  stage: prod_deploy
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
+  environment:
+    name: production/rahti-int
+  when: manual
+  only:
+    - master
+  tags:
+    - rahti-int
