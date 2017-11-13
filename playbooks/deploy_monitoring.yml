@@ -110,7 +110,7 @@
 
     - name: wait for grafana to start responding
       uri:
-        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/health
+        url: https://grafana.{{ openshift_public_hostname }}/api/health
         method: GET
         user: admin
         password: "{{ monitoring_access_token }}"
@@ -122,7 +122,7 @@
 
     - name: check if datasource exists already
       uri:
-        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/datasources/name/local
+        url: https://grafana.{{ openshift_public_hostname }}/api/datasources/name/local
         method: GET
         user: admin
         password: "{{ monitoring_access_token }}"
@@ -134,7 +134,7 @@
 
     - name: add prometheus as data source
       uri:
-        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/datasources
+        url: https://grafana.{{ openshift_public_hostname }}/api/datasources
         method: POST
         user: admin
         password: "{{ monitoring_access_token }}"
@@ -146,7 +146,7 @@
 
     - name: add or update k8s dashboard
       uri:
-        url: https://grafana-monitoring-infra.{{ openshift_public_hostname }}/api/dashboards/db
+        url: https://grafana.{{ openshift_public_hostname }}/api/dashboards/db
         method: POST
         user: admin
         password: "{{ monitoring_access_token }}"

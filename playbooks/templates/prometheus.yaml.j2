@@ -27,6 +27,7 @@ items:
     name: prometheus
     namespace: monitoring-infra
   spec:
+    host: "prometheus.{{ openshift_public_hostname }}"
     to:
       name: prometheus
     tls:
