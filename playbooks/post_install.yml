@@ -46,6 +46,12 @@
       shell: oc replace -n default -f /home/cloud-user/project-request.yaml
       when: existing_template.stdout_lines | length > 0
 
+    - name: remove default route for Heketi
+      oc_route:
+        name: heketi-storage
+        namespace: glusterfs
+        state: absent
+
 - name: Additional Docker registry configuration
   include: registry_config.yml
 
