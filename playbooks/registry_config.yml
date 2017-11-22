@@ -86,6 +86,10 @@
         mount_path: /etc/cockpit/ws-certs.d
       run_once: true
 
+    - name: redeploy registry console if needed
+      command: oc rollout latest registry-console -n default
+      when: replace_registry_console_cert|default(False)|bool == True
+
     - name: modify route to registry console to be in the API domain
       oc_route:
         state: present
