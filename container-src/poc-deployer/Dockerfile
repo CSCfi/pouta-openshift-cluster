@@ -10,7 +10,7 @@ RUN yum install -y \
     yum install -y \
         openssh-clients \
         python-devel python2-pip \
-        gcc openssl-devel \
+        gcc openssl-devel openssl \
         java-1.8.0-openjdk-headless httpd-tools \
         tmux less git man bash-completion \
     && \
