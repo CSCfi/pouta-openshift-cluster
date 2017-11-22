@@ -12,6 +12,13 @@ items:
       name: grafana
     tls:
       termination: Edge
+      insecureEdgeTerminationPolicy: Redirect
+      caCertificate: |
+        {{ api_domain_cert.tls_ca_certificate|indent(width=8) }}
+      certificate: |
+        {{ api_domain_cert.tls_certificate|indent(width=8) }}
+      key: |
+        {{ api_domain_cert.tls_secret_key|indent(width=8) }}
 
 - apiVersion: v1
   kind: Service

@@ -55,7 +55,7 @@
         /etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key
         > /etc/origin/master/registry-console.cert
       when: registry_console_cert.stat.exists == False or
-            replace_registry_console_cert|default(False) == True
+            replace_registry_console_cert|default(False)|bool == True
 
     - name: set access rights for registry-console.cert
       file:
