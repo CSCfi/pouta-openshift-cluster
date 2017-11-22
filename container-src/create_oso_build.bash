@@ -17,7 +17,7 @@ if (( $# < 1 || $# > 2 )); then
     exit 1
 fi
 name=${1:-foo}
-src=${2:-https://github.com/CSCfi/pouta-ansible-cluster.git}
+src=${2:-https://github.com/CSCfi/pouta-openshift-cluster.git}
 
 if ! oc project > /dev/null ; then
   echo "Error getting current OpenShift project. Check that you are logged in."
@@ -25,6 +25,7 @@ if ! oc project > /dev/null ; then
 fi
 
 echo "Building $name."
+echo "Using source from $src."
 echo
 oc project
 echo
@@ -44,5 +45,5 @@ echo
 echo "By default, a build is started from the sources in remote repo."
 echo "To build from local sources, run"
 echo
-echo " oc start-build --from-dir [directory for PAC git] $name"
+echo " oc start-build --from-dir [directory for POC git] $name"
 echo
