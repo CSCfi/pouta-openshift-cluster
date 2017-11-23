@@ -6,6 +6,8 @@ items:
   metadata:
     name: grafana
     namespace: monitoring-infra
+    annotations:
+      haproxy.router.openshift.io/ip_whitelist: "{{ bastion_allow_cidrs|join(' ') }}"
   spec:
     host: "grafana.{{ openshift_public_hostname }}"
     to:
