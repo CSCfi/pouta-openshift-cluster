@@ -38,10 +38,13 @@ stages:
   - docker_build
   - ci_env_deploy
   - ci_run_tests
+  - ci_backups
   - cleanup
+  - qa_backups
   - qa_env_deploy
   - qa_run_tests
   - mirroring
+  - prod_backups
   - prod_deploy
 
 docker_image_build_job:
@@ -54,6 +57,8 @@ docker_image_build_job:
 
 deploy_ci_openshift_job:
   stage: ci_env_deploy
+  except:
+    - schedules
   script:
     - cd scripts
     - docker pull $IMAGE_TAG
@@ -64,14 +69,28 @@ deploy_ci_openshift_job:
 
 run_ci_tests_openshift_job:
   stage: ci_run_tests
+  except:
+    - schedules
   script:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
     - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash ../tests/site.yml
 
+backup_ci_openshift_job:
+  stage: ci_backups
+  except:
+    - schedules
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
+
 deprovision_ci_openshift_job:
   stage: cleanup
+  except:
+    - schedules
   script:
     - cd scripts
     - docker pull $IMAGE_TAG
@@ -79,8 +98,22 @@ deprovision_ci_openshift_job:
     - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash deprovision.yml
   when: always
 
+backup_oso_qa_job:
+  stage: qa_backups
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
+  only:
+    - master
+  tags:
+    - oso-qa
+
 deploy_qa_openshift_job:
   stage: qa_env_deploy
+  except:
+    - schedules
   script:
     - cd scripts
     - docker pull $IMAGE_TAG
@@ -95,6 +128,8 @@ deploy_qa_openshift_job:
 
 run_qa_tests_openshift_job:
   stage: qa_run_tests
+  except:
+    - schedules
   script:
     - cd scripts
     - docker pull $IMAGE_TAG
@@ -107,14 +142,30 @@ run_qa_tests_openshift_job:
 
 mirror_to_github:
   stage: mirroring
+  except:
+    - schedules
   script:
     - rm -rf ../poc-bare
     - git clone --bare $CI_REPOSITORY_URL ../poc-bare
     - cd ../poc-bare
     - git push --mirror $GITHUB_MIRROR
 
+backup_rahti_int_job:
+  stage: prod_backups
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
+  only:
+    - master
+  tags:
+    - rahti-int
+
 deploy_rahti_int_job:
   stage: prod_deploy
+  except:
+    - schedules
   script:
     - cd scripts
     - docker pull $IMAGE_TAG
