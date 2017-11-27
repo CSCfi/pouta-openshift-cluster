@@ -10,64 +10,31 @@ parameters:
       A name for the OpenShift environment to be used for naming resources.
     type: string
     default: { get_param: 'OS::stack_name' }
-  bastion_allow_ports:
-    description: >
-      Which ports to allow connections to on the bastion host.
-    type: comma_delimited_list
-    default: '22'
-  bastion_allow_cidrs:
-    description: >
-      The CIDRs of the networks where the bastion host should be accessible
-      from.
-    type: comma_delimited_list
-    default: '0.0.0.0/0'
-  secgroup_ext_access_rules:
-    description: >
-      Rules for the security group that governs external access to the system.
-    type: json
-  openshift_network_cidr:
-    description: >
-      What CIDR to use for the dedicated cluster network.
-    type: string
-    default: '192.168.10.0/24'
-  openshift_network_dns_servers:
-    description: >
-      What DNS servers to use in the dedicated cluster network.
-    type: comma_delimited_list
-    default: '193.166.4.24,193.166.4.25'
-  openshift_network_allocation_pool_start:
-    description: >
-      Start address for the allocation pool of the OpenShift network. The
-      allocation pool is for dynamically reserved IP addresses.
-    type: string
-    default: '192.168.10.60'
-  openshift_network_allocation_pool_end:
-    description: >
-      End address for the allocation pool of the OpenShift network. The
-      allocation pool is for dynamically reserved IP addresses.
-    type: string
-    default: '192.168.10.254'
-  openshift_router:
-    description: >
-      The router to which the dedicated cluster network should be connected to
-      for external access.
-    type: string
   key_name:
     description: >
       The name of the SSH key to initially insert into VMs.
     type: string
-  bastion_vm_image:
+  secgroup_id_infra:
     description: >
-      What OpenStack image to use for the bastion host.
+      Id of infra security group
     type: string
-  bastion_vm_flavor:
+  secgroup_id_common:
     description: >
-      What OpenStack flavor to use for the bastion host.
+      Id of common security group
     type: string
-  bastion_cloud_config:
+  secgroup_id_ext_access:
     description: >
-      Configuration for cloud-init for the bastion host.
-    type: json
+      Id for external access security group
+    type: string
+  network_id:
+    description: >
+      Id of cluster network
+    type: string
+  network_prefix:
+    description: >
+      The first two (/16) or three (/24) octets of a private network CIDR.
+    type: string
+    default: "192.168"
   master_vm_group_size:
     description: >
       How many master VMs to start.
@@ -84,11 +51,6 @@ parameters:
     description: >
       The size of the Cinder volume to attach to NFS VMs.
     type: number
-  network_prefix:
-    description: >
-      The first two (/16) or three (/24) octets of a private network CIDR.
-    type: string
-    default: "192.168"
   master_resource_group_identifier:
     description: >
       The part of the cluster IP address that differentiates the master
@@ -104,45 +66,6 @@ resources:
   # Security groups
   #-----------------------------------
 
-  secgroup_bastion:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: "bastion"
-      rules:
-        repeat:
-          for_each:
-            <%port%>: { get_param: bastion_allow_ports }
-            <%cidr%>: { get_param: bastion_allow_cidrs }
-          template:
-            protocol: tcp
-            port_range_min: <%port%>
-            port_range_max: <%port%>
-            remote_ip_prefix: <%cidr%>
-
-  secgroup_common:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: "common"
-      rules:
-        - remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_bastion }
-        - remote_mode: remote_group_id
-          protocol: icmp
-        - remote_mode: remote_group_id
-          protocol: udp
-          port_range_min: 4789
-          port_range_max: 4789
-
-  secgroup_infra:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: infra
-      rules:
-        - remote_mode: remote_group_id
-
   secgroup_lb:
     type: secgroup.yaml
     properties:
@@ -153,24 +76,17 @@ resources:
           port_range_min: 80
           port_range_max: 80
           remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
         - protocol: tcp
           port_range_min: 443
           port_range_max: 443
           remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
         - protocol: tcp
           port_range_min: 8443
           port_range_max: 8443
           remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
-
-  secgroup_ext_access:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: "ext-access"
-      rules: { get_param: secgroup_ext_access_rules }
+          remote_group_id: { get_param: secgroup_id_common }
 
   secgroup_master:
     type: secgroup.yaml
@@ -182,17 +98,17 @@ resources:
           port_range_min: 53
           port_range_max: 53
           remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
         - protocol: tcp
           port_range_min: 53
           port_range_max: 53
           remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
         - protocol: tcp
           port_range_min: 8443
           port_range_max: 8443
           remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
 
   secgroup_nfs:
     type: secgroup.yaml
@@ -201,73 +117,10 @@ resources:
       name_suffix: nfs
       rules:
         - remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_common }
+          remote_group_id: { get_param: secgroup_id_common }
           protocol: tcp
           port_range_min: 2049
           port_range_max: 2049
-
-  #-----------------------------------
-  # Dedicated cluster network
-  #-----------------------------------
-
-  openshift_network:
-    type: OS::Neutron::Net
-    properties:
-       name:
-         str_replace:
-            template: env_name-name_suffix
-            params:
-              env_name: { get_param: env_name }
-              name_suffix: "network"
-
-  openshift_subnet:
-    type: OS::Neutron::Subnet
-    properties:
-      network_id: { get_resource: openshift_network }
-      cidr: { get_param: openshift_network_cidr }
-      dns_nameservers: { get_param: openshift_network_dns_servers }
-      allocation_pools:
-        - start: { get_param: openshift_network_allocation_pool_start }
-          end: { get_param: openshift_network_allocation_pool_end }
-
-  openshift_subnet_router_interface:
-    type: OS::Neutron::RouterInterface
-    properties:
-      router: { get_param: openshift_router }
-      subnet: { get_resource: openshift_subnet }
-
-  #-----------------------------------
-  # Bastion VM
-  #-----------------------------------
-
-  bastion_cloud_config_resource:
-    type: "OS::Heat::CloudConfig"
-    properties:
-      cloud_config: { get_param: bastion_cloud_config }
-
-  bastion:
-    type: OS::Nova::Server
-    depends_on: "openshift_subnet"
-    properties:
-      name:
-        str_replace:
-          template: env_name-name_suffix
-          params:
-            env_name: { get_param: env_name }
-            name_suffix: "bastion"
-      image: { get_param: bastion_vm_image }
-      networks:
-        - network: { get_resource: openshift_network }
-      flavor: { get_param: bastion_vm_flavor }
-      metadata:
-        group: "bastion"
-        stack: { get_param: env_name }
-      key_name: { get_param: key_name }
-      security_groups:
-        - { get_resource: secgroup_bastion }
-      user_data: { get_resource: bastion_cloud_config_resource }
-      user_data_format: RAW
-      user_data_update_policy: "IGNORE"
 
   #-----------------------------------
   # Nova server groups (anti-affinity)
@@ -285,7 +138,6 @@ resources:
 
   master_vm_group:
     type: OS::Heat::ResourceGroup
-    depends_on: "openshift_subnet"
     properties:
       count: { get_param: master_vm_group_size }
       removal_policies: [{'resource_list': ['0']}]
@@ -300,7 +152,7 @@ resources:
                 name_suffix: "master"
           image: { get_param: master_vm_image }
           networks:
-            - network: { get_resource: openshift_network }
+            - network: { get_param: network_id }
               fixed_ip:
                 str_replace:
                   template: network_prefix.master_resource_group_identifier%index%
@@ -313,19 +165,12 @@ resources:
             stack: { get_param: env_name }
           key_name: { get_param: key_name }
           security_groups:
-            - { get_resource: secgroup_infra }
-            - { get_resource: secgroup_common }
+            - { get_param: secgroup_id_infra }
+            - { get_param: secgroup_id_common }
+            - { get_param: secgroup_id_ext_access }
             - { get_resource: secgroup_master }
             - { get_resource: secgroup_lb }
-            - { get_resource: secgroup_ext_access }
           scheduler_hints:
             group: { get_resource: master }
           vol_name_suffix: "data"
           vol_size: { get_param: master_vm_vol_size }
-
-outputs:
-  resources:
-    value:
-      secgroup_id_common: { get_resource: secgroup_common }
-      secgroup_id_infra: { get_resource: secgroup_infra }
-      network_id: { get_resource: openshift_network }

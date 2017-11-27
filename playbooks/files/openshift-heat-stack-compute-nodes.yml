@@ -26,6 +26,10 @@ parameters:
     description: >
       Id of infra security group
     type: string
+  secgroup_id_ext_access:
+    description: >
+      Id of external access security group
+    type: string
   compute_node_group_size:
     description: >
       How many compute nodes to start.

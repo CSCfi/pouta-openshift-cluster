@@ -13,13 +13,6 @@
       changed_when: false
       no_log: True
 
-    - name: check if stack has been provisioned already (minimal)
-      shell: openstack stack show {{ cluster_name }}
-      register: stack_output_minimal
-      failed_when: false
-      changed_when: false
-      no_log: True
-
     - block:
       - set_fact: ssh_config_file={{lookup('env', 'HOME')}}/.ssh/config
       - name: create $HOME/.ssh/
@@ -64,5 +57,4 @@
         - item != "localhost"
         - item != cluster_name + "-bastion"
         with_items: "{{ groups.all }}"
-      when: stack_output_minimal.stderr.find('Stack not found') == -1 or
-            stack_output_base.stderr.find('Stack not found') == -1
+      when: stack_output_base.stderr.find('Stack not found') == -1

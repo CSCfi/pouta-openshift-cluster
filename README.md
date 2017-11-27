@@ -25,7 +25,12 @@ is done with the official [installer playbook](https://github.com/openshift/open
     - security groups
     - networks 
 - uses OpenStack Heat for provisioning
-- optionally updates existing Heat stacks
+- always updates heat stack for base resources (bastion, networks, basic security groups, ...)
+- optionally updates other Heat stacks. The variables are:
+  - allow_heat_stack_update_node_groups: list of node groups to update
+  - allow_heat_stack_update_cluster: update masters and load balancers
+  - allow_heat_stack_update_etcd: update etcd VMs
+  - allow_heat_stack_update_glusterfs: update glusterfs hosts
 
 ### pre_install.yml
 
@@ -43,24 +48,18 @@ is done with the official [installer playbook](https://github.com/openshift/open
 - optionally deploys default www page and Prometheus based monitoring
 
 
-### scaleup.yml
+### scaleup.yml and site_scaleup.yml
 
-Running OpenShift Ansible scaleup playbooks for any host that does not 
+*scaleup.yml* runs OpenShift Ansible scaleup playbooks for any host that does not 
 have /var/lib/POC_INSTALLED flag on them. The playbooks are
     
     playbooks/byo/openshift-master/scaleup.yml
     playbooks/byo/openshift-node/scaleup.yml
     playbooks/byo/openshift-etcd/scaleup.yml
 
-NOTE: Set flag 'allow_first_master_scaleup' to true to allow 
-replacing/recovering first master. This is a special case as the first 
-master has the files for local CA, thus you must restore /etc/origin/master 
-first from backup before configuring it with scaleup.
-
-The complete process of scaling up would include editing the resource group size 
-in the inventory and running provisioning, preinstall and scaleup:
-
-    ansible-playbook -v -e allow_heat_stack_update=1 site_scaleup.yml
+*site_scaleup.yml* is a wrapper around scaleup.yml that calls provision.yml, pre_install.yml, 
+scaleup.yml and post_install.yml. See "Heat stack updates" and recovery documentation in docs/ for 
+usage instructions.
 
 ## Prerequisites
 
@@ -205,11 +204,16 @@ to the process for the color coding and ctrl+c to work.
 
 ### Heat stack updates
 
-If you want to update an existing Heat stack to, say, add more minion nodes,
-then you can set allow_heat_stack_update to true when running the provisioning
-or the site playbooks:
+Normally only base stack is updated when running site or provisioning playbooks. In case you need to 
+update an existing Heat stack, set the corresponding variable (allow_heat_stack_update_*) to true. See 
+the description for provision.yml for a list of variables 
 
-    ansible-playbook site.yml -e "allow_heat_stack_update=true"
+Here is how you would update the stack for ssdnodes, e.g. for scale up purposes: 
+
+    ansible-playbook site.yml -e '{allow_heat_stack_update_node_groups=["ssdnode"]}'
+
+Note that some configuration changes like VM image may result in all VMs in the stack to be reprovisioned.
+Be careful and test with non-critical resources first.
 
 ## Deprovisioning
 
