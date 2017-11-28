@@ -59,7 +59,7 @@ parameters:
       group. Comes after network prefix but before index (1-9). Ends with a dot
       (when cluster network is /16) or not (when cluster network is /24).
     type: string
-    default: "1."
+    default: "5."
 
 resources:
 

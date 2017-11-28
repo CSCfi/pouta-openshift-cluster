@@ -50,7 +50,7 @@ parameters:
       with a dot (when cluster network is /16) or not (when cluster network is
       /24).
     type: string
-    default: "5."
+    default: "6."
   compute_node_flavor:
     description: >
       What OpenStack flavor to use for compute nodes.
