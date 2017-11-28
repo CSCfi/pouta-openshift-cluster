@@ -267,6 +267,7 @@ resources:
         - { get_resource: secgroup_bastion }
       user_data: { get_resource: bastion_cloud_config_resource }
       user_data_format: RAW
+      user_data_update_policy: "IGNORE"
 
   #-----------------------------------
   # Nova server groups (anti-affinity)
