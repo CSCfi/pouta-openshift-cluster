@@ -41,6 +41,7 @@ resources:
 
   volume:
     type: OS::Cinder::Volume
+    depends_on: vm
     properties:
       name:
         list_join: ['-', [{ get_param: vm_name }, { get_param: vol_name_suffix }]]
