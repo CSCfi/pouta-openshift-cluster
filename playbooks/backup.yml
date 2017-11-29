@@ -101,6 +101,42 @@
       file:
         path: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
         state: absent
+    - name: ensure python-heketi is installed
+      yum:
+        pkg: python-heketi
+    - name: drop backup script to ansible user's home directory
+      copy:
+        src: "files/heketi_backup.py"
+        dest: "~/heketi_backup.py"
+        mode: 0755
+    - name: get Heketi secret
+      oc_secret:
+        state: list
+        namespace: glusterfs
+        name: heketi-storage-admin-secret
+        decode: True
+      register: heketi_secret
+      run_once: true
+    - name: backup Heketi BoltDB via Heketi API
+      shell: >
+        python ~/heketi_backup.py
+        --user admin
+        --key {{ heketi_secret.results.decoded.key }}
+        --host http://heketi-storage.glusterfs.svc:8080
+        --file /tmp/heketi.db
+      run_once: true
+    - name: sync Heketi BoltDB backup to bastion
+      synchronize:
+        src: "/tmp/heketi.db"
+        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/heketi-{{ backup_time }}.db"
+        mode: pull
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+      run_once: true
+    - name: remove Heketi BoltDB backup from master
+      file:
+        path: "/tmp/heketi.db"
+        state: absent
+      run_once: true
 
 - name: Backup glusterfs
   hosts: glusterfs
@@ -117,6 +153,8 @@
         /etc/glusterfs
         /var/lib/glusterd
         /var/lib/heketi
+      tags:
+        - skip_ansible_lint
 
     - name: sync glusterfs archive to bastion
       synchronize:
