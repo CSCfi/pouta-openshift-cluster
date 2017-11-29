@@ -230,13 +230,17 @@
       os_floating_ip:
         server: "{{ cluster_name }}-master-1"
         floating_ip_address: "{{ openshift_public_ip }}"
-      when: master_vm_group_size == 1
+      when:
+        - master_vm_group_size == 1
+        - skip_public_ip_association|default(false)|bool == false
 
     - name: Associate floating IP with first LB node
       os_floating_ip:
         server: "{{ cluster_name }}-lb-1"
         floating_ip_address: "{{ openshift_public_ip }}"
-      when: master_vm_group_size > 1
+      when:
+        - master_vm_group_size > 1
+        - skip_public_ip_association|default(false)|bool == false
 
     - name: Associate floating IP with bastion host
       os_floating_ip:
