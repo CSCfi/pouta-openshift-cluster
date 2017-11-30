@@ -137,6 +137,30 @@
         path: "/tmp/heketi.db"
         state: absent
       run_once: true
+    - name: get topology information from Heketi
+      shell: >
+        oc rsh -n glusterfs dc/heketi-storage
+        heketi-cli --user admin --secret {{ heketi_secret.results.decoded.key }}
+        topology info --json
+      run_once: true
+      register: heketi_topology
+    - name: write Heketi topology info into a file
+      copy:
+        content: "{{ heketi_topology.stdout }}"
+        dest: /tmp/heketi-topo.json
+      run_once: true
+    - name: sync Heketi topology JSON file to bastion
+      synchronize:
+        src: "/tmp/heketi-topo.json"
+        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/heketi-topo-{{ backup_time }}.json"
+        mode: pull
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+      run_once: true
+    - name: remove Heketi topology JSON from master
+      file:
+        path: "/tmp/heketi-topo.json"
+        state: absent
+      run_once: true
 
 - name: Backup glusterfs
   hosts: glusterfs
