@@ -87,7 +87,7 @@
         state: absent
         wait: yes
 
-    - name: Delete stack {{ cluster_name }}-cluster (multimaster)
+    - name: Delete stack {{ cluster_name }}-cluster
       os_stack:
         name: "{{ cluster_name }}-cluster"
         state: absent
@@ -99,15 +99,9 @@
         state: absent
         wait: yes
 
-    - name: Delete stack {{ cluster_name }}-base (multimaster)
+    - name: Delete stack {{ cluster_name }}-base
       os_stack:
         name: "{{ cluster_name }}-base"
-        state: absent
-        wait: yes
-
-    - name: Delete stack {{ cluster_name }} (singlemaster)
-      os_stack:
-        name: "{{ cluster_name }}"
         state: absent
         wait: yes
 

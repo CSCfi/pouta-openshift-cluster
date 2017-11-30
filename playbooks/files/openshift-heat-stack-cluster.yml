@@ -14,10 +14,27 @@ parameters:
     description: >
       The name of the SSH key to initially insert into VMs.
     type: string
-  secgroup_ext_access_rules:
+  secgroup_id_infra:
     description: >
-      Rules for the security group that governs external access to the system.
-    type: json
+      Id of infra security group
+    type: string
+  secgroup_id_common:
+    description: >
+      Id of common security group
+    type: string
+  secgroup_id_ext_access:
+    description: >
+      Id for external access security group
+    type: string
+  network_id:
+    description: >
+      Id of cluster network
+    type: string
+  network_prefix:
+    description: >
+      The first two (/16) or three (/24) octets of a private network CIDR.
+    type: string
+    default: "192.168"
   lb_vm_group_size:
     description: >
       How many load balancer VMs to start.
@@ -62,23 +79,6 @@ parameters:
     description: >
       What OpenStack flavor to use for master VMs.
     type: string
-  secgroup_id_infra:
-    description: >
-      Id of infra security group
-    type: string
-  secgroup_id_common:
-    description: >
-      Id of common security group
-    type: string
-  network_id:
-    description: >
-      Id of cluster network
-    type: string
-  network_prefix:
-    description: >
-      The first two (/16) or three (/24) octets of a private network CIDR.
-    type: string
-    default: "192.168"
   lb_resource_group_identifier:
     description: >
       The part of the cluster IP address that differentiates the LB
@@ -131,13 +131,6 @@ resources:
           port_range_max: 8443
           remote_mode: remote_group_id
           remote_group_id: { get_param: secgroup_id_common }
-
-  secgroup_ext_access:
-    type: secgroup.yaml
-    properties:
-      env_name: { get_param: env_name }
-      name_suffix: "ext-access"
-      rules: { get_param: secgroup_ext_access_rules }
 
   secgroup_master:
     type: secgroup.yaml
@@ -229,9 +222,9 @@ resources:
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_lb }
-            - { get_resource: secgroup_ext_access }
             - { get_param: secgroup_id_infra }
             - { get_param: secgroup_id_common }
+            - { get_param: secgroup_id_ext_access }
           scheduler_hints:
             group: { get_resource: lb }
           vol_name_suffix: "data"

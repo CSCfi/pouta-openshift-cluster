@@ -11,13 +11,6 @@
         name: "{{ cluster_name }}"
         public_key_file: "/dev/shm/{{ cluster_name }}/id_rsa.pub"
 
-    - name: Check if stack has been provisioned already (minimal)
-      shell: openstack stack show {{ cluster_name }}
-      register: stack_output_minimal
-      failed_when: false
-      changed_when: false
-      no_log: True
-
     - name: Check if stack has been provisioned already (base)
       shell: openstack stack show {{ cluster_name }}-base
       register: stack_output_base
@@ -46,142 +39,110 @@
       changed_when: false
       no_log: True
 
-    # multimaster block
-    - block:
+    - name: Build/update the OpenShift Heat stack (base)
+      register: heat_stack_base
+      os_stack:
+        name: "{{ cluster_name }}-base"
+        state: present
+        template: "files/openshift-heat-stack-base.yml"
+        wait: yes
+        parameters:
+          env_name: "{{ cluster_name }}"
+          key_name: "{{ cluster_name }}"
+          secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
+          openshift_network_cidr: "{{ openshift_network_cidr }}"
+          openshift_network_allocation_pool_start: "{{ openshift_network_allocation_pool_start }}"
+          openshift_network_allocation_pool_end: "{{ openshift_network_allocation_pool_end }}"
+          openshift_router: "{{ openshift_router }}"
+          bastion_vm_image: "{{ bastion_vm_image }}"
+          bastion_vm_flavor: "{{ bastion_vm_flavor }}"
+          bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
+          bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
+          bastion_allow_ports: "{{ bastion_allow_ports }}"
 
-      - name: Build/update the OpenShift Heat stack (base)
-        register: heat_stack_base
-        os_stack:
-          name: "{{ cluster_name }}-base"
-          state: present
-          template: "files/openshift-heat-stack-base.yml"
-          wait: yes
-          parameters:
-            env_name: "{{ cluster_name }}"
-            key_name: "{{ cluster_name }}"
-            bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
-            bastion_allow_ports: "{{ bastion_allow_ports }}"
-            openshift_network_cidr: "{{ openshift_network_cidr }}"
-            openshift_network_allocation_pool_start: "{{ openshift_network_allocation_pool_start }}"
-            openshift_network_allocation_pool_end: "{{ openshift_network_allocation_pool_end }}"
-            openshift_router: "{{ openshift_router }}"
-            bastion_vm_image: "{{ bastion_vm_image }}"
-            bastion_vm_flavor: "{{ bastion_vm_flavor }}"
-            bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
-        when:
-          - stack_output_base.stderr.find('Stack not found') != -1 or
-            allow_heat_stack_update|default(false)|bool
+    - name: Put base stack output into a dict
+      set_fact:
+        base_stack_outputs: "{{ heat_stack_base.stack.outputs[0].output_value }}"
 
-      - name: Put base stack output into a dict
-        set_fact:
-          base_stack_outputs:
-            secgroup_id_common: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_common }}"
-            secgroup_id_infra: "{{ heat_stack_base.stack.outputs[0].output_value.secgroup_id_infra }}"
-            network_id: "{{ heat_stack_base.stack.outputs[0].output_value.network_id }}"
-
-      - name: Build/update the OpenShift Heat stack (etcd)
-        os_stack:
-          name: "{{ cluster_name }}-etcd"
-          state: present
-          template: "files/openshift-heat-stack-etcd.yml"
-          wait: yes
-          parameters:
-            env_name: "{{ cluster_name }}"
-            key_name: "{{ cluster_name }}"
-            etcd_vm_group_size: "{{ etcd_vm_group_size }}"
-            etcd_vm_image: "{{ etcd_vm_image }}"
-            etcd_vm_flavor: "{{ etcd_vm_flavor }}"
-            secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
-            secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
-            network_id: "{{ base_stack_outputs.network_id}}"
-            network_prefix: "{{ openshift_network_prefix }}"
-            resource_group_identifier: "{{ etcd_resource_group_identifier }}"
-        when:
-          - stack_output_etcd.stderr.find('Stack not found') != -1 or
-            allow_heat_stack_update_etcd|default(false)|bool
-
-      - name: Build/update the OpenShift Heat stack (cluster)
-        os_stack:
-          name: "{{ cluster_name }}-cluster"
-          state: present
-          template: "files/openshift-heat-stack-cluster.yml"
-          wait: yes
-          parameters:
-            env_name: "{{ cluster_name }}"
-            key_name: "{{ cluster_name }}"
-            secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
-            lb_vm_group_size: "{{ lb_vm_group_size }}"
-            lb_vm_image: "{{ lb_vm_image }}"
-            lb_vm_flavor: "{{ lb_vm_flavor }}"
-            lb_vol_size: "{{ lb_vol_size }}"
-            nfs_vm_group_size: "{{ nfs_vm_group_size }}"
-            nfs_vm_image: "{{ nfs_vm_image }}"
-            nfs_vm_flavor: "{{ nfs_vm_flavor }}"
-            nfs_vol_size: "{{ nfs_vol_size }}"
-            master_vm_group_size: "{{ master_vm_group_size }}"
-            master_vm_image: "{{ master_vm_image }}"
-            master_vm_flavor: "{{ master_vm_flavor }}"
-            secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
-            secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
-            network_id: "{{ base_stack_outputs.network_id }}"
-            network_prefix: "{{ openshift_network_prefix }}"
-            lb_resource_group_identifier: "{{ lb_resource_group_identifier }}"
-            master_resource_group_identifier: "{{ master_resource_group_identifier }}"
-            nfs_resource_group_identifier: "{{ nfs_resource_group_identifier }}"
-        when:
-          - stack_output_cluster.stderr.find('Stack not found') != -1 or
-            allow_heat_stack_update|default(false)|bool
-
+    - name: Build/update the OpenShift Heat stack (multimaster - etcd)
+      os_stack:
+        name: "{{ cluster_name }}-etcd"
+        state: present
+        template: "files/openshift-heat-stack-etcd.yml"
+        wait: yes
+        parameters:
+          env_name: "{{ cluster_name }}"
+          key_name: "{{ cluster_name }}"
+          etcd_vm_group_size: "{{ etcd_vm_group_size }}"
+          etcd_vm_image: "{{ etcd_vm_image }}"
+          etcd_vm_flavor: "{{ etcd_vm_flavor }}"
+          secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+          secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+          network_id: "{{ base_stack_outputs.network_id}}"
+          network_prefix: "{{ openshift_network_prefix }}"
+          resource_group_identifier: "{{ etcd_resource_group_identifier }}"
       when:
         - master_vm_group_size > 1
-        - allow_heat_stack_update|default(false)|bool or
-          allow_heat_stack_update_etcd|default(false)|bool or
-          stack_output_base.stderr.find('Stack not found') != -1 or
-          stack_output_etcd.stderr.find('Stack not found') != -1 or
-          stack_output_cluster.stderr.find('Stack not found') != -1
-    # end multimaster block
+        - stack_output_etcd.stderr.find('Stack not found') != -1 or
+          allow_heat_stack_update_etcd|default(false)|bool
 
-    # singlemaster block
-    - block:
-      - name: Build/update the OpenShift Heat stack (minimal)
-        register: heat_stack
-        os_stack:
-          name: "{{ cluster_name }}"
-          state: present
-          template: "files/openshift-heat-stack-minimal.yml"
-          wait: yes
-          parameters:
-            env_name: "{{ cluster_name }}"
-            bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
-            bastion_allow_ports: "{{ bastion_allow_ports }}"
-            secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
-            openshift_network_cidr: "{{ openshift_network_cidr }}"
-            openshift_router: "{{ openshift_router }}"
-            key_name: "{{ cluster_name }}"
-            bastion_vm_image: "{{ bastion_vm_image }}"
-            bastion_vm_flavor: "{{ bastion_vm_flavor }}"
-            bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
-            master_vm_group_size: "{{ master_vm_group_size }}"
-            master_vm_image: "{{ master_vm_image }}"
-            master_vm_flavor: "{{ master_vm_flavor }}"
-            master_vm_vol_size: "{{ master_vm_vol_size }}"
-            openshift_network_allocation_pool_start: "{{ openshift_network_allocation_pool_start }}"
-            openshift_network_allocation_pool_end: "{{ openshift_network_allocation_pool_end }}"
-            network_prefix: "{{ openshift_network_prefix }}"
-            master_resource_group_identifier: "{{ master_resource_group_identifier }}"
+    - name: Build/update the OpenShift Heat stack (cluster/multimaster)
+      os_stack:
+        name: "{{ cluster_name }}-cluster"
+        state: present
+        template: "files/openshift-heat-stack-cluster.yml"
+        wait: yes
+        parameters:
+          env_name: "{{ cluster_name }}"
+          key_name: "{{ cluster_name }}"
+          secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+          secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+          secgroup_id_ext_access: "{{ base_stack_outputs.secgroup_id_ext_access }}"
+          network_id: "{{ base_stack_outputs.network_id }}"
+          network_prefix: "{{ openshift_network_prefix }}"
+          lb_vm_group_size: "{{ lb_vm_group_size }}"
+          lb_vm_image: "{{ lb_vm_image }}"
+          lb_vm_flavor: "{{ lb_vm_flavor }}"
+          lb_vol_size: "{{ lb_vol_size }}"
+          nfs_vm_group_size: "{{ nfs_vm_group_size }}"
+          nfs_vm_image: "{{ nfs_vm_image }}"
+          nfs_vm_flavor: "{{ nfs_vm_flavor }}"
+          nfs_vol_size: "{{ nfs_vol_size }}"
+          master_vm_group_size: "{{ master_vm_group_size }}"
+          master_vm_image: "{{ master_vm_image }}"
+          master_vm_flavor: "{{ master_vm_flavor }}"
+          lb_resource_group_identifier: "{{ lb_resource_group_identifier }}"
+          master_resource_group_identifier: "{{ master_resource_group_identifier }}"
+          nfs_resource_group_identifier: "{{ nfs_resource_group_identifier }}"
+      when:
+        - master_vm_group_size > 1
+        - stack_output_cluster.stderr.find('Stack not found') != -1 or
+          allow_heat_stack_update_cluster|default(false)|bool
 
-      - name: Put minimal stack outputs into dict
-        set_fact:
-          base_stack_outputs:
-            secgroup_id_common: "{{ heat_stack.stack.outputs[0].output_value.secgroup_id_common }}"
-            secgroup_id_infra: "{{ heat_stack.stack.outputs[0].output_value.secgroup_id_infra }}"
-            network_id: "{{ heat_stack.stack.outputs[0].output_value.network_id }}"
-
+    - name: Build/update the OpenShift Heat stack (cluster/singlemaster)
+      register: heat_stack
+      os_stack:
+        name: "{{ cluster_name }}-cluster"
+        state: present
+        template: "files/openshift-heat-stack-minimal.yml"
+        wait: yes
+        parameters:
+          env_name: "{{ cluster_name }}"
+          key_name: "{{ cluster_name }}"
+          secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+          secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+          secgroup_id_ext_access: "{{ base_stack_outputs.secgroup_id_ext_access }}"
+          network_id: "{{ base_stack_outputs.network_id }}"
+          network_prefix: "{{ openshift_network_prefix }}"
+          master_vm_group_size: "{{ master_vm_group_size }}"
+          master_vm_image: "{{ master_vm_image }}"
+          master_vm_flavor: "{{ master_vm_flavor }}"
+          master_vm_vol_size: "{{ master_vm_vol_size }}"
+          master_resource_group_identifier: "{{ master_resource_group_identifier }}"
       when:
         - master_vm_group_size == 1
-        - stack_output_minimal.stderr.find('Stack not found') != -1 or
-          allow_heat_stack_update|default(false)|bool
-    # end singlemaster block
+        - stack_output_cluster.stderr.find('Stack not found') != -1 or
+          allow_heat_stack_update_cluster|default(false)|bool
 
     - name: Build/update the OpenShift Heat stack (glusterfs)
       os_stack:
@@ -214,9 +175,9 @@
         wait: yes
         parameters: "{{ item.heat_parameters | combine(base_stack_outputs) }}"
       with_items: "{{ compute_node_groups }}"
-      # this is true if we are provisioning a new cluster or allow_heat_stack_update is true
       when:
-        - base_stack_outputs is defined
+        - stack_output_base.stderr.find('Stack not found') != -1 or
+          item.stack_name in allow_heat_stack_update_node_groups|default([])
 
     - name: Remove inventory cache
       file:

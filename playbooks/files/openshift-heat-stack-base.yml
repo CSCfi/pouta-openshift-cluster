@@ -14,17 +14,6 @@ parameters:
     description: >
       The name of the SSH key to initially insert into VMs.
     type: string
-  bastion_allow_ports:
-    description: >
-      Which ports to allow connections to on the bastion host.
-    type: comma_delimited_list
-    default: '22'
-  bastion_allow_cidrs:
-    description: >
-      The CIDRs of the networks where the bastion host should be accessible
-      from.
-    type: comma_delimited_list
-    default: '0.0.0.0/0'
   openshift_network_cidr:
     description: >
       What CIDR to use for the dedicated cluster network.
@@ -52,6 +41,10 @@ parameters:
       The router to which the dedicated cluster network should be connected to
       for external access.
     type: string
+  secgroup_ext_access_rules:
+    description: >
+      Rules for the security group that governs external access to the system.
+    type: json
   bastion_vm_image:
     description: >
       What OpenStack image to use for the bastion host.
@@ -64,6 +57,17 @@ parameters:
     description: >
       Configuration for cloud-init for the bastion host.
     type: json
+  bastion_allow_ports:
+    description: >
+      Which ports to allow connections to on the bastion host.
+    type: comma_delimited_list
+    default: '22'
+  bastion_allow_cidrs:
+    description: >
+      The CIDRs of the networks where the bastion host should be accessible
+      from.
+    type: comma_delimited_list
+    default: '0.0.0.0/0'
 
 resources:
 
@@ -109,6 +113,13 @@ resources:
       name_suffix: infra
       rules:
         - remote_mode: remote_group_id
+
+  secgroup_ext_access:
+    type: secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: "ext-access"
+      rules: { get_param: secgroup_ext_access_rules }
 
   #-----------------------------------
   # Dedicated cluster network
@@ -180,4 +191,5 @@ outputs:
     value:
       secgroup_id_common: { get_resource: secgroup_common }
       secgroup_id_infra: { get_resource: secgroup_infra }
+      secgroup_id_ext_access: { get_resource: secgroup_ext_access }
       network_id: { get_resource: openshift_network }
