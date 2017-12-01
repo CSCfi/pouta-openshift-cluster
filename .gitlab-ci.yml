@@ -107,6 +107,7 @@ backup_oso_qa_job:
     - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
   only:
     - master
+    - schedules
   tags:
     - oso-qa
 
@@ -118,6 +119,7 @@ deploy_qa_openshift_job:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
     - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
   environment:
     name: oso-qa
@@ -159,6 +161,7 @@ backup_rahti_int_job:
     - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
   only:
     - master
+    - schedules
   tags:
     - rahti-int
 
@@ -170,6 +173,7 @@ deploy_rahti_int_job:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
     - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
   environment:
     name: production/rahti-int
