@@ -31,6 +31,10 @@ echo "ANSIBLE_LIBRARY set to $ANSIBLE_LIBRARY"
 
 pushd /opt/deployment/poc/playbooks > /dev/null
 
+echo "Installing galaxy-roles"
+echo
+ansible-galaxy install -f -p $HOME/galaxy-roles -r requirements.yml
+
 echo "Initializing ramdisk contents"
 echo
 SKIP_DYNAMIC_INVENTORY=1 ansible-playbook initialize_ramdisk.yml

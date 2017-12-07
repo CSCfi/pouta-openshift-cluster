@@ -24,7 +24,6 @@ before_script:
   - eval "$(ssh-agent -s)"
   - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
   - echo "$CI_RUNNER_SSH_KEY" > ~/.ssh/id_rsa && chmod 0600 ~/.ssh/id_rsa
-  - '(cd playbooks; ansible-galaxy install -f -r requirements.yml)'
   - rm -rf ../openshift-environments
   - git clone $ENVIRONMENTS_REPO_URL ../openshift-environments
   - '(cd ../openshift-environments; git rev-parse --verify -q remotes/origin/$CI_COMMIT_REF_NAME) &&
