@@ -39,6 +39,15 @@
       changed_when: false
       no_log: True
 
+    - name: Optionally assert that this is a new deployment
+      assert:
+        that: stack_output_base.stderr.find('Stack not found') != -1
+        msg: >
+          Asserting a new clean deployment failed, base stack exists. Since we require a clean deployment,
+          this is probably a CI environment and there are some leftover resources from a previous CI build.
+          Please clean up the old build and try again.
+      when: assert_new_deployment|default(False)|bool
+
     - name: Build/update the OpenShift Heat stack (base)
       register: heat_stack_base
       os_stack:
