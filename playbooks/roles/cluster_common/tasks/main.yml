@@ -52,3 +52,10 @@
   mount:
     path: '/mnt'
     state: absent
+
+- name: configure cron to send output to syslog instead of mail
+  lineinfile:
+    path: /etc/sysconfig/crond
+    regexp: '^CRONDARGS=.*'
+    line: 'CRONDARGS=-s -m off'
+  notify: restart crond

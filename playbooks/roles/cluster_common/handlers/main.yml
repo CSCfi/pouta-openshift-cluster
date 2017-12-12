@@ -5,3 +5,8 @@
     if systemctl -q is-active dnsmasq; then
       systemctl kill -s HUP dnsmasq;
     fi
+
+- name: restart crond
+  service:
+    name: crond
+    state: restarted
