@@ -8,3 +8,18 @@
   with_items:
     - "-A INPUT -p udp -m udp --dport 53 -j ACCEPT"
     - "-A INPUT -p tcp -m tcp --dport 53 -j ACCEPT"
+
+- name: add a script for pruning old objects
+  copy:
+    src: files/poc_prune_objects.bash
+    dest: /usr/local/bin/poc_prune_objects.bash
+    mode: '0755'
+
+- name: add a cron entry for object auto pruning
+  cron:
+    name: "Prune old OpenShift objects"
+    hour: "{{ groups.masters.index(inventory_hostname) }}"
+    minute: "42"
+    cron_file: poc_openshift_pruning
+    user: root
+    job: "/usr/local/bin/poc_prune_objects.bash"
