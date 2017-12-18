@@ -1,0 +1,64 @@
+- name: Setup default www app
+  hosts: masters[0]
+  tasks:
+    # block for conditionally deploying default-www-app
+    - block:
+      - name: check if project default-www exists
+        shell: oc get projects | grep default-www
+        register: existing_default_www
+        changed_when: false
+        failed_when: false
+
+      - name: create project default-www
+        shell: oc new-project default-www && oc project default
+        when: existing_default_www.stdout_lines | length == 0
+
+      - name: check if app has been deployed
+        shell: oc get dc -n default-www default-www-app
+        register: existing_default_www_app
+        changed_when: false
+        failed_when: false
+
+      - name: create app
+        shell: oc new-app -n default-www --name default-www-app {{ default_www_app_image }}
+        when: existing_default_www_app.stdout_lines | length == 0
+
+      - name: set environment variables
+        shell: oc set env -n default-www dc/default-www-app {{ item }}
+        with_items:
+        - PLATFORM_NAME={{ cluster_name }}
+        - PLATFORM_API_URL=https://{{ openshift_public_hostname }}:8443
+        - PLATFORM_APP_BASE_NAME={{ openshift_public_hostname }}
+        when: existing_default_www_app.stdout_lines | length == 0
+
+      - name: create default www app routes
+        oc_route:
+          state: present
+          name: "default-www-{{ item.name }}"
+          namespace: default-www
+          service_name: default-www-app
+          cert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
+          key_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key"
+          cacert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}_ext_ca.crt"
+          host: "{{ item.hostname|default(item.name + '.' + openshift_public_hostname) }}"
+          tls_termination: edge
+        with_items:
+        - name: default
+          hostname: "{{ openshift_public_hostname }}"
+        - name: www
+        - name: admin
+
+      - name: add redirect rule to default www app routes
+        oc_edit:
+          kind: routes
+          name: "default-www-{{ item }}"
+          namespace: default-www
+          content:
+            spec.tls.insecureEdgeTerminationPolicy: Redirect
+        with_items:
+        - default
+        - www
+        - admin
+      when:
+      - deploy_default_www_app | default(false) | bool
+      - default_www_app_image is defined

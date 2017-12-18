@@ -1,0 +1,51 @@
+---
+- name: Import objects through first master
+  hosts: masters[0]
+  tasks:
+    - name: update storage classes
+      oc_storageclass:
+        name: "{{ item.name }}"
+        state: present
+        default_storage_class: "{{ item.default_storage_class|default(omit) }}"
+        provisioner: "{{ item.provisioner }}"
+        parameters: "{{ item.parameters|default([]) }}"
+      with_items: "{{ storage_classes|default([]) }}"
+      when:
+        - skip_pvc|default(false) == false
+        - item.name in active_storage_classes
+
+    - name: copy nfs_pv definitions to first master
+      copy:
+        src: /tmp/nfs_pv
+        dest: /home/cloud-user/
+      when: provision_nfs_pvs|default(false)|bool
+
+    - name: create PVs
+      shell: for vol in nfs_pv/persistent-volume.pvol*; do oc create -f $vol; done
+      failed_when: false
+      when: provision_nfs_pvs|default(false)|bool
+
+    - name: copy default project template to first master
+      template:
+        src: "{{ oso_default_project_request|default('templates/project-request.yaml') }}"
+        dest: /home/cloud-user/project-request.yaml
+
+    - name: check if project template exists
+      shell: oc get template -n default project-request-default
+      register: existing_template
+      changed_when: false
+      failed_when: false
+
+    - name: import project template
+      shell: oc create -n default -f /home/cloud-user/project-request.yaml
+      when: existing_template.stdout_lines | length == 0
+
+    - name: update project template
+      shell: oc replace -n default -f /home/cloud-user/project-request.yaml
+      when: existing_template.stdout_lines | length > 0
+
+    - name: remove default route for Heketi
+      oc_route:
+        name: heketi-storage
+        namespace: glusterfs
+        state: absent
