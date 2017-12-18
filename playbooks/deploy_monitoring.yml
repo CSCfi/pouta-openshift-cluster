@@ -47,16 +47,17 @@
         src: "{{ mktemp.stdout }}/proxy-htpasswd"
       register: proxy_htpasswd
 
-    - name: upsert secret
-      include: tasks/upsert_k8s_object.yml
-      vars:
+    - name: upsert secret in monitoring-infra
+      oc_secret:
+        state: present
         namespace: monitoring-infra
-        template_base_name: secret.yaml.j2
         name: monitoring-token
-        labels: {}
-        data:
-          htpasswd: "{{ proxy_htpasswd['content'] }}"
-          token: "{{ monitoring_access_token | b64encode }}"
+        contents:
+        # this comes from 'slurp' module and needs to be decoded
+        - path:  htpasswd
+          data: "{{ proxy_htpasswd['content']| b64decode }}"
+        - path: token
+          data: "{{ monitoring_access_token }}"
 
     - name: upsert prometheus data volume
       include: tasks/upsert_k8s_object.yml
@@ -75,6 +76,26 @@
         namespace: monitoring-infra
         template_base_name: prometheus.yaml.j2
         name: prometheus
+
+    - name: upsert secret for heketi-metrics-exporter
+      oc_secret:
+        state: present
+        namespace: glusterfs
+        name: monitoring-token
+        contents:
+        # this comes from 'slurp' module and needs to be decoded
+        - path:  htpasswd
+          data: "{{ proxy_htpasswd['content']| b64decode }}"
+
+    - name: upsert heketi-metrics-exporter deployment
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: glusterfs
+        template_base_name: heketi-metrics-exporter.yaml.j2
+        name: heketi-metrics-exporter
+        data:
+          htpasswd: "{{ proxy_htpasswd['content'] }}"
+          token: "{{ monitoring_access_token | b64encode }}"
 
     - name: upsert grafana data volume
       include: tasks/upsert_k8s_object.yml
