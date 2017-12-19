@@ -3,15 +3,11 @@
   tasks:
     # block for conditionally deploying default-www-app
     - block:
-      - name: check if project default-www exists
-        shell: oc get projects | grep default-www
-        register: existing_default_www
-        changed_when: false
-        failed_when: false
-
       - name: create project default-www
-        shell: oc new-project default-www && oc project default
-        when: existing_default_www.stdout_lines | length == 0
+        oc_project:
+          state: present
+          name: default-www
+          display_name: "The default OpenShift web application"
 
       - name: check if app has been deployed
         shell: oc get dc -n default-www default-www-app
@@ -20,16 +16,13 @@
         failed_when: false
 
       - name: create app
-        shell: oc new-app -n default-www --name default-www-app {{ default_www_app_image }}
+        shell: oc new-app -n default-www --name default-www-app {{ default_www_app_repo }}
         when: existing_default_www_app.stdout_lines | length == 0
 
+      # TODO: use oc_env when that works (at the time of this writing it does not)
       - name: set environment variables
-        shell: oc set env -n default-www dc/default-www-app {{ item }}
-        with_items:
-        - PLATFORM_NAME={{ cluster_name }}
-        - PLATFORM_API_URL=https://{{ openshift_public_hostname }}:8443
-        - PLATFORM_APP_BASE_NAME={{ openshift_public_hostname }}
-        when: existing_default_www_app.stdout_lines | length == 0
+        shell: oc set env -n default-www dc/default-www-app {{ item.key }}="{{ item.value }}"
+        with_dict: "{{ default_www_app_environment }}"
 
       - name: create default www app routes
         oc_route:
@@ -59,6 +52,6 @@
         - default
         - www
         - admin
+
       when:
       - deploy_default_www_app | default(false) | bool
-      - default_www_app_image is defined
