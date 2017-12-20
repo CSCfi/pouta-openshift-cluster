@@ -54,15 +54,15 @@ check_route_url() {
 }
 
 @test "test connectivity to default www app" {
-    run check_route_url default-www default-www-admin
+    run check_route_url default-www default-www-admin "container cloud"
 
     [ $status -eq 0 ]
 
-    run check_route_url default-www default-www-default
+    run check_route_url default-www default-www-default "container cloud"
 
     [ $status -eq 0 ]
 
-    run check_route_url default-www default-www-www
+    run check_route_url default-www default-www-www "container cloud"
 
     [ $status -eq 0 ]
 }
