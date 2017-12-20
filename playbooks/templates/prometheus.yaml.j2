@@ -281,3 +281,12 @@ items:
         - source_labels: [__meta_kubernetes_service_name]
           action: replace
           target_label: kubernetes_name
+
+      - job_name: 'heketi'
+        scheme: https
+        basic_auth:
+          username: token
+          password: {{ monitoring_access_token }}
+        static_configs:
+        - targets:
+          - heketi-metrics-exporter.{{ openshift_public_hostname }}
