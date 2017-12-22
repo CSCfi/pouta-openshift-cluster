@@ -1,0 +1,33 @@
+---
+- name: install keepalived
+  yum:
+    name: keepalived
+    state: present
+
+- name: ensure the script dir for keepalived exists
+  file:
+    path: /usr/local/share/keepalived
+    state: directory
+    mode: 0755
+
+- name: drop check scripts
+  copy:
+    src: scripts/
+    dest: /usr/local/share/keepalived
+    mode: 0755
+
+- name: configure keepalived
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart keepalived
+
+- name: optionally ensure keepalived is started at boot (defaults to true)
+  systemd:
+    enabled: yes
+    name: keepalived
+  when: enable_keepalived_on_startup|default(true)|bool

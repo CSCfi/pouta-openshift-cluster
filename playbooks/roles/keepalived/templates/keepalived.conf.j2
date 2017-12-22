@@ -1,0 +1,28 @@
+global_defs {
+    enable_script_security
+}
+
+vrrp_script check_poc_installed {
+    script       "/usr/local/share/keepalived/check_poc_installed.sh"
+    interval 10
+}
+
+vrrp_instance vrrp_group_1 {
+    state {{ keepalived_state }}
+    interface {{ keepalived_interface }}
+    virtual_router_id 1
+    priority {{ keepalived_priority }}
+    authentication {
+        auth_type AH
+        auth_pass {{ keepalived_password }}
+    }
+    virtual_ipaddress {
+        {{ keepalived_vip }}/{{ keepalived_vip_mask_bits }} brd {{ keepalived_vip_mask }} dev {{ keepalived_interface }}
+    }
+    track_interface {
+        {{ keepalived_interface }}
+    }
+    track_script {
+        check_poc_installed weight {{ poc_not_installed_weight }}
+    }
+}
