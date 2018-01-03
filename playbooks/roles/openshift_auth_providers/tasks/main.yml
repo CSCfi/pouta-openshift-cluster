@@ -6,7 +6,7 @@
     value: |
       - name: Local account
         login: true
-        mappingMethod: add
+        mappingMethod: "{{ local_auth_mapping_method }}"
         challenge: true
         provider:
           apiVersion: v1
@@ -16,7 +16,7 @@
       - name: GitHub
         challenge: false
         login: true
-        mappingMethod: add
+        mappingMethod: "{{ github_auth_mapping_method }}"
         provider:
           apiVersion: v1
           kind: GitHubIdentityProvider
@@ -26,19 +26,43 @@
       {% for org in github_allowed_auth_orgs %}
             - {{ org }}
       {% endfor %}
-      {%- endif %}
+      {% endif %}
       {% if deploy_gitlab_auth | d() | bool == true -%}
       - name: "{{ gitlab_oauth_provider_name }}"
         challenge: true
         login: true
-        mappingMethod: add
+        mappingMethod: "{{ gitlab_auth_mapping_method }}"
         provider:
           apiVersion: v1
           kind: GitLabIdentityProvider
           url: "{{ gitlab_url }}"
           clientID: "{{ gitlab_oauth_client_id }}"
           clientSecret: "{{ gitlab_oauth_client_secret }}"
-      {%- endif %}
+      {% endif %}
+      {% if deploy_ldap_auth | d() | bool == true -%}
+      - name: "{{ ldap_auth_provider_name }}"
+        challenge: true
+        login: true
+        mappingMethod: "{{ ldap_auth_mapping_method }}"
+        provider:
+          apiVersion: v1
+          kind: LDAPPasswordIdentityProvider
+          attributes:
+      {% for key in ldap_attribute_map %}
+            {{ key }}:
+      {% for value in ldap_attribute_map[key] %}
+              - {{ value }}
+      {% endfor %}
+      {% endfor %}
+          insecure: false
+      {% if ldap_bind_account_dn is defined %}
+          bindDN: "{{ ldap_bind_account_dn }}"
+      {% endif %}
+      {% if ldap_bind_account_password is defined %}
+          bindPassword: "{{ ldap_bind_account_password }}"
+      {% endif %}
+          url: "{{ ldap_user_query }}"
+      {% endif %}
   notify:
     - restart master
     - restart master api

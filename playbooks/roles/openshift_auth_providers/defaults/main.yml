@@ -1,2 +1,6 @@
 ---
 openshift_master_config_file: "/etc/origin/master/master-config.yaml"
+local_auth_mapping_method: "claim"
+github_auth_mapping_method: "claim"
+gitlab_auth_mapping_method: "claim"
+ldap_auth_mapping_method: "claim"
