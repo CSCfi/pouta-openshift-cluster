@@ -12,6 +12,7 @@ RUN yum install -y \
         python-devel python2-pip \
         gcc openssl-devel openssl \
         java-1.8.0-openjdk-headless httpd-tools \
+        jq \
         tmux less git man bash-completion \
     && \
     yum clean all
