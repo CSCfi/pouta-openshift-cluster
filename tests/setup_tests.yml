@@ -1,6 +1,6 @@
 ---
 - name: Setup tests
-  hosts: [masters,bastion]
+  hosts: [masters, bastion]
   become: yes
   tasks:
     - name: install bats
@@ -20,3 +20,36 @@
         dest: /tmp/poc/tests/
         owner: cloud-user
         mode: "0755"
+
+- name: Prepare bastion
+  hosts: bastion
+  become: yes
+  tasks:
+  - name: install CentOS PaaS repo
+    yum:
+      name: centos-release-openshift-origin36
+      state: present
+
+  - name: install origin clients
+    yum:
+      name: origin-clients
+      state: present
+
+  - name: create /dev/shm/secret directory for secrets
+    file:
+      path: /dev/shm/secret
+      state: directory
+      mode: 0700
+      owner: cloud-user
+    when:
+      - testuser_username is defined
+
+  - name: create testuser credential file /dev/shm/secret/testuser_credentials
+    copy:
+      dest: /dev/shm/secret/testuser_credentials
+      mode: 0400
+      owner: cloud-user
+      content: |
+        https://{{ openshift_public_hostname }}:8443|{{ testuser_username }}|{{ testuser_password }}
+    when:
+      - testuser_username is defined
