@@ -140,3 +140,11 @@
       when:
         - existing_registry_pv.stdout_lines | length > 0
         - skip_pvc|default(false) == false
+
+    - name: Deploy registry-console on infra nodes by adding a node selector
+      oc_edit:
+        namespace: default
+        kind: deploymentconfig
+        name: registry-console
+        content:
+          spec.template.spec.nodeSelector.type: master
