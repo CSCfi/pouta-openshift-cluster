@@ -11,42 +11,66 @@
         name: "{{ cluster_name }}"
         public_key_file: "/dev/shm/{{ cluster_name }}/id_rsa.pub"
 
-    - name: Check if stack has been provisioned already (base)
+    - name: Register stack creation status (base)
       shell: openstack stack show {{ cluster_name }}-base
       register: stack_output_base
       failed_when: false
       changed_when: false
       no_log: True
 
-    - name: Check if stack has been provisioned already (etcd)
+    - name: Register stack creation status (etcd)
       shell: openstack stack show {{ cluster_name }}-etcd
       register: stack_output_etcd
       failed_when: false
       changed_when: false
       no_log: True
 
-    - name: Check if stack has been provisioned already (cluster)
+    - name: Register stack creation status (cluster)
       shell: openstack stack show {{ cluster_name }}-cluster
       register: stack_output_cluster
       failed_when: false
       changed_when: false
       no_log: True
 
-    - name: Check if stack has been provisioned already (glusterfs)
+    - name: Register stack creation status (glusterfs)
       shell: openstack stack show {{ cluster_name }}-glusterfs
       register: stack_output_glusterfs
       failed_when: false
       changed_when: false
       no_log: True
 
-    - name: Optionally assert that this is a new deployment
+    - name: Register stack creation status (compute nodes)
+      shell: openstack stack show {{ cluster_name }}-{{ item.stack_name }}
+      register: stack_output_compute_nodes
+      failed_when: false
+      changed_when: false
+      no_log: True
+      with_items: "{{ compute_node_groups }}"
+
+    - name: Optionally assert that this is a new deployment (control plane stacks)
       assert:
-        that: stack_output_base.stderr.find('Stack not found') != -1
+        that:
+          - stack_output_base.stderr.find('Stack not found') != -1
+          - stack_output_cluster.stderr.find('Stack not found') != -1
+          - stack_output_glusterfs.stderr.find('Stack not found') != -1
         msg: >
-          Asserting a new clean deployment failed, base stack exists. Since we require a clean deployment,
-          this is probably a CI environment and there are some leftover resources from a previous CI build.
+          Asserting a new clean deployment failed, control plane stack(s) exist.
+          Since we require a clean deployment, this is probably a CI environment
+          and there are some leftover resources from a previous CI build.
           Please clean up the old build and try again.
       when: assert_new_deployment|default(False)|bool
+
+    - name: Optionally assert that this is a new deployment (compute node stacks)
+      assert:
+        that:
+          - item.stderr.find('Stack not found') != -1
+        msg: >
+          Asserting a new clean deployment failed, compute node stack(s) exist.
+          Since we require a clean deployment, this is probably a CI environment
+          and there are some leftover resources from a previous CI build.
+          Please clean up the old build and try again.
+      when: assert_new_deployment|default(False)|bool
+      with_items: "{{ stack_output_compute_nodes.results }}"
 
     - name: Build/update the OpenShift Heat stack (base)
       register: heat_stack_base
