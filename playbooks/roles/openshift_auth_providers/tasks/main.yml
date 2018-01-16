@@ -66,3 +66,14 @@
   notify:
     - restart master
     - restart master api
+
+- name: populate/update htaccess file
+  copy:
+    dest: /etc/origin/master/htpasswd
+    mode: 0600
+    owner: root
+    group: root
+    content: |
+      {% for user, pass in local_auth_mapping_htaccess_entries.iteritems() %}
+      {{   user ~ ':' ~ pass }}
+      {% endfor %}
