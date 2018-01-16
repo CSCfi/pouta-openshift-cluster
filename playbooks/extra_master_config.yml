@@ -9,6 +9,8 @@
   roles:
     - role: openshift_auth_providers
       when: configure_auth|default(true)|bool
+      vars:
+        local_auth_mapping_htaccess_entries: "{{ openshift_master_htpasswd_users }}"
   tasks:
     - name: generate bash completion with oc
       shell: oc completion bash > /etc/bash_completion.d/oc
