@@ -42,8 +42,8 @@
     - r_etcd_common_action: "backup"
     - r_etcd_common_backup_tag: "{{ cluster_name }}"
     - r_etcd_common_backup_sufix_name: "/{{ backup_time }}"
-    - r_etcd_common_embedded_etcd: "{{ True if install_type == 'singlemaster' else False }}"
-    - etcd_backup_root: "{{ '/var/lib/origin/openshift.local.etcd' if install_type == 'singlemaster' else '/var/lib/etcd' }}"
+    - r_etcd_common_embedded_etcd: False
+    - etcd_backup_root: "/var/lib/etcd"
   roles:
     - etcd_common
   tasks:

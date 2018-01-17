@@ -161,7 +161,7 @@ resources:
                     master_resource_group_identifier: { get_param: master_resource_group_identifier }
           flavor: { get_param: master_vm_flavor }
           metadata:
-            groups: "masters,node_masters,nfsservers"
+            groups: "masters,node_masters,nfsservers,etcd"
             stack: { get_param: env_name }
           key_name: { get_param: key_name }
           security_groups:
