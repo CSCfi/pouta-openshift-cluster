@@ -4,17 +4,19 @@
 
 - name: restart master
   systemd: name=origin-master state=restarted
-  when: install_type == 'singlemaster'
+  when:
+    - install_type == 'singlemaster'
+    - openshift_release == '3.6'
   notify: verify API server
 
 - name: restart master api
   systemd: name=origin-master-api state=restarted
-  when: install_type == 'multimaster'
+  when: install_type == 'multimaster' or openshift_release == '3.7'
   notify: verify API server
 
 - name: restart master controllers
   systemd: name=origin-master-controllers state=restarted
-  when: install_type == 'multimaster'
+  when: install_type == 'multimaster' or openshift_release == '3.7'
 
 - name: verify API server
   command: >
