@@ -137,4 +137,4 @@ ansible-playbook -v site_scaleup.yml
 ```
 
 If you are replacing etcd-1, change the endpoint host and add 
-'-e override_etcd_ca_host=[surviving member]' in the playbook command above.
+'-e etcd_ca_host=[surviving member]' in the playbook command above.
