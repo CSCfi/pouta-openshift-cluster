@@ -18,6 +18,11 @@ The variables for controlling the mapping method are prefixed with the auth prov
 
 The default value for all auth providers is 'claim'.
 
+## Note on identity provider names
+
+It is important to pay attention to selecting a good name for your identity provider. The names are visible to end 
+users in the Web UI login page. They also end up in OAuth callback URLs, thus changing them could be a hassle.
+
 ## Using local htpasswd file
 
 OpenShift can use an htpasswd file on master hosts as identity source. To populate this during installation, set 
@@ -37,7 +42,25 @@ where each user is a key and the value is the htpasswd file hash for the passwor
 
 ## Configuring GitHub
 
-TBA
+See [OpenShift docs on configuring GitHub auth](https://docs.openshift.org/latest/install_config/configuring_authentication.html#GitHub)
+for instructions and [configuration task in POC](/playbooks/roles/openshift_auth_providers/tasks/main.yml) 
+for value mapping details. 
+
+Basically the process involves:
+- create an Organization in GitHub (or use an existing one, admin rights needed)
+  - for 'Authorization callback URL', use https://[CLUSTER_API_HOSTNAME]:8443/oauth2callback/GitHub
+- create an OAuth application the organization
+- copy Client ID and Client Secret into inventory, see below.
+
+Here is a configuration example. The actual values provided by GitHub OAuth Application registration process are placed 
+in a vault file and referred to here:
+
+```yaml
+deploy_github_auth: true
+github_oauth_client_id: "{{ github_oauth_client_id_vault }}"
+github_oauth_client_secret: "{{ github_oauth_client_secret_vault }}"
+github_allowed_auth_orgs: "{{ github_allowed_auth_orgs_vault }}"
+```
 
 ## Configuring GitLab
 
