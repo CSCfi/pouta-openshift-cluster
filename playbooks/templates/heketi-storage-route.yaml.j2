@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Route
+metadata:
+  annotations:
+    haproxy.router.openshift.io/ip_whitelist: "{{ [openshift_router_ip, openshift_public_ip] | join(' ') }}"
+  name: heketi-storage
+  namespace: glusterfs
+spec:
+  host: heketi-storage-glusterfs.{{ openshift_public_hostname }}
+  tls:
+    caCertificate: |
+      {{ api_domain_cert.tls_ca_certificate|indent(width=6) }}
+    certificate: |
+      {{ api_domain_cert.tls_certificate|indent(width=6) }}
+    key: |
+      {{ api_domain_cert.tls_secret_key|indent(width=6) }}
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: heketi-storage

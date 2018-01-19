@@ -122,7 +122,7 @@
         python ~/heketi_backup.py
         --user admin
         --key {{ heketi_secret.results.decoded.key }}
-        --host http://heketi-storage.glusterfs.svc:8080
+        --host https://heketi-storage-glusterfs.{{ openshift_public_hostname }}
         --file /tmp/heketi.db
       run_once: true
     - name: sync Heketi BoltDB backup to bastion
