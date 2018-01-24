@@ -44,8 +44,10 @@
       shell: oc replace -n default -f /home/cloud-user/project-request.yaml
       when: existing_template.stdout_lines | length > 0
 
-    - name: remove default route for Heketi
-      oc_route:
-        name: heketi-storage
+    - name: replace default route for Heketi with a more secure one (TLS+whitelist)
+      include: tasks/upsert_k8s_object.yml
+      vars:
         namespace: glusterfs
-        state: absent
+        template_base_name: heketi-storage-route.yaml.j2
+        name: heketi-storage
+        upsert_replace: true
