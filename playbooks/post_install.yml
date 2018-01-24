@@ -20,3 +20,7 @@
 - name: Deploy app templates and related objects
   include: add_app_templates.yml
   when: add_app_templates|default(true)|bool
+
+# Fix: make sure origin-master-controllers have up to date resolv.conf with local resolution
+- name: Fix - restart master controllers
+  include: fix_restart_master_controllers.yml
