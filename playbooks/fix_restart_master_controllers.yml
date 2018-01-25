@@ -1,0 +1,28 @@
+# Fix: make sure origin-master-controllers have up to date resolv.conf with local resolution
+#
+# Looks like origin-master-controllers service is not restarted by
+# openshift-ansible after configuring local DNS. This leads to
+# origin-master-controllers container having an outdated copy before it
+# is restarted. Fix this by restarting the service if resolv.conf does not
+# contain cluster.local.
+#
+---
+- name: Fix - restart origin-master-controllers if needed
+  hosts: masters
+  serial: 1
+  tasks:
+    - block:
+      - name: register if resolv.conf in origin-master-controllers has cluster.local
+        shell: >
+          docker exec origin-master-controllers
+          grep cluster.local /etc/resolv.conf
+        register: cluster_local_in_resolv_conf
+        failed_when: false
+        changed_when: false
+
+      - name: restart origin-master-controllers if needed
+        systemd:
+          name: origin-master-controllers
+          state: restarted
+        when: cluster_local_in_resolv_conf.stdout_lines | length == 0
+      when: install_type == 'multimaster' or openshift_release == '3.7'
