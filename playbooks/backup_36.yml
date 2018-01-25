@@ -1,4 +1,22 @@
 ---
+- name: Add host(s) to etcd_backup group
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Add etcd hosts in a multimaster installation
+      add_host:
+        name: "{{ item }}"
+        groups: etcd_backup
+      with_items: "{{ groups['etcd'] }}"
+      when: install_type == 'multimaster'
+    - name: Add master host in a singlemaster installation
+      add_host:
+        name: "{{ item }}"
+        groups: etcd_backup
+      with_items: "{{ groups['masters'] }}"
+      when: install_type == 'singlemaster'
+
 - name: Ensure backup base dirs exist on bastion
   hosts: bastion
   gather_facts: no
@@ -12,23 +30,23 @@
         mode: 0750
       with_items:
         - "{{ groups['masters'] }}"
-        - "{{ groups['etcd'] }}"
+        - "{{ groups['etcd_backup'] }}"
         - "{{ groups['glusterfs'] }}"
 
 - name: Backup etcd
-  hosts: etcd
+  hosts: etcd_backup
   become: yes
   gather_facts: yes
   vars:
     - backup_time: "{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}"
+    - r_etcd_common_action: "backup"
     - r_etcd_common_backup_tag: "{{ cluster_name }}"
     - r_etcd_common_backup_sufix_name: "/{{ backup_time }}"
     - r_etcd_common_embedded_etcd: False
     - etcd_backup_root: "/var/lib/etcd"
+  roles:
+    - etcd_common
   tasks:
-    - include_role:
-        name: etcd
-        tasks_from: backup
     - name: archive etcd backup
       archive:
         path: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}"
