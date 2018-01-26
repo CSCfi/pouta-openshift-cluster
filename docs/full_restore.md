@@ -20,3 +20,6 @@ restore/full_restore.bash
 This will provision a fresh cluster and restore etcd data (openshift objects) and generated certificates
 on it. The provisioning will be done in pieces, take a look at 
 [restore/full_restore.bash](/playbooks/restore/full_restore.bash) for details, comments and troubleshooting.
+
+Note: The current version of the script works with openshift-ansible#release-3.7. For release-3.6, use 
+`restore/full_restore_36.bash`
