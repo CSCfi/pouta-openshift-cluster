@@ -63,6 +63,29 @@
       {% endif %}
           url: "{{ ldap_user_query }}"
       {% endif %}
+      {% if deploy_openid_connect_auth | d() | bool == true -%}
+      - name: "{{ openid_connect_provider_name }}"
+        challenge: true
+        login: true
+        mappingMethod: "{{ openid_connect_mapping_method }}"
+        provider:
+          apiVersion: v1
+          kind: OpenIDIdentityProvider
+          clientID: "{{ openid_connect_client_id }}"
+          clientSecret: "{{ openid_connect_client_secret }}"
+          claims:
+            id:
+            - sub
+            preferredUsername:
+            - preferred_username
+            name:
+            - name
+            email:
+            - email
+          urls:
+            authorize: "{{ openid_connect_authorize_url }}"
+            token: "{{ openid_connect_token_url }}"
+      {% endif %}
   notify:
     - restart master
     - restart master api
