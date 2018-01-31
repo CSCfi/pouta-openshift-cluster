@@ -64,27 +64,40 @@
           url: "{{ ldap_user_query }}"
       {% endif %}
       {% if deploy_openid_connect_auth | d() | bool == true -%}
-      - name: "{{ openid_connect_provider_name }}"
+      {%   for conf in openid_connect_auth_providers %}
+      - name: "{{ conf.name }}"
         challenge: true
         login: true
-        mappingMethod: "{{ openid_connect_mapping_method }}"
+        mappingMethod: "{{ conf.mapping_method }}"
         provider:
           apiVersion: v1
           kind: OpenIDIdentityProvider
-          clientID: "{{ openid_connect_client_id }}"
-          clientSecret: "{{ openid_connect_client_secret }}"
+          clientID: "{{ conf.client_id }}"
+          clientSecret: "{{ conf.client_secret }}"
+      {%     if conf.extra_scopes is defined %}
+          extraScopes:
+      {%       for extra_scope in conf.extra_scopes %}
+          - {{ extra_scope }}
+      {%       endfor %}
+      {%     endif %}
+          extraAuthorizeParameters:
+            include_granted_scopes: "true"
           claims:
             id:
-            - sub
+            - {{ conf.id_attribute }}
             preferredUsername:
-            - preferred_username
+            - email
             name:
             - name
             email:
             - email
           urls:
-            authorize: "{{ openid_connect_authorize_url }}"
-            token: "{{ openid_connect_token_url }}"
+            authorize: "{{ conf.authorize_url }}"
+            token: "{{ conf.token_url }}"
+      {%     if conf.user_info_url is defined %}
+            userInfo: "{{ conf.user_info_url }}"
+      {%     endif %}
+      {%   endfor %}
       {% endif %}
   notify:
     - restart master
