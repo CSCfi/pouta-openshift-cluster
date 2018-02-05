@@ -348,7 +348,7 @@
             "tableColumn": "",
             "targets": [
               {
-                "expr": "sum (container_fs_usage_bytes{device=~\"^/dev/[sv]da9$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"}) / sum (container_fs_limit_bytes{device=~\"^/dev/[sv]da9$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"}) * 100",
+                "expr": "sum (container_fs_usage_bytes{device=~\"^vg_data-docker--pool$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"}) / sum (container_fs_limit_bytes{device=~\"^vg_data-docker--pool$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"}) * 100",
                 "format": "time_series",
                 "interval": "10s",
                 "intervalFactor": 1,
@@ -359,7 +359,7 @@
               }
             ],
             "thresholds": "65, 90",
-            "title": "Cluster filesystem usage",
+            "title": "Docker pool storage usage",
             "type": "singlestat",
             "valueFontSize": "80%",
             "valueMaps": [
@@ -752,7 +752,7 @@
             "tableColumn": "",
             "targets": [
               {
-                "expr": "sum (container_fs_usage_bytes{device=~\"^/dev/[sv]da9$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"})",
+                "expr": "sum (container_fs_usage_bytes{device=~\"^vg_data-docker--pool$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"})",
                 "interval": "10s",
                 "intervalFactor": 1,
                 "refId": "A",
@@ -832,7 +832,7 @@
             "tableColumn": "",
             "targets": [
               {
-                "expr": "sum (container_fs_limit_bytes{device=~\"^/dev/[sv]da9$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"})",
+                "expr": "sum (container_fs_limit_bytes{device=~\"^vg_data-docker--pool$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"})",
                 "interval": "10s",
                 "intervalFactor": 1,
                 "refId": "A",
