@@ -23,9 +23,9 @@
           clientID: "{{ github_oauth_client_id }}"
           clientSecret: "{{ github_oauth_client_secret }}"
           organizations:
-      {% for org in github_allowed_auth_orgs %}
+      {%   for org in github_allowed_auth_orgs %}
             - {{ org }}
-      {% endfor %}
+      {%   endfor %}
       {% endif %}
       {% if deploy_gitlab_auth | d() | bool == true -%}
       - name: "{{ gitlab_oauth_provider_name }}"
@@ -48,19 +48,19 @@
           apiVersion: v1
           kind: LDAPPasswordIdentityProvider
           attributes:
-      {% for key in ldap_attribute_map %}
+      {%   for key in ldap_attribute_map %}
             {{ key }}:
-      {% for value in ldap_attribute_map[key] %}
+      {%     for value in ldap_attribute_map[key] %}
               - {{ value }}
-      {% endfor %}
-      {% endfor %}
+      {%     endfor %}
+      {%   endfor %}
           insecure: false
-      {% if ldap_bind_account_dn is defined %}
+      {%   if ldap_bind_account_dn is defined %}
           bindDN: "{{ ldap_bind_account_dn }}"
-      {% endif %}
-      {% if ldap_bind_account_password is defined %}
+      {%   endif %}
+      {%   if ldap_bind_account_password is defined %}
           bindPassword: "{{ ldap_bind_account_password }}"
-      {% endif %}
+      {%   endif %}
           url: "{{ ldap_user_query }}"
       {% endif %}
       {% if deploy_openid_connect_auth | d() | bool == true -%}
@@ -83,14 +83,12 @@
           extraAuthorizeParameters:
             include_granted_scopes: "true"
           claims:
-            id:
-            - {{ conf.id_attribute }}
-            preferredUsername:
-            - email
-            name:
-            - name
-            email:
-            - email
+      {%   for key in conf.claims %}
+            {{ key }}:
+      {%     for value in conf.claims[key] %}
+              - {{ value }}
+      {%     endfor %}
+      {%   endfor %}
           urls:
             authorize: "{{ conf.authorize_url }}"
             token: "{{ conf.token_url }}"
