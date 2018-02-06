@@ -18,6 +18,9 @@ The variables for controlling the mapping method are prefixed with the auth prov
 
 The default value for all auth providers is 'claim'.
 
+OpenID Connect auth provider supports setting up multiple providers and the mapping method can be selected per
+provider. See the chapter for OpenID Connect below.  
+
 ## Note on identity provider names
 
 It is important to pay attention to selecting a good name for your identity provider. The names are visible to end 
@@ -100,3 +103,43 @@ The route for outgoing traffic in OpenStack depends on whether the source VM has
 source address for the queries executed on masters can be either the master's floating IP (if it has one) or the 
 IP of the OpenStack router associated with the cluster network. Also note that in the latter case traffic from customer
 PODs will originate from the same IP.
+
+## Configuring OpenID Connect
+
+See [OpenShift docs on configuring OpenID Connect](https://docs.openshift.org/latest/install_config/configuring_authentication.html#OpenID)
+info on the configuration values and [configuration task in POC](/playbooks/roles/openshift_auth_providers/tasks/main.yml) 
+for value mapping details.
+
+Basically the process involves:
+- Create a client in your OIDC provider
+- Set up the inventory (see an example below)
+  - Client ID
+  - Client Secret
+  - URLs for authorize, token and user_info endpoints
+  - Mapping of claims
+  - Extra scopes, if needed
+  
+POC supports setting up multiple OpenID Connect providers. Here is an example of vaulted configuration for a single
+provider:  
+```yaml
+openid_connect_auth_providers_vault:
+  - name: "OIDC example"
+    mapping_method: "claim"
+    client_id: "8cfabffc-0de8-4c77-99ee-81fdea3acd53"
+    client_secret: "1ac6028d126c782fa204d957d3ea06978b346e68640e47a4"
+    authorize_url: "https://example.org/oauth/authorization"
+    token_url: "https://example.org/oauth/token"
+    user_info_url: "https://example.org/openid/userinfo"
+    claims:
+      id:
+      - sub
+      preferredUsername:
+      - email
+      name:
+      - name
+      email:
+      - email
+    extra_scopes:
+      - email
+      - profile
+```
