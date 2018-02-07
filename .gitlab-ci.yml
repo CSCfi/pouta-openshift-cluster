@@ -7,6 +7,7 @@ variables:
   OPENSHIFT_ANSIBLE_VERSION: release-3.6-csc
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
   GITHUB_MIRROR: git@github.com:CSCfi/pouta-openshift-cluster.git
+  BACKUP_PLAYBOOK: backup.yml
 
 services:
   - docker:dind
@@ -32,6 +33,7 @@ before_script:
      (cd ../openshift-environments; git checkout master; git pull)'
   - 'stat -t ../openshift-ansible || (git clone $OPENSHIFT_ANSIBLE_REPO_URL ../openshift-ansible)'
   - '(cd ../openshift-ansible; git checkout $OPENSHIFT_ANSIBLE_VERSION; git pull)'
+  - 'stat -t ../openshift-ansible/roles/etcd_common && export BACKUP_PLAYBOOK=backup_36.yml'
 
 stages:
   - docker_build
@@ -84,7 +86,7 @@ backup_ci_openshift_job:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
+    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash $BACKUP_PLAYBOOK
 
 deprovision_ci_openshift_job:
   stage: cleanup
@@ -103,7 +105,7 @@ backup_oso_qa_job:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
+    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash $BACKUP_PLAYBOOK
   only:
     - master
     - schedules
@@ -118,7 +120,7 @@ deploy_qa_openshift_job:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
+    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash $BACKUP_PLAYBOOK
     - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
   environment:
     name: oso-qa
@@ -157,7 +159,7 @@ backup_rahti_int_job:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
+    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash $BACKUP_PLAYBOOK
   only:
     - master
     - schedules
@@ -172,7 +174,7 @@ deploy_rahti_int_job:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash backup.yml
+    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash $BACKUP_PLAYBOOK
     - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
   environment:
     name: production/rahti-int

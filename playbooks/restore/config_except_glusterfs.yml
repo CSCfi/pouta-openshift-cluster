@@ -1,0 +1,24 @@
+---
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/byo/openshift-cluster/initialize_groups.yml"
+  tags:
+  - always
+
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/common/openshift-cluster/std_include.yml"
+  tags:
+  - always
+
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/common/openshift-checks/install.yml"
+
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/common/openshift-etcd/config.yml"
+
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/common/openshift-nfs/config.yml"
+  when: groups.oo_nfs_to_config | default([]) | count > 0
+
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/common/openshift-loadbalancer/config.yml"
+  when: groups.oo_lb_to_config | default([]) | count > 0
+
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/common/openshift-master/config.yml"
+
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/common/openshift-master/additional_config.yml"
+
+- include: "{{ os_ansible_path|default('../../../openshift-ansible') }}/playbooks/common/openshift-node/config.yml"

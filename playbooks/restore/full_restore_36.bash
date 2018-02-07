@@ -36,7 +36,7 @@ if [ $? != 0 ]; then echo "failed"; exit 1; fi
 
 header Install containerized etcd with byo
 # (the playbook will fail when it is skipping 'hosted' installation, but worry not)
-ansible-playbook -v $PLAYBOOK_BASE/../../openshift-ansible/playbooks/byo/openshift-etcd/config.yml
+ansible-playbook -v -t etcd $PLAYBOOK_BASE/../../openshift-ansible/playbooks/byo/config.yml
 
 header Stop etcd on all hosts
 ansible etcd -b -a "systemctl stop etcd_container"
@@ -48,25 +48,28 @@ if [ $? != 0 ]; then echo "failed"; exit 1; fi
 header Run scaleup for etcd
 ansible ${ENV_NAME}-etcd-2,${ENV_NAME}-etcd-3 -b \
   -a 'rm -rf /var/lib/etcd/member /etc/etcd/etdc.conf /var/lib/POC_INSTALLED'
-ansible-playbook -v $PLAYBOOK_BASE/restore/etcd_scaleup.yml
+ansible-playbook -v -l localhost,etcd scaleup.yml
 if [ $? != 0 ]; then echo "failed"; exit 1; fi
 
 header Restore glusterfs config and state
 ansible-playbook -v restore/restore_glusterfs.yml
 
-header Run selected pieces of the installer
-ansible etcd,nodes -a 'rm -f /var/lib/POC_INSTALLED'
-ansible-playbook -v $PLAYBOOK_BASE/restore/config_except_glusterfs.yml
-if [ $? != 0 ]; then echo "failed"; exit 1; fi
+header Continue installing the cluster
+ansible-playbook -v -t etcd,loadbalancer,master ../../openshift-ansible/playbooks/byo/config.yml
 
-header Delete old pods from glusterfs namespace, fresh ones will work
-ansible ${ENV_NAME}-master-1 -a 'oc delete pods --all -n glusterfs'
+header Delete old node and router objects, restart remaining nodes to re-register
+ansible ${ENV_NAME}-master-1 -a 'oc delete nodes --all'
+ansible ${ENV_NAME}-master-1 -a 'oc -n default delete dc router'
+ansible nodes -a 'systemctl restart origin-node'
 
-header Mark hosts as installed
-ansible-playbook -v $PLAYBOOK_BASE/set_install_state.yml
+header Install nodes
+ansible-playbook -v -t node ../../openshift-ansible/playbooks/byo/config.yml
 
-header Finish by running site.yml
-ansible-playbook -v $PLAYBOOK_BASE/site.yml
+header Install glusterfs
+ansible-playbook -v ../../openshift-ansible/playbooks/byo/openshift-glusterfs/config.yml
+
+header "Run the rest of the installation (skip glusterfs, it is not re-entrant)"
+ansible-playbook -v --skip-tags glusterfs install.yml post_install.yml
 if [ $? != 0 ]; then echo "failed"; exit 1; fi
 
 header Done
