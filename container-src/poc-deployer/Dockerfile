@@ -34,6 +34,7 @@ WORKDIR /opt/deployment
 
 COPY init_env.bash init_env.bash
 COPY run_playbook.bash run_playbook.bash
+COPY run_backup.bash run_backup.bash
 COPY bashrc .bashrc
 
 CMD /usr/bin/bash
