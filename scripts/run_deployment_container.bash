@@ -14,23 +14,24 @@ print_usage_and_exit()
     echo
     echo "Usage: $me [options] [container arguments]"
     echo "  where options are"
-    echo "  -p vault_password_file  path to file containing vault password"
-    echo "                          mounted to /dev/shm/secrets/vaultpass"
-    echo "  -P vault_password_file  path to file containing vault password"
-    echo "                          exposed as environment variable VAULT_PASS"
-    echo "  -e environment_name     environment to deploy"
-    echo "  -i                      open interactive session"
-    echo "  -s                      skip ssh config generation (useful when debugging broken installations)"
+    echo "  -p vault_password_file   path to file containing vault password"
+    echo "                           mounted to /dev/shm/secrets/vaultpass"
+    echo "  -P vault_password_file   path to file containing vault password"
+    echo "                           exposed as environment variable VAULT_PASS"
+    echo "  -e environment_name      environment to deploy"
+    echo "  -o openshift_ansible_dir mount openshift-ansible from host. Use absolute path"
+    echo "  -i                       open interactive session"
+    echo "  -s                       skip ssh config generation (useful when debugging broken installations)"
     exit 1
 }
 
 docker_opts=''
 
-while getopts "p:P:e:ish" opt; do
+while getopts "p:P:e:o:ish" opt; do
     case $opt in
         p)
             passfile=$OPTARG
-            if [ ! -e $passfile ]; then
+            if [[ ! -e $passfile ]]; then
                 echo "vault password file $passfile does not exist"
                 exit 1
             fi
@@ -38,11 +39,19 @@ while getopts "p:P:e:ish" opt; do
             ;;
         P)
             passfile=$OPTARG
-            if [ ! -e $passfile ]; then
+            if [[ ! -e $passfile ]]; then
                 echo "vault password file $passfile does not exist"
                 exit 1
             fi
             docker_opts="$docker_opts -e VAULT_PASS=$(cat $passfile)"
+            ;;
+        o)
+            osa_dir=$OPTARG
+            if [[ ! -d $osa_dir ]]; then
+                echo "Error: openshift-ansible directory '$osa_dir' does not exist or is not a directory"
+                exit 1
+            fi
+            docker_opts="$docker_opts -v $osa_dir:/opt/deployment/openshift-ansible:ro"
             ;;
         e)
             env_name=$OPTARG
@@ -64,7 +73,6 @@ shift "$((OPTIND-1))"
 docker run --rm \
     -v $SCRIPT_DIR/../../openshift-environments:/opt/deployment/openshift-environments:ro \
     -v $SCRIPT_DIR/../../poc:/opt/deployment/poc:ro \
-    -v $SCRIPT_DIR/../../openshift-ansible:/opt/deployment/openshift-ansible:ro \
     --name ${env_name}-deployer \
     $docker_opts \
     cscfi/poc-deployer $*
