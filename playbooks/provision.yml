@@ -288,3 +288,4 @@
         delay: 5
         timeout: 300
       delegate_to: "{{ hostvars[groups['bastion'][0]]['ansible_ssh_host'] }}"
+      when: check_for_ssh_after_provisioning|default(false)|bool
