@@ -177,3 +177,21 @@ deploy_rahti_int_job:
     - master
   tags:
     - rahti-int
+
+deploy_rahti_job:
+  stage: prod_deploy
+  except:
+    - schedules
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e rahti -P /dev/shm/secret/vaultpass ./run_backup.bash
+    - ./run_deployment_container.bash -e rahti -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
+  environment:
+    name: production/rahti
+  when: manual
+  only:
+    - master
+  tags:
+    - rahti
