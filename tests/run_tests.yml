@@ -3,22 +3,27 @@
   hosts: bastion
   tasks:
     - block:
-        - name: run bats tests
-          shell: './generic_bats_wrapper.bash bats_test_bastion*'
-          args:
-            chdir: '/tmp/poc/tests'
-          register: test_output
-          failed_when: false
+      - name: collect remote test names
+        shell: (cd /tmp/poc/tests && ls -d bats_test_bastion*)
+        register: test_directories
 
-        - name: print test output in human readable format
-          debug: var=test_output.stdout.split('\n')
-          failed_when: test_output.rc != 0
+      - name: run bats tests
+        shell: './generic_bats_wrapper.bash {{ item }}'
+        args:
+          chdir: '/tmp/poc/tests'
+        register: test_output
+        with_items: "{{ test_directories.stdout_lines }}"
+        when:
+          - item not in poc_test_blacklist|default([])
+
       always:
         - name: cleanup test files
           file:
             path: /tmp/poc
             state: absent
-          when: test_cleanup|default(true)|bool == true
+          when:
+            - test_cleanup|default(true)|bool == true
+
         - name: remove testuser credential file /dev/shm/secret/testuser_credentials
           file:
             path: /dev/shm/secret/testuser_credentials
@@ -28,30 +33,36 @@
   hosts: masters
   tasks:
     - block:
-        - name: run bats tests
-          shell: './generic_bats_wrapper.bash bats_test_master*'
-          args:
-            chdir: '/tmp/poc/tests'
-          register: test_output
-          failed_when: false
+      - name: collect remote test names
+        shell: (cd /tmp/poc/tests && ls -d bats_test_master*)
+        register: test_directories
 
-        - name: print test output in human readable format
-          debug: var=test_output.stdout.split('\n')
-          failed_when: test_output.rc != 0
+      - name: run bats tests
+        shell: './generic_bats_wrapper.bash {{ item }}'
+        args:
+          chdir: '/tmp/poc/tests'
+        register: test_output
+        with_items: "{{ test_directories.stdout_lines }}"
+        when:
+          - item not in poc_test_blacklist|default([])
 
-        - name: run bats tests from OpenShift project context
-          shell: './openshift_bats_wrapper.bash bats_test_openshift*'
-          args:
-            chdir: '/tmp/poc/tests'
-          register: test_output
-          failed_when: false
+      - name: collect remote test names
+        shell: (cd /tmp/poc/tests && ls -d bats_test_openshift*)
+        register: test_directories
 
-        - name: print test output in human readable format
-          debug: var=test_output.stdout.split('\n')
-          failed_when: test_output.rc != 0
+      - name: run bats tests from OpenShift project context
+        shell: './openshift_bats_wrapper.bash {{ item }}'
+        args:
+          chdir: '/tmp/poc/tests'
+        register: test_output
+        with_items: "{{ test_directories.stdout_lines }}"
+        when:
+          - item not in poc_test_blacklist|default([])
+
       always:
         - name: cleanup test files
           file:
             path: /tmp/poc
             state: absent
-          when: test_cleanup|default(true)|bool == true
+          when:
+            - test_cleanup|default(true)|bool == true
