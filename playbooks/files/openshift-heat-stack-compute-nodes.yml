@@ -42,6 +42,11 @@ parameters:
     description: >
       Id of cluster network
     type: string
+  subnet_id:
+    description: >
+      Id of cluster subnet. Currently needs to be included in the params even if
+      not used because it is a base stack output.
+    type: string
   network_prefix:
     description: >
       The first two (/16) or three (/24) octets of a private network CIDR.

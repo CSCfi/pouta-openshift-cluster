@@ -193,3 +193,4 @@ outputs:
       secgroup_id_infra: { get_resource: secgroup_infra }
       secgroup_id_ext_access: { get_resource: secgroup_ext_access }
       network_id: { get_resource: openshift_network }
+      subnet_id: { get_resource: openshift_subnet }

@@ -30,6 +30,10 @@ parameters:
     description: >
       Id of cluster network
     type: string
+  subnet_id:
+    description: >
+      Id of cluster subnet
+    type: string
   network_prefix:
     description: >
       The first two (/16) or three (/24) octets of a private network CIDR.
@@ -51,6 +55,14 @@ parameters:
     description: >
       The size of the Cinder volume to attach to LB VMs.
     type: number
+  lb_vip_floatingip_id:
+    description: >
+      The id of the OpenStack floating IP to associate with the LB VIP.
+    type: string
+  lb_vip_ip:
+    description: >
+      The IP to use as the VIP for keepalived on the LB nodes.
+    type: string
   nfs_vm_group_size:
     description: >
       How many NFS VMs to start.
@@ -131,6 +143,8 @@ resources:
           port_range_max: 8443
           remote_mode: remote_group_id
           remote_group_id: { get_param: secgroup_id_common }
+        - protocol: 112
+          remote_mode: remote_group_id
 
   secgroup_master:
     type: secgroup.yaml
@@ -165,6 +179,23 @@ resources:
           protocol: tcp
           port_range_min: 2049
           port_range_max: 2049
+
+  #-----------------------------------
+  # Ports
+  #-----------------------------------
+
+  lb_vip_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: network_id }
+      fixed_ips:
+        - ip_address: { get_param: lb_vip_ip }
+
+  lb_vip_floatingip_association:
+    type: OS::Neutron::FloatingIPAssociation
+    properties:
+      floatingip_id: { get_param: lb_vip_floatingip_id }
+      port_id: { get_resource: lb_vip_port }
 
   #-----------------------------------
   # Nova server groups (anti-affinity)
@@ -208,13 +239,16 @@ resources:
                 name_suffix: "lb"
           image: { get_param: lb_vm_image }
           networks:
-            - network: { get_param: network_id }
+            - subnet: { get_param: subnet_id }
               fixed_ip:
                 str_replace:
                   template: network_prefix.lb_resource_group_identifier%index%
                   params:
                     network_prefix: { get_param: network_prefix }
                     lb_resource_group_identifier: { get_param: lb_resource_group_identifier }
+              port_extra_properties:
+                allowed_address_pairs:
+                  - ip_address: { get_param: lb_vip_ip }
           flavor: { get_param: lb_vm_flavor }
           metadata:
             groups: "lb,node_lbs"
