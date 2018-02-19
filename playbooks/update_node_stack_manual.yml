@@ -1,0 +1,88 @@
+# Purpose:
+#   update node stack without having to touch base stack. This can happen if base stack is stuck in an inconsistent
+#   state after a Heat update failure.
+#
+# Usage:
+# First, get output variables from base stack
+#
+#   openstack stack show -f json ${ENV_NAME}-base | jq '.outputs[0]' > /tmp/${ENV_NAME}-base-stack-output.json
+#
+# Then, check that the outputs match what you actually want to be provisioned.
+#
+# Finally, update the node stack and scale up playbook by playbook
+#
+#   ansible-playbook -v -e @/tmp/${ENV_NAME}-base-stack-output.json update_node_stack_manual.yml
+#   ansible-playbook -v pre_install.yml scaleup.yml post_install.yml
+---
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  tasks:
+    - include: environment_context.yml
+
+    - name: Put extracted base stack output into a dict
+      set_fact:
+        base_stack_outputs: "{{ output_value }}"
+
+    - name: Build/update compute node stack(s)
+      os_stack:
+        name: "{{ cluster_name }}-{{ item.stack_name }}"
+        state: present
+        template: "files/openshift-heat-stack-compute-nodes.yml"
+        wait: yes
+        parameters: "{{ item.heat_parameters | combine(base_stack_outputs) }}"
+      with_items: "{{ compute_node_groups }}"
+
+    - name: Remove inventory cache
+      file:
+        path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
+        state: absent
+
+    - name: Refresh dynamic inventory
+      meta: refresh_inventory
+
+- include: generate_ssh_config.yml
+
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: Wait for connectivity on port 22 on the bastion
+      wait_for:
+        host: "{{ bastion_public_ip }}"
+        port: 22
+        search_regex: "OpenSSH"
+        delay: 5
+        timeout: 900
+    - name: Wait for SSH to work
+      shell: ssh {{ bastion_public_ip }} 'echo success'
+      register: result
+      until: result.stdout.find('success') != -1
+      retries: 30
+      delay: 5
+      changed_when: false
+
+- name: Install nmap-ncat on bastion if need be
+  hosts: bastion
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Install nmap-ncat
+      yum:
+        name: nmap-ncat
+        state: present
+
+- name: Wait for SSH to work on all other hosts
+  hosts: all
+  gather_facts: no
+  any_errors_fatal: yes
+  tasks:
+    - name: Wait for connectivity on port 22 on all other hosts
+      wait_for:
+        host: "{{ ansible_ssh_host }}"
+        port: 22
+        search_regex: "OpenSSH"
+        delay: 5
+        timeout: 300
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['ansible_ssh_host'] }}"
+      when: check_for_ssh_after_provisioning|default(false)|bool
