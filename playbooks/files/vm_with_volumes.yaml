@@ -2,7 +2,7 @@
 heat_template_version: newton
 
 description: >
-  VM with a volume attached.
+  VM with at least two and possibly more volumes attached.
 
 parameters:
   vm_name:
@@ -29,6 +29,12 @@ parameters:
     type: string
   vol_size_2:
     type: string
+  extension_volume_group_size:
+    type: number
+    default: 0
+  extension_volume_size:
+    type: number
+    default: 0
 
 resources:
   vm:
@@ -72,3 +78,15 @@ resources:
       instance_uuid: { get_resource: vm }
       volume_id: { get_resource: volume_2 }
       mountpoint: /dev/vdc
+
+  extension_volumes:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: extension_volume_group_size }
+      resource_def:
+        type: volume_with_attachment.yaml
+        properties:
+          instance_id: { get_resource: vm }
+          volume_name:
+            list_join: ['-', [{ get_param: vm_name }, 'extension-vol', '%index%']]
+          volume_size: { get_param: extension_volume_size }
