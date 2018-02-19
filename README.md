@@ -210,7 +210,7 @@ the description for provision.yml for a list of variables
 
 Here is how you would update the stack for ssdnodes, e.g. for scale up purposes: 
 
-    ansible-playbook site.yml -e '{allow_heat_stack_update_node_groups=["ssdnode"]}'
+    ansible-playbook site_scaleup.yml -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}'
 
 Note that some configuration changes like VM image may result in all VMs in the stack to be reprovisioned.
 Be careful and test with non-critical resources first.
