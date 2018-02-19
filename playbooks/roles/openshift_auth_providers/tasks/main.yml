@@ -111,3 +111,23 @@
       {% for user, pass in local_auth_mapping_htaccess_entries.iteritems() %}
       {{   user ~ ':' ~ pass }}
       {% endfor %}
+
+- name: create a LDAP group sync file
+  copy:
+    dest: /etc/origin/master/ldap_group_sync.yaml
+    mode: 0600
+    owner: root
+    group: root
+    content: |
+      kind: LDAPSyncConfig
+      apiVersion: v1
+      url: {{ ldap_protocol }}://{{ ldap_auth_host }}
+      {% if ldap_bind_account_dn is defined %}
+      bindDN: "{{ ldap_bind_account_dn }}"
+      {% endif %}
+      {% if ldap_bind_account_password is defined %}
+      bindPassword: "{{ ldap_bind_account_password }}"
+      {% endif %}
+      {{ ldap_group_sync_schema_params }}
+  when:
+  - deploy_ldap_group_sync | default(False) | bool

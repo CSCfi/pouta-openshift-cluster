@@ -69,7 +69,10 @@ github_allowed_auth_orgs: "{{ github_allowed_auth_orgs_vault }}"
 
 TBA
 
-## Configuring LDAP
+## Configuring LDAP authentication and group syncing
+
+
+### LDAP authentication
 
 See [OpenShift docs on configuring LDAP](https://docs.openshift.org/latest/install_config/configuring_authentication.html#LDAPPasswordIdentityProvider)
 info on the configuration values and [configuration task in POC](/playbooks/roles/openshift_auth_providers/tasks/main.yml) 
@@ -96,6 +99,19 @@ The following values are taken from Ansible inventory variables:
 - ldap_attribute_map
   - maps to 'attributes' in config
   - a dictionary mapping LDAP entries to OpenShift user attributes
+
+### Syncing groups from LDAP 
+
+See [OpenShift docs on synchronizing groups from LDAP](https://docs.openshift.org/latest/install_config/syncing_groups_with_ldap.html)
+
+The sync process in POC can be enabled by setting *enable_ldap_group_sync* to true. The basic configuration is taken 
+from LDAP auth provider settings. In addition, *ldap_group_sync_schema_params* variable has to be set to match the 
+respective configuration block for LDAP server schema (rfc2307, activeDirectory or augmentedActiveDirectory) as 
+described in the OpenShift documentation.
+
+See [configuration task in POC](/playbooks/roles/openshift_auth_providers/tasks/main.yml) and 
+[openshift_master role](/playbooks/roles/openshift_master/tasks/main.yml) for technical details.
+
 
 ### Note on network access and firewalls on OpenStack
 

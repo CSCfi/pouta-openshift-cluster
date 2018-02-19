@@ -23,3 +23,28 @@
     cron_file: poc_openshift_pruning
     user: root
     job: "/usr/local/bin/poc_prune_objects.bash"
+
+- block:
+  - name: add a script for syncing ldap groups
+    copy:
+      src: files/poc_sync_ldap_groups.bash
+      dest: /usr/local/bin/poc_sync_ldap_groups.bash
+      mode: '0755'
+
+  - set_fact:
+       ldap_sync_cron_hours: |
+         [{% for hour in range(groups.masters.index(inventory_hostname), 24, groups.masters|length )%}
+         {{ hour }},
+         {% endfor %}]
+
+  - name: add a cron entry for syncing ldap groups
+    cron:
+      name: "Sync group information from LDAP"
+      hour: "{{ ldap_sync_cron_hours|join(',') }}"
+      minute: "{{ 59 |random(seed=cluster_name) }}"
+      cron_file: poc_sync_ldap_groups
+      user: root
+      job: "/usr/local/bin/poc_sync_ldap_groups.bash --confirm"
+  # endblock
+  when:
+    - deploy_ldap_group_sync | default(False) | bool
