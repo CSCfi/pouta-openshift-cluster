@@ -10,12 +10,9 @@
 - name: Setup default www app
   include: setup_default_www_app.yml
 
-# There is a localhost -based play in deploy_monitoring, and it seems that even if the play
-# includes environment_context for assigning variables for localhost, the tasks are culled early.
-# That is why we need to get the installation flag from master[0]
 - name: Deploy monitoring
   include: deploy_monitoring.yml
-  when: hostvars[groups.masters[0]].deploy_monitoring|default(false)|bool
+  when: deploy_monitoring|default(false)|bool
 
 - name: Deploy app templates and related objects
   include: add_app_templates.yml
