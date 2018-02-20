@@ -46,6 +46,14 @@ parameters:
       How big each extension volume should be.
     type: number
     default: 0
+  glusterfs_volume_deletion_policy:
+    description: >
+      What the deletion policy should be for GlusterFS volumes should be.
+      See https://docs.openstack.org/heat/latest/template_guide/hot_spec.html
+      The idea would be to set this to Retain for production and Delete for
+      development systems.
+    type: string
+    default: "Retain"
   secgroup_id_infra:
     description: >
       Id of infra security group
@@ -143,3 +151,4 @@ resources:
           vol_size_2: { get_param: glusterfs_vol_2_size }
           extension_volume_group_size: { get_param: glusterfs_extension_volume_group_size }
           extension_volume_size: { get_param: glusterfs_extension_volume_size }
+          volume_deletion_policy: { get_param: glusterfs_volume_deletion_policy }

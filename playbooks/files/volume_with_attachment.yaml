@@ -11,6 +11,9 @@ parameters:
     type: string
   volume_size:
     type: string
+  volume_deletion_policy:
+    type: string
+    default: "Retain"
 
 resources:
   volume:
@@ -18,6 +21,7 @@ resources:
     properties:
       name: { get_param: volume_name }
       size: { get_param: volume_size }
+    deletion_policy: { get_param: volume_deletion_policy }
 
   volume_attachment:
     type: OS::Cinder::VolumeAttachment

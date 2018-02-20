@@ -35,6 +35,9 @@ parameters:
   extension_volume_size:
     type: number
     default: 0
+  volume_deletion_policy:
+    type: string
+    default: "Retain"
 
 resources:
   vm:
@@ -56,6 +59,7 @@ resources:
       name:
         list_join: ['-', [{ get_param: vm_name }, { get_param: vol_name_suffix_1 }]]
       size: { get_param: vol_size_1 }
+    deletion_policy: { get_param: volume_deletion_policy }
 
   volume_attachment_1:
     type: OS::Cinder::VolumeAttachment
@@ -71,6 +75,7 @@ resources:
       name:
         list_join: ['-', [{ get_param: vm_name }, { get_param: vol_name_suffix_2 }]]
       size: { get_param: vol_size_2 }
+    deletion_policy: { get_param: volume_deletion_policy }
 
   volume_attachment_2:
     type: OS::Cinder::VolumeAttachment
@@ -90,3 +95,4 @@ resources:
           volume_name:
             list_join: ['-', [{ get_param: vm_name }, 'extension-vol', '%index%']]
           volume_size: { get_param: extension_volume_size }
+          volume_deletion_policy: { get_param: volume_deletion_policy }
