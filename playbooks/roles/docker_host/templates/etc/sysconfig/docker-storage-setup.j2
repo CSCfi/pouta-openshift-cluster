@@ -1,9 +1,9 @@
-STORAGE_DRIVER={{ docker_storage_driver|default('devicemapper') }}
+STORAGE_DRIVER={{ docker_storage_driver|default('overlay2') }}
 
-{% if docker_lvol_vg_name is defined %}
+{% if (docker_lvol_vg_name is defined) and (docker_lvol_vg_name != '') %}
 VG={{ docker_lvol_vg_name }}
 {% endif %}
 
-{% if docker_lvol_size is defined %}
+{% if (docker_lvol_size is defined) and (docker_lvol_size != '') %}
 DATA_SIZE={{ docker_lvol_size }}
 {% endif %}
