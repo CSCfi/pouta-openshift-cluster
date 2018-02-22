@@ -86,6 +86,7 @@ resources:
 
   extension_volumes:
     type: OS::Heat::ResourceGroup
+    depends_on: volume_attachment_2
     properties:
       count: { get_param: extension_volume_group_size }
       resource_def:
