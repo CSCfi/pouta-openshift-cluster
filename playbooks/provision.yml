@@ -12,40 +12,86 @@
         public_key_file: "/dev/shm/{{ cluster_name }}/id_rsa.pub"
 
     - name: Register stack creation status (base)
-      shell: openstack stack show {{ cluster_name }}-base
+      shell: openstack stack environment show -f json {{ cluster_name }}-base
       register: stack_output_base
       failed_when: false
       changed_when: false
       no_log: True
+      tags:
+        - skip_ansible_lint
 
     - name: Register stack creation status (etcd)
-      shell: openstack stack show {{ cluster_name }}-etcd
+      shell: openstack stack environment show -f json {{ cluster_name }}-etcd
       register: stack_output_etcd
       failed_when: false
       changed_when: false
       no_log: True
+      tags:
+        - skip_ansible_lint
 
     - name: Register stack creation status (cluster)
-      shell: openstack stack show {{ cluster_name }}-cluster
+      shell: openstack stack environment show -f json {{ cluster_name }}-cluster
       register: stack_output_cluster
       failed_when: false
       changed_when: false
       no_log: True
+      tags:
+        - skip_ansible_lint
 
     - name: Register stack creation status (glusterfs)
-      shell: openstack stack show {{ cluster_name }}-glusterfs
+      shell: openstack stack environment show -f json {{ cluster_name }}-glusterfs
       register: stack_output_glusterfs
       failed_when: false
       changed_when: false
       no_log: True
+      tags:
+        - skip_ansible_lint
+
+    - block:
+      - name: Format output from GlusterFS Heat stack environment as JSON
+        set_fact:
+          stack_output_glusterfs_json: "{{ stack_output_glusterfs.stdout | from_json }}"
+
+      - name: Put current number of GlusterFS nodes into a variable
+        set_fact:
+          glusterfs_vm_group_size_now: "{{ stack_output_glusterfs_json.parameters.glusterfs_vm_group_size }}"
+
+      - name: Put current size of GlusterFS extension volume group into a variable
+        set_fact:
+          glusterfs_extension_volume_group_size_now: "{{ stack_output_glusterfs_json.parameters.glusterfs_extension_volume_group_size|default(0) }}"
+
+      - name: Assert that we are not scaling down the number of GlusterFS nodes
+        assert:
+          that:
+            - glusterfs_vm_group_size|int >= glusterfs_vm_group_size_now|int
+          msg: >
+            Can't scale down the number of GlusterFS nodes
+            (glusterfs_vm_group_size) as this could lead to data loss.
+            Please set assert_no_gluster_nodes_scaledown to false if you really
+            want to do this.
+        when: assert_no_gluster_nodes_scaledown|default(True)|bool
+
+      - name: Assert that we are not shrinking the number of GlusterFS volumes
+        assert:
+          that:
+            - glusterfs_extension_volume_group_size|default(0)|int >= glusterfs_extension_volume_group_size_now|int
+          msg: >
+            Can't reduce glusterfs_extension_volume_group_size as this could lead
+            to data loss. Please set assert_no_gluster_vol_scaledown to false if
+            you really want to do this.
+        when: assert_no_gluster_vol_scaledown|default(True)|bool
+      # end block
+      when: stack_output_glusterfs.stderr.find('Stack not found') == -1
 
     - name: Register stack creation status (compute nodes)
-      shell: openstack stack show {{ cluster_name }}-{{ item.stack_name }}
+      shell: openstack stack environment show -f json {{ cluster_name }}-{{ item.stack_name }}
       register: stack_output_compute_nodes
       failed_when: false
       changed_when: false
       no_log: True
       with_items: "{{ compute_node_groups }}"
+      tags:
+        - skip_ansible_lint
 
     - name: Optionally assert that this is a new deployment (control plane stacks)
       assert:
@@ -199,6 +245,9 @@
           glusterfs_vm_flavor: "{{ glusterfs_vm_flavor }}"
           glusterfs_vol_1_size: "{{ glusterfs_docker_vol_size|default('10') }}"
           glusterfs_vol_2_size: "{{ glusterfs_vol_size }}"
+          glusterfs_extension_volume_group_size: "{{ glusterfs_extension_volume_group_size|default(0) }}"
+          glusterfs_extension_volume_size: "{{ glusterfs_extension_volume_size|default(0) }}"
+          glusterfs_volume_deletion_policy: "{{ glusterfs_volume_deletion_policy|default('Retain') }}"
           secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
           secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
           network_id: "{{ base_stack_outputs.network_id }}"

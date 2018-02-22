@@ -1,0 +1,30 @@
+---
+heat_template_version: newton
+
+description: >
+  A volume that is attached to a specific instance. For use with ResourceGroups.
+
+parameters:
+  instance_id:
+    type: string
+  volume_name:
+    type: string
+  volume_size:
+    type: string
+  volume_deletion_policy:
+    type: string
+    default: "Retain"
+
+resources:
+  volume:
+    type: OS::Cinder::Volume
+    properties:
+      name: { get_param: volume_name }
+      size: { get_param: volume_size }
+    deletion_policy: { get_param: volume_deletion_policy }
+
+  volume_attachment:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: { get_param: instance_id }
+      volume_id: { get_resource: volume }

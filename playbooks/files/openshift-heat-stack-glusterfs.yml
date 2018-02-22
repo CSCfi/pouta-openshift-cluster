@@ -36,6 +36,24 @@ parameters:
       The size of the Cinder volume 2 to attach to glusterfs VMs.
     type: number
     default: "0"
+  glusterfs_extension_volume_group_size:
+    description: >
+      How many extension volumes to add to each GlusterFS VM.
+    type: number
+    default: 0
+  glusterfs_extension_volume_size:
+    description: >
+      How big each extension volume should be.
+    type: number
+    default: 0
+  glusterfs_volume_deletion_policy:
+    description: >
+      What the deletion policy should be for GlusterFS volumes should be.
+      See https://docs.openstack.org/heat/latest/template_guide/hot_spec.html
+      The idea would be to set this to Retain for production and Delete for
+      development systems.
+    type: string
+    default: "Retain"
   secgroup_id_infra:
     description: >
       Id of infra security group
@@ -99,7 +117,7 @@ resources:
       count: { get_param: glusterfs_vm_group_size }
       removal_policies: [{'resource_list': ['0']}]
       resource_def:
-        type: vm_with_two_volumes.yaml
+        type: vm_with_volumes.yaml
         properties:
           vm_name:
             str_replace:
@@ -131,3 +149,6 @@ resources:
           vol_size_1: { get_param: glusterfs_vol_1_size }
           vol_name_suffix_2: "vol-2"
           vol_size_2: { get_param: glusterfs_vol_2_size }
+          extension_volume_group_size: { get_param: glusterfs_extension_volume_group_size }
+          extension_volume_size: { get_param: glusterfs_extension_volume_size }
+          volume_deletion_policy: { get_param: glusterfs_volume_deletion_policy }
