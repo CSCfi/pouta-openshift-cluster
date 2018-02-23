@@ -1,0 +1,6 @@
+# This is a convenience playbook that combines deployment of a system with
+# running tests on that system immediately.
+---
+- include: site.yml
+
+- include: ../tests/site.yml
