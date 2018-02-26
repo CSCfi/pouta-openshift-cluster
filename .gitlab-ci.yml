@@ -160,6 +160,19 @@ backup_rahti_int_job:
   tags:
     - rahti-int
 
+backup_rahti_job:
+  stage: prod_backups
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e rahti -P /dev/shm/secret/vaultpass ./run_backup.bash
+  only:
+    - master
+    - schedules
+  tags:
+    - rahti
+
 deploy_rahti_int_job:
   stage: prod_deploy
   except:
