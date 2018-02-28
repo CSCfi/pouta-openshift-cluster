@@ -21,6 +21,7 @@
     - NetworkManager
     - jq
     - sysstat
+    - rng-tools
 
 - name: disable kdump
   service:
@@ -32,12 +33,6 @@
 - name: reset failed units in systemd if needed
   command: systemctl reset-failed
   when: kdump_status.changed
-
-- name: start NetworkManager
-  service:
-    name: NetworkManager
-    state: started
-    enabled: yes
 
 - name: stop cloud-init managing /etc/hosts
   lineinfile:
@@ -70,5 +65,12 @@
   when: custom_ntp_servers is defined
   notify: restart chronyd
 
-- name: enabled chronyd
-  service: name=chronyd enabled=yes
+- name: start and enable services
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - NetworkManager
+    - chronyd
+    - rngd
