@@ -1,0 +1,40 @@
+---
+
+- name: install rng-tools
+  yum:
+    name: rng-tools
+    state: present
+
+# our options here seem to be checking rngd -v output or grepping for rdrand processor flag
+- name: check if hardware source for entropy exists
+  shell: "rngd -v | grep -q 'Available entropy sources'"
+  failed_when: false
+  register: hardware_entropy_check
+
+- name: enable rngd if there is a hardware entropy source
+  systemd:
+    name: rngd
+    state: started
+    enabled: yes
+  when:
+    - hardware_entropy_check.rc == 0
+
+- name: disable rngd if no hardware entropy source is present
+  systemd:
+    name: rngd
+    state: stopped
+    enabled: no
+    daemon_reload: yes
+  when:
+    - hardware_entropy_check.rc != 0
+
+- name: check if rngd is in failed state on a node without hardware entropy
+  shell: "systemctl --failed | grep -q 'rngd.service'"
+  failed_when: false
+  register: rngd_service_failed_check
+
+- name: reset failed state for inactive rngd
+  command: "systemctl reset-failed rngd"
+  when:
+    - hardware_entropy_check.rc != 0
+    - rngd_service_failed_check.rc == 0
