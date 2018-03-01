@@ -332,7 +332,7 @@
 
     - name: Assign extra floating IPs
       os_floating_ip:
-        server: "{{ item.attach_to }}"
+        server: "{{ item.assign_to }}"
         floating_ip_address: "{{ item.address }}"
       with_items: "{{ ip_address_data|default([]) }}"
       when:
