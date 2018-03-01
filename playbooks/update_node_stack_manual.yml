@@ -17,9 +17,9 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  roles:
+    - poc_facts
   tasks:
-    - include: environment_context.yml
-
     - name: Put extracted base stack output into a dict
       set_fact:
         base_stack_outputs: "{{ output_value }}"

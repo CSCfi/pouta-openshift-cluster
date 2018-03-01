@@ -2,9 +2,9 @@
 
 - name: Deploy monitoring
   hosts: masters[0]
+  roles:
+    - role: poc_facts
   tasks:
-    - include: environment_context.yml
-
     - name: install python-passlib
       yum:
         name: python-passlib
@@ -126,9 +126,9 @@
   hosts: localhost
   connection: local
   gather_facts: no
+  roles:
+    - poc_facts
   tasks:
-    - include: environment_context.yml
-
     - name: wait for grafana to start responding
       uri:
         url: https://grafana.{{ openshift_public_hostname }}/api/health
@@ -138,8 +138,9 @@
         force_basic_auth: yes
       failed_when: false
       register: grafana_up
-      until: grafana_up.status == 200
-      retries: 120
+      until: grafana_up.status|default(999) == 200
+      retries: 60
+      delay: 10
 
     - name: check if datasource exists already
       uri:

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Route
 metadata:
   annotations:
-    haproxy.router.openshift.io/ip_whitelist: "{{ [openshift_router_ip, openshift_public_ip] | join(' ') }}"
+    haproxy.router.openshift.io/ip_whitelist: "{{ ip_whitelist_heketi | join(' ') }}"
   name: heketi-storage
   namespace: glusterfs
 spec:

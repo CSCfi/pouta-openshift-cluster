@@ -3,9 +3,9 @@
   hosts: localhost
   gather_facts: no
   connection: local
+  roles:
+    - poc_facts
   tasks:
-    - include: environment_context.yml
-
     - name: check if stack has been provisioned already (base)
       shell: openstack stack show {{ cluster_name }}-base
       register: stack_output_base

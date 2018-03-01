@@ -2,9 +2,9 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  roles:
+    - poc_facts
   tasks:
-    - include: environment_context.yml
-
     - name: make sure we are allowed to deprovision
       assert:
         that:
@@ -43,8 +43,9 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  roles:
+    - poc_facts
   tasks:
-    - include: environment_context.yml
 
     - name: Disassociate floating IP from bastion
       os_floating_ip:

@@ -31,7 +31,7 @@ items:
   metadata:
     name: heketi-metrics-exporter
     annotations:
-      haproxy.router.openshift.io/ip_whitelist: "{{ (bastion_allow_cidrs + [openshift_router_ip, openshift_public_ip])|join(' ') }}"
+      haproxy.router.openshift.io/ip_whitelist: "{{ ip_whitelist_heketi|join(' ') }}"
   spec:
     host: "heketi-metrics-exporter.{{ openshift_public_hostname }}"
     to:

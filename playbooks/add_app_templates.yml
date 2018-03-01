@@ -3,9 +3,9 @@
 ---
 - name: Add app templates
   hosts: masters[0]
+  roles:
+    - poc_facts
   tasks:
-    - include: environment_context.yml
-
     - name: upsert app templates
       include: tasks/upsert_k8s_object.yml
       vars:

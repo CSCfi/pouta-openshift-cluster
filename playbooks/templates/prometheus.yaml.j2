@@ -27,7 +27,7 @@ items:
     name: prometheus
     namespace: monitoring-infra
     annotations:
-      haproxy.router.openshift.io/ip_whitelist: "{{ bastion_allow_cidrs|join(' ') }}"
+      haproxy.router.openshift.io/ip_whitelist: "{{ ip_whitelist_monitoring|join(' ') }}"
   spec:
     host: "prometheus.{{ openshift_public_hostname }}"
     to:

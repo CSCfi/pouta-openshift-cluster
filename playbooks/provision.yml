@@ -2,9 +2,9 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  roles:
+    - poc_facts
   tasks:
-    - include: environment_context.yml
-
     - name: Add public key to OpenStack for {{ cluster_name }}
       os_keypair:
         state: present
@@ -118,6 +118,46 @@
       when: assert_new_deployment|default(False)|bool
       with_items: "{{ stack_output_compute_nodes.results }}"
 
+    - name: Create security group rules for API access
+      set_fact:
+        api_fw_rules: >
+          {{
+            api_fw_rules|default([]) + [
+              {
+                'protocol': 'tcp',
+                'port_range_min': item[1],
+                'port_range_max': item[1],
+                'remote_ip_prefix': item[0]
+              }
+            ]
+          }}
+      with_nested:
+        - "{{ ip_whitelist_api }}"
+        - [ 8443 ]
+      no_log: true
+
+    - name: Create security group rules for load balancer access
+      set_fact:
+        lb_fw_rules: >
+          {{
+            lb_fw_rules|default([]) + [
+              {
+                'protocol': 'tcp',
+                'port_range_min': item[1],
+                'port_range_max': item[1],
+                'remote_ip_prefix': item[0]
+              }
+            ]
+          }}
+      with_nested:
+        - "{{ ip_whitelist_lb }}"
+        - [ 80, 443 ]
+      no_log: true
+
+    - name: Combine external secgroup rules
+      set_fact:
+        secgroup_ext_access_rules: "{{ api_fw_rules + lb_fw_rules + extra_secgroup_ext_access_rules|default([]) }}"
+
     - name: Build/update the OpenShift Heat stack (base)
       register: heat_stack_base
       os_stack:
@@ -136,7 +176,7 @@
           bastion_vm_image: "{{ bastion_vm_image }}"
           bastion_vm_flavor: "{{ bastion_vm_flavor }}"
           bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
-          bastion_allow_cidrs: "{{ bastion_allow_cidrs }}"
+          bastion_allow_cidrs: "{{ ip_whitelist_bastion }}"
           bastion_allow_ports: "{{ bastion_allow_ports }}"
 
     - name: Put base stack output into a dict
@@ -277,7 +317,12 @@
     - name: Refresh dynamic inventory
       meta: refresh_inventory
 
-    - name: Associate floating IP with master
+    - name: Associate floating IP with bastion host
+      os_floating_ip:
+        server: "{{ cluster_name }}-bastion"
+        floating_ip_address: "{{ bastion_public_ip }}"
+
+    - name: Associate floating IP with singlemaster
       os_floating_ip:
         server: "{{ cluster_name }}-master-1"
         floating_ip_address: "{{ openshift_public_ip }}"
@@ -285,10 +330,13 @@
         - master_vm_group_size == 1
         - skip_public_ip_association|default(false)|bool == false
 
-    - name: Associate floating IP with bastion host
+    - name: Assign extra floating IPs
       os_floating_ip:
-        server: "{{ cluster_name }}-bastion"
-        floating_ip_address: "{{ bastion_public_ip }}"
+        server: "{{ item.attach_to }}"
+        floating_ip_address: "{{ item.address }}"
+      with_items: "{{ ip_address_data|default([]) }}"
+      when:
+        - item.assign_to is defined
 
     - name: Refresh dynamic inventory
       meta: refresh_inventory

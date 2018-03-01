@@ -1,0 +1,43 @@
+# create a unified set of common and extra ip address data
+- set_fact:
+    ip_address_data: "{{ common_ip_address_data|default([]) + extra_ip_address_data|default([]) }}"
+
+# pre-filter all entries that have whitelist data
+- set_fact:
+    ip_address_data_for_whitelists: >
+      {{ ip_address_data | json_query("[?allow_access_to]") }}
+
+# extract bastion access whitelist
+- set_fact:
+    ip_whitelist_bastion: >
+      {{ ip_address_data_for_whitelists | json_query("[?contains(allow_access_to, 'bastion')].address") }}
+
+# extract monitoring access whitelist
+- set_fact:
+    ip_whitelist_monitoring: >
+      {{ ip_address_data_for_whitelists | json_query("[?contains(allow_access_to, 'monitoring')].address") }}
+
+# extract api access whitelist
+- set_fact:
+    ip_whitelist_api: >
+      {{ ip_address_data_for_whitelists | json_query("[?contains(allow_access_to, 'api')].address") }}
+
+# extract heketi storage administration whitelist
+- set_fact:
+    ip_whitelist_heketi: >
+      {{ ip_address_data_for_whitelists | json_query("[?contains(allow_access_to, 'heketi')].address") }}
+
+# extract load balancer access whitelist
+- set_fact:
+    ip_whitelist_lb: >
+      {{ ip_address_data_for_whitelists | json_query("[?contains(allow_access_to, 'lb')].address") }}
+
+# if this is a singlemaster installation, allow access from master floating ip to
+# API, lb, heketi and monitoring
+- set_fact:
+    ip_whitelist_api: "{{ ip_whitelist_api + [openshift_public_ip] }}"
+    ip_whitelist_lb: "{{ ip_whitelist_lb + [openshift_public_ip] }}"
+    ip_whitelist_monitoring: "{{ ip_whitelist_monitoring + [openshift_public_ip] }}"
+    ip_whitelist_heketi: "{{ ip_whitelist_heketi + [openshift_public_ip] }}"
+  when:
+    - master_vm_group_size == 1

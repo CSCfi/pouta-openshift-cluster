@@ -7,6 +7,8 @@
   hosts: masters
   serial: 1
   roles:
+    - role: poc_facts
+
     - role: openshift_auth_providers
       when: configure_auth|default(true)|bool
       vars:

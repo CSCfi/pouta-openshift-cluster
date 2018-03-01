@@ -1,6 +1,8 @@
 ---
 - name: Import objects through first master
   hosts: masters[0]
+  roles:
+    - role: poc_facts
   tasks:
     - name: update storage classes
       oc_storageclass:

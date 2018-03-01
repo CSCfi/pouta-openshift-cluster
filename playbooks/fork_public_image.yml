@@ -3,9 +3,9 @@
   hosts: localhost
   gather_facts: no
   connection: local
+  roles:
+    - poc_facts
   tasks:
-    - include: environment_context.yml
-
     - name: fork image if needed
       include: tasks/fork_public_image.yml
       vars:
