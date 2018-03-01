@@ -161,22 +161,9 @@ For initialize_ramdisk.yml to work, you will need to populate the following vari
 
 If you want to automate the process or repeat running single actions containerized, you
 can create a vault password file and loopback mount it to the container so that
-initialization playbook does not have to ask it interactively:
-
-    # Create a directory on ramdisk
-    mkdir -p /dev/shm/secret
-    chmod 750 /dev/shm/secret
-    
-    # Prepare the password file
-    touch /dev/shm/secret/vaultpass
-    chmod 640 /dev/shm/secret/vaultpass
-    chcon -Rt svirt_sandbox_file_t /dev/shm/secret/vaultpass
-
-    # Change the group to match the gid of user 'deployer' in the container
-    sudo chgrp -R 29295 /dev/shm/secret
-    
-    # Populate the password from a password manager with xclip:
-    xclip -o > /dev/shm/secret/vaultpass
+initialization playbook does not have to ask it interactively. There is a
+script called `read_vault_pass_from_clipboard.bash` under the scripts directory
+for doing this.
 
 ## Provisioning
 
