@@ -52,6 +52,7 @@
     - role: docker_host
       docker_lvol_vg_name: "{{ 'vg_data' if docker_storage_driver == 'devicemapper' else '' }}"
       docker_lvol_size: "{{ '99%FREE' if docker_storage_driver == 'devicemapper' else '' }}"
+      docker_package_state: "noop"
 
 - name: Configure openshift masters
   hosts:
