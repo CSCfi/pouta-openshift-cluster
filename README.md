@@ -35,10 +35,13 @@ is done with the official [installer playbook](https://github.com/openshift/open
 ### pre_install.yml
 
 - adds basic tools
-- installs and configures
-    - docker
+- configures
+    - persistent storage
+    - docker storage by creating docker-storage-setup configuration
     - internal DNS
-- configures persistent storage
+- docker installation is left to openshift-ansible by default, 'docker_package_name' 
+  and 'docker_package_state' variables can be set to manually override this and install 
+  docker during pre-install
 
 ### post_install.yml
 

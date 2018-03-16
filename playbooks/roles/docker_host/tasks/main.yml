@@ -1,5 +1,7 @@
 - name: disable auto-updates on Pouta (these can cause container restarts)
-  file: name=/etc/cron.daily/automatic_updates state=absent
+  file:
+    name: /etc/cron.daily/automatic_updates
+    state: absent
 
 - name: upload custom docker storage configuration for docker-storage-setup
   template:
@@ -7,13 +9,22 @@
     dest: /etc/sysconfig/docker-storage-setup
     backup: True
 
-- name: install docker and redhat certificate bundle
+- name: install Red Hat certificate bundle
   yum:
-    name: "{{ item }}"
+    name: "python-rhsm-certificates"
     state: present
-  with_items:
-    - docker
-    - python-rhsm-certificates
 
-- name: enable docker service
-  service: name=docker state=started enabled=yes
+- name: set {{ docker_package_name }} state to {{ docker_package_state }}
+  yum:
+    name: "{{ docker_package_name }}"
+    state: "{{ docker_package_state }}"
+  when:
+    - docker_package_state != 'noop'
+
+- name: start and enable docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  when:
+    - docker_package_state in ['present', 'latest', 'installed']
