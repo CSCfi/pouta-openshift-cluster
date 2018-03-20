@@ -10,7 +10,7 @@
     state: directory
     mode: 0755
 
-- name: drop check scripts
+- name: copy check scripts
   copy:
     src: scripts/
     dest: /usr/local/share/keepalived
