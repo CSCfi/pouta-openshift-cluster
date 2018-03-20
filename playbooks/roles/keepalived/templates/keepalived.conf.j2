@@ -2,8 +2,8 @@ global_defs {
     enable_script_security
 }
 
-vrrp_script check_poc_installed {
-    script       "/usr/local/share/keepalived/check_poc_installed.sh"
+vrrp_script check_app_routes {
+    script       "/usr/local/share/keepalived/check_app_routes.bash"
     interval 10
 }
 
@@ -23,6 +23,6 @@ vrrp_instance vrrp_group_1 {
         {{ keepalived_interface }}
     }
     track_script {
-        check_poc_installed weight {{ poc_not_installed_weight }}
+        check_app_routes weight {{ keepalived_app_routes_down_weight }}
     }
 }
