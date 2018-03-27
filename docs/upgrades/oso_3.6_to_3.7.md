@@ -85,13 +85,28 @@ volumes again.
 9. Make sure the environment still works properly, fix problems if needed.
 
 10. Once the control plane is upgraded and Heketi is fixed, it is time to upgrade
-the nodes:
+the nodes. First we upgrade glusterfs nodes, taking care that only one node is upgraded at a time and 
+the cluster becomes healthy before proceeding. 
 ```bash
 cd ~/poc/playbooks
-ansible-playbook ../../openshift-ansible/playbooks/byo/openshift-cluster/upgrades/v3_7/upgrade_nodes.yml
+ansible-playbook -v ../../openshift-ansible/playbooks/byo/openshift-cluster/upgrades/v3_7/upgrade_nodes.yml --limit 'localhost:masters:glusterfs[0]'
 ```
-Wait for the upgrade to finish.
+Wait for the upgrade to finish. Check that the glusterfs pod is ready, and no volume healing operations are in progress
 
-11. Stop the ghost volume busting script from running in its loop with Ctrl+C.
+```bash
+oc -n glusterfs get pods -l glusterfs=storage-pod
+oc -n glusterfs rsh ds/glusterfs-storage bash -c "gluster volume list | xargs --replace bash -c 'echo; echo \"{}\"; gluster volume heal {} info'"
+```
 
-12. Make sure the environment is functioning properly after the upgrade.
+You should check that "Number of entries" is zero for all the volumes.
+
+Repeat this for all glusterfs nodes.
+
+11. Upgrade the rest of the nodes
+```bash
+ansible-playbook -v ../../openshift-ansible/playbooks/byo/openshift-cluster/upgrades/v3_7/upgrade_nodes.yml --limit 'localhost:all:!glusterfs'
+```
+
+12. Stop the ghost volume busting script from running in its loop with Ctrl+C.
+
+13. Make sure the environment is functioning properly after the upgrade.
