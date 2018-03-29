@@ -1,0 +1,13 @@
+---
+
+- import_playbook: get_install_state.yml
+
+- import_playbook: "{{ os_ansible_path|default('../../openshift-ansible') }}/playbooks/prerequisites.yml"
+  when:
+    - groups['new_masters']|default([])|length == groups['masters']|default([])|length
+
+- import_playbook: "{{ os_ansible_path|default('../../openshift-ansible') }}/playbooks/deploy_cluster.yml"
+  when:
+    - groups['new_masters']|default([])|length == groups['masters']|default([])|length
+
+- import_playbook: set_install_state.yml
