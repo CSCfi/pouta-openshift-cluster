@@ -25,4 +25,4 @@
           name: origin-master-controllers
           state: restarted
         when: cluster_local_in_resolv_conf.stdout_lines | length == 0
-      when: install_type == 'multimaster' or openshift_release == '3.7'
+      when: install_type == 'multimaster' or openshift_release|version_compare('3.7', '>=')
