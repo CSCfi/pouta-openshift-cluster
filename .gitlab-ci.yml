@@ -35,12 +35,11 @@ stages:
   - ci_run_tests
   - ci_backups
   - cleanup
-  - qa_backups
   - qa_env_deploy
   - qa_run_tests
   - mirroring
-  - prod_backups
   - prod_deploy
+  - scheduled_backups
 
 docker_image_build_job:
   stage: docker_build
@@ -93,19 +92,6 @@ deprovision_ci_openshift_job:
     - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash deprovision.yml
   when: always
 
-backup_oso_qa_job:
-  stage: qa_backups
-  script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_backup.bash
-  only:
-    - master
-    - schedules
-  tags:
-    - oso-qa
-
 deploy_qa_openshift_job:
   stage: qa_env_deploy
   except:
@@ -147,32 +133,6 @@ mirror_to_github:
     - cd ../poc-bare
     - git push --mirror $GITHUB_MIRROR
 
-backup_rahti_int_job:
-  stage: prod_backups
-  script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_backup.bash
-  only:
-    - master
-    - schedules
-  tags:
-    - rahti-int
-
-backup_rahti_job:
-  stage: prod_backups
-  script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e rahti -P /dev/shm/secret/vaultpass ./run_backup.bash
-  only:
-    - master
-    - schedules
-  tags:
-    - rahti
-
 deploy_rahti_int_job:
   stage: prod_deploy
   except:
@@ -206,5 +166,41 @@ deploy_rahti_job:
   when: manual
   only:
     - master
+  tags:
+    - rahti
+
+scheduled_backups_oso_qa_job:
+  stage: scheduled_backups
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_backup.bash
+  only:
+    - schedules
+  tags:
+    - oso-qa
+
+scheduled_backups_rahti_int_job:
+  stage: scheduled_backups
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_backup.bash
+  only:
+    - schedules
+  tags:
+    - rahti-int
+
+scheduled_backups_rahti_job:
+  stage: scheduled_backups
+  script:
+    - cd scripts
+    - docker pull $IMAGE_TAG
+    - docker tag $IMAGE_TAG cscfi/poc-deployer
+    - ./run_deployment_container.bash -e rahti -P /dev/shm/secret/vaultpass ./run_backup.bash
+  only:
+    - schedules
   tags:
     - rahti
