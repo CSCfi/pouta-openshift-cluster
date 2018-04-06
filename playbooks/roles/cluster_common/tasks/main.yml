@@ -59,3 +59,11 @@
     regexp: '^CRONDARGS=.*'
     line: 'CRONDARGS=-s -m off'
   notify: restart crond
+
+- name: daily rotation and compression for syslog files
+  copy:
+    dest: /etc/logrotate.d/syslog
+    src: files/logrotated_syslog
+    mode: 0644
+    owner: root
+    group: root
