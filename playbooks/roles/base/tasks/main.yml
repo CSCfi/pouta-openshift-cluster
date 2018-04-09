@@ -21,6 +21,7 @@
     - NetworkManager
     - jq
     - sysstat
+    - logrotate
 
 - name: disable kdump
   service:
