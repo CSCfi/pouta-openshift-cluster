@@ -64,7 +64,7 @@ items:
           role: monitoring
       spec:
         nodeSelector:
-          type: glusterfs
+          type: {{ poc_heketi_node_selector_type|default('master') }}
         containers:
         - name: basic-auth-proxy
           image: {{ monitoring_basic_auth_proxy_image }}

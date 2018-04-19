@@ -53,3 +53,15 @@
         template_base_name: heketi-storage-route.yaml.j2
         name: heketi-storage
         upsert_replace: true
+
+    - name: image, nodeSelector and memory limit changes to heketi-storage
+      oc_edit:
+        namespace: glusterfs
+        kind: dc
+        name: heketi-storage
+        content:
+          spec.template.spec.nodeSelector.type: "{{ poc_heketi_node_selector_type|default('master') }}"
+          spec.template.spec.containers[0].resources.limits.memory: "{{ poc_heketi_memory_limit|default('1Gi') }}"
+          spec.template.spec.containers[0].resources.requests.memory: "{{ poc_heketi_memory_request|default('1Gi') }}"
+          spec.template.spec.containers[0].image: "{{ poc_heketi_image|default('heketi/heketi:6') }}"
+          spec.template.spec.containers[0].imagePullPolicy: Always
