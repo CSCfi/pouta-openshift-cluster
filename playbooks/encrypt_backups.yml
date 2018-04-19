@@ -1,0 +1,60 @@
+# This playbook creates encrypted versions of backup files that do not
+# already exist in encrypted form.
+#
+# This playbook needs to following variables in the inventory
+# - bastion_backup_base_dir (backup directory path)
+# - backup_encryption_public_key (gnupg public key in ascii armory)
+# - backup_encryption_key_name (name/id/email of the key)
+---
+- name: Encrypt backups
+  hosts: bastion
+  gather_facts: no
+  tasks:
+    - name: install gpg
+      yum:
+        name: gnupg2
+        state: present
+
+    - name: import gpg public key
+      shell: >
+        echo "{{ backup_encryption_public_key }}" | gpg --batch --no-tty --import
+
+    - name: mark our key as trusted
+      shell: >
+        echo -e 'trust\n5\ny\n'
+        | gpg --batch --no-tty --command-fd 0 --edit-key {{ backup_encryption_key_name }}
+
+    - name: find encryption targets
+      find:
+        path: "{{ bastion_backup_base_dir }}"
+        recurse: yes
+        file_type: file
+      register: encryption_targets
+
+    - name: find existing encrypted files
+      find:
+        path: "{{ bastion_backup_base_dir }}"
+        recurse: yes
+        file_type: file
+        patterns: '*.enc'
+      register: existing_encrypted_file_objects
+
+    - name: create a plain list of existing encrypted files
+      set_fact:
+        existing_encrypted_files: "{{ existing_encrypted_file_objects.files | map(attribute='path') | list }}"
+
+    # NOTE: Ansible 2.5 supports excludes, use that in 'find encryption targets'
+    #       instead of excluding encrypted files here
+    - name: create missing encrypted files
+      shell: >
+        gpg
+        --batch --no-tty
+        --encrypt
+        --recipient {{ backup_encryption_key_name }}
+        --output {{ item.path }}.enc
+        {{ item.path }}
+      with_items:
+        - "{{ encryption_targets.files }}"
+      when:
+        - item.path ~ '.enc' not in existing_encrypted_files
+        - not item.path.endswith('.enc')

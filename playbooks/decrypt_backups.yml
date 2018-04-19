@@ -1,0 +1,66 @@
+# This playbook decrypts backup files that are available in encrypted form but
+# do not exist in decrypted form.
+#
+# This playbook needs to following variables in the inventory
+# - bastion_backup_base_dir (backup directory path)
+# - backup_encryption_private_key (gnupg private key in ascii armory)
+# - backup_encryption_key_name (name/id/email of the key)
+---
+- name: Decrypt backups
+  hosts: bastion
+  gather_facts: no
+  tasks:
+    - name: install gpg
+      yum:
+        name: gnupg2
+        state: present
+
+    - name: import gpg private key
+      shell: >
+        echo "{{ backup_encryption_private_key }}" | gpg --batch --no-tty --import
+      no_log: true
+      failed_when: false
+
+    - name: find existing backup files
+      find:
+        path: "{{ bastion_backup_base_dir }}"
+        recurse: yes
+        file_type: file
+      register: existing_backup_file_objects
+
+    - name: create a plain list of existing backup files
+      set_fact:
+        existing_backup_files: |
+          {{
+            existing_backup_file_objects.files
+            | map(attribute='path')
+            | list
+          }}
+
+    - name: find encrypted backups
+      find:
+        path: "{{ bastion_backup_base_dir }}"
+        recurse: yes
+        file_type: file
+        patterns: '*.enc'
+      register: decryption_source_file_objects
+
+    - name: create a plain list of backup files available through decryption
+      set_fact:
+        decryption_target_files: |
+          {{
+            decryption_source_file_objects.files
+            | map(attribute='path')
+            | map('regex_replace', '.enc$', '')
+            | list
+          }}
+
+    - name: decrypt backups files that we don't already have
+      shell: >
+        gpg
+        --batch --no-tty
+        --decrypt
+        --output {{ item }}
+        {{ item }}.enc
+      with_items:
+        - "{{ decryption_target_files | difference(existing_backup_files) }}"
