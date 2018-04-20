@@ -24,11 +24,6 @@
           when:
             - test_cleanup|default(true)|bool == true
 
-        - name: remove testuser credential file /dev/shm/secret/testuser_credentials
-          file:
-            path: /dev/shm/secret/testuser_credentials
-            state: absent
-
 - name: Run tests on masters
   hosts: masters
   tasks:

@@ -9,7 +9,36 @@
     - "5666" # NRPE
   notify: restart iptables
 
-- name: install nmap for connectivity testing
+- name: install CentOS PaaS repo
   yum:
-    pkg: nmap
+    name: centos-release-openshift-origin36
     state: present
+
+- name: install required packages
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - nmap
+    - origin-clients
+
+- name: create /dev/shm/secret directory for secrets
+  file:
+    path: /dev/shm/secret
+    state: directory
+    mode: 0750
+    owner: cloud-user
+    group: nrpe
+  when:
+    - testuser_username is defined
+
+- name: create testuser credential file /dev/shm/secret/testuser_credentials
+  copy:
+    dest: /dev/shm/secret/testuser_credentials
+    mode: 0440
+    owner: cloud-user
+    group: nrpe
+    content: |
+      https://{{ openshift_public_hostname }}:8443|{{ testuser_username }}|{{ testuser_password }}
+  when:
+    - testuser_username is defined
