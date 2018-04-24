@@ -1,5 +1,5 @@
 ---
-- name: Ensure backup base dirs exist on bastion
+- name: Prepare bastion for backups
   hosts: bastion
   gather_facts: no
   tasks:
@@ -29,38 +29,46 @@
     - include_role:
         name: etcd
         tasks_from: backup
+
     - name: archive etcd backup
       archive:
         path: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}"
         dest: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}.tar.gz"
+
     - name: archive /etc/etcd
       archive:
         path: "/etc/etcd"
         dest: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
+
     - name: sync etcd backup to bastion
       synchronize:
         src: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}.tar.gz"
         dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/openshift-backup-{{ cluster_name }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
     - name: sync /etc/etcd archive to bastion
       synchronize:
         src: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
         dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/etc-etcd-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
     - name: remove etcd backup from etcd host
       file:
         path: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}"
         state: absent
+
     - name: remove etcd backup archive from etcd host
       file:
         path: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}.tar.gz"
         state: absent
+
     - name: remove /etc/etcd backup from etcd host
       file:
         path: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
         state: absent
+
 
 - name: Backup masters
   hosts: masters
@@ -69,28 +77,34 @@
   vars:
     - backup_time: "{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}"
   tasks:
+
     - name: archive /etc/origin
       archive:
         path: '/etc/origin'
         dest: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
+
     - name: sync /etc/origin archive to bastion
       synchronize:
         src: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
         dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/etc-origin-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
     - name: remove /etc/origin archive from master
       file:
         path: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
         state: absent
+
     - name: ensure python-heketi is installed
       yum:
         pkg: python-heketi
+
     - name: drop backup script to ansible user's home directory
       copy:
         src: "files/heketi_backup.py"
         dest: "~/heketi_backup.py"
         mode: 0755
+
     - name: get Heketi secret
       oc_secret:
         state: list
@@ -99,6 +113,7 @@
         decode: True
       register: heketi_secret
       run_once: true
+
     - name: backup Heketi BoltDB via Heketi API
       shell: >
         python ~/heketi_backup.py
@@ -107,6 +122,7 @@
         --host https://heketi-storage-glusterfs.{{ openshift_public_hostname }}
         --file /tmp/heketi.db
       run_once: true
+
     - name: sync Heketi BoltDB backup to bastion
       synchronize:
         src: "/tmp/heketi.db"
@@ -114,11 +130,13 @@
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
       run_once: true
+
     - name: remove Heketi BoltDB backup from master
       file:
         path: "/tmp/heketi.db"
         state: absent
       run_once: true
+
     - name: get topology information from Heketi
       shell: >
         oc rsh -n glusterfs dc/heketi-storage
@@ -126,11 +144,13 @@
         topology info --json
       run_once: true
       register: heketi_topology
+
     - name: write Heketi topology info into a file
       copy:
         content: "{{ heketi_topology.stdout }}"
         dest: /tmp/heketi-topo.json
       run_once: true
+
     - name: sync Heketi topology JSON file to bastion
       synchronize:
         src: "/tmp/heketi-topo.json"
@@ -138,6 +158,7 @@
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
       run_once: true
+
     - name: remove Heketi topology JSON from master
       file:
         path: "/tmp/heketi-topo.json"
@@ -187,11 +208,13 @@
         recurse: yes
         file_type: directory
       register: old_backup_dirs
+
     - name: remove old backup dirs
       file:
         path: "{{ item.path }}"
         state: absent
       with_items: "{{ old_backup_dirs.files }}"
+
     - name: get backup files older than {{ l_backup_retention_time }}
       find:
         path: "{{ bastion_backup_base_dir }}"
@@ -199,6 +222,7 @@
         recurse: yes
         file_type: file
       register: old_backup_files
+
     - name: remove old backup files
       file:
         path: "{{ item.path }}"
