@@ -5,7 +5,7 @@
   tasks:
     - name: ensure backup base dirs exist on bastion
       file:
-        path: "{{ bastion_backup_base_dir }}/{{ item }}"
+        path: "{{ backup_bastion_base_dir }}/{{ item }}"
         state: directory
         owner: "{{ ansible_ssh_user }}"
         group: "{{ ansible_ssh_user }}"
@@ -25,6 +25,7 @@
     - r_etcd_common_backup_sufix_name: "/{{ backup_time }}"
     - r_etcd_common_embedded_etcd: False
     - etcd_backup_root: "/var/lib/etcd"
+    - openshift_is_containerized: "{{ containerized }}"
   tasks:
     - include_role:
         name: etcd
@@ -43,14 +44,14 @@
     - name: sync etcd backup to bastion
       synchronize:
         src: "{{ etcd_backup_root }}/openshift-backup-{{ cluster_name }}.tar.gz"
-        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/openshift-backup-{{ cluster_name }}-{{ backup_time }}.tar.gz"
+        dest: "{{ backup_bastion_base_dir }}/{{ inventory_hostname }}/openshift-backup-{{ cluster_name }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
 
     - name: sync /etc/etcd archive to bastion
       synchronize:
         src: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
-        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/etc-etcd-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
+        dest: "{{ backup_bastion_base_dir }}/{{ inventory_hostname }}/etc-etcd-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
 
@@ -86,7 +87,7 @@
     - name: sync /etc/origin archive to bastion
       synchronize:
         src: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
-        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/etc-origin-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
+        dest: "{{ backup_bastion_base_dir }}/{{ inventory_hostname }}/etc-origin-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
 
@@ -126,7 +127,7 @@
     - name: sync Heketi BoltDB backup to bastion
       synchronize:
         src: "/tmp/heketi.db"
-        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/heketi-{{ backup_time }}.db"
+        dest: "{{ backup_bastion_base_dir }}/{{ inventory_hostname }}/heketi-{{ backup_time }}.db"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
       run_once: true
@@ -154,7 +155,7 @@
     - name: sync Heketi topology JSON file to bastion
       synchronize:
         src: "/tmp/heketi-topo.json"
-        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/heketi-topo-{{ backup_time }}.json"
+        dest: "{{ backup_bastion_base_dir }}/{{ inventory_hostname }}/heketi-topo-{{ backup_time }}.json"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
       run_once: true
@@ -186,7 +187,7 @@
     - name: sync glusterfs archive to bastion
       synchronize:
         src: "/tmp/glusterfs-{{ inventory_hostname }}.tar.gz"
-        dest: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}/glusterfs-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
+        dest: "{{ backup_bastion_base_dir }}/{{ inventory_hostname }}/glusterfs-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
 
@@ -203,7 +204,7 @@
   tasks:
     - name: get backup dirs older than {{ l_backup_retention_time }}
       find:
-        path: "{{ bastion_backup_base_dir }}"
+        path: "{{ backup_bastion_base_dir }}"
         age: "{{ l_backup_retention_time }}"
         recurse: yes
         file_type: directory
@@ -217,7 +218,7 @@
 
     - name: get backup files older than {{ l_backup_retention_time }}
       find:
-        path: "{{ bastion_backup_base_dir }}"
+        path: "{{ backup_bastion_base_dir }}"
         age: "{{ l_backup_retention_time }}"
         recurse: yes
         file_type: file

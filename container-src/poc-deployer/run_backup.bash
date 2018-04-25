@@ -16,15 +16,13 @@ fi
 echo
 echo "-------------------------------------------------------------------------------"
 echo
-echo " Running $backup_playbook for $ENV_NAME"
-echo
-branch-info
+echo " Running $backup_playbook encrypt_backups.yml backup_remote_rsync.yml"
+echo " for $ENV_NAME"
 echo
 echo "-------------------------------------------------------------------------------"
 echo
 
-
-ansible-playbook $backup_playbook
+ansible-playbook $backup_playbook encrypt_backups.yml backup_remote_rsync.yml
 result=$?
 
 popd  > /dev/null

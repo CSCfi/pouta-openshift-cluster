@@ -2,7 +2,7 @@
 # do not exist in decrypted form.
 #
 # This playbook needs to following variables in the inventory
-# - bastion_backup_base_dir (backup directory path)
+# - backup_bastion_base_dir (backup directory path)
 # - backup_encryption_private_key (gnupg private key in ascii armory)
 # - backup_encryption_key_name (name/id/email of the key)
 ---
@@ -23,7 +23,7 @@
 
     - name: find existing backup files
       find:
-        path: "{{ bastion_backup_base_dir }}"
+        path: "{{ backup_bastion_base_dir }}"
         recurse: yes
         file_type: file
       register: existing_backup_file_objects
@@ -39,7 +39,7 @@
 
     - name: find encrypted backups
       find:
-        path: "{{ bastion_backup_base_dir }}"
+        path: "{{ backup_bastion_base_dir }}"
         recurse: yes
         file_type: file
         patterns: '*.enc'

@@ -1,0 +1,50 @@
+# This playbook copies backup files with rsync over ssh to given target.
+#
+# The following variables are used:
+# - backup_rsync_enabled (set to true to run)
+# - backup_bastion_base_dir (backup directory path)
+# - backup_rsync_target (target url, including user, host and directory)
+# - backup_rsync_ssh_private_key (rsync over ssh private key)
+# - backup_rsync_target_known_hosts (.ssh/known_hosts line for target host)
+# - backup_rsync_filter_options (optional includes and excludes for rsync)
+---
+- name: Run backup rsync
+  hosts: bastion
+  gather_facts: no
+  tasks:
+    - when: backup_rsync_enabled | default(False) | bool
+      block:
+        - name: install rsync
+          yum:
+            name: rsync
+            state: present
+
+        - name: copy rsync private key to ramdisk
+          copy:
+            dest: "/dev/shm/backup_rsync_ssh_private_key"
+            content: "{{ backup_rsync_ssh_private_key }}"
+            mode: 0600
+          register: copy_private_key
+
+        - name: install backup target host key to known hosts
+          lineinfile:
+            path: "/home/cloud-user/.ssh/known_hosts"
+            line: "{{ backup_rsync_target_known_hosts }}"
+            create: yes
+            mode: 0600
+            owner: cloud-user
+
+        - name: copy backup files to remote
+          shell: >
+            rsync -avi --delete
+            -e 'ssh -i /dev/shm/backup_rsync_ssh_private_key'
+            {{ backup_rsync_filter_options|default() }}
+            {{ backup_bastion_base_dir }}
+            {{ backup_rsync_target }}/{{ cluster_name }}
+
+      always:
+        - name: remove rsync private key from ramdisk
+          file:
+            path: "/dev/shm/backup_rsync_ssh_private_key_"
+            state: absent
+      # end block
