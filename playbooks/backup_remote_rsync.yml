@@ -45,6 +45,6 @@
       always:
         - name: remove rsync private key from ramdisk
           file:
-            path: "/dev/shm/backup_rsync_ssh_private_key_"
+            path: "/dev/shm/backup_rsync_ssh_private_key"
             state: absent
       # end block
