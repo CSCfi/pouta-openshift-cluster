@@ -23,6 +23,9 @@
     - sysstat
     - logrotate
 
+- name: install virtualenv for Python
+  pip: name=virtualenv state=present
+
 - name: disable kdump
   service:
     name: kdump
