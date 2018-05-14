@@ -1,4 +1,4 @@
 ---
-- include: setup_tests.yml
+- import_playbook: setup_tests.yml
 
-- include: run_tests.yml
+- import_playbook: run_tests.yml
