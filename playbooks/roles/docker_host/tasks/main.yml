@@ -14,6 +14,13 @@
     name: "python-rhsm-certificates"
     state: present
 
+- name: fallback for missing certificate bundle file on early CentOS 7.5
+  copy:
+    dest: /etc/rhsm/ca/redhat-uep.pem
+    src: files/etc/rhsm/ca/redhat-uep.pem
+    mode: 0644
+    owner: root
+
 - name: set {{ docker_package_name }} state to {{ docker_package_state }}
   yum:
     name: "{{ docker_package_name }}"
