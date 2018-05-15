@@ -354,6 +354,7 @@
         search_regex: "OpenSSH"
         delay: 5
         timeout: 900
+
     - name: Wait for SSH to work
       shell: ssh {{ bastion_public_ip }} 'echo success'
       register: result
@@ -386,3 +387,51 @@
         timeout: 300
       delegate_to: "{{ hostvars[groups['bastion'][0]]['ansible_ssh_host'] }}"
       when: check_for_ssh_after_provisioning|default(false)|bool
+
+- import_playbook: get_install_state.yml
+
+- name: Update packages on cluster hosts
+  hosts: OSEv3
+  tasks:
+    - when:
+        - poc_update_and_reboot|default(false)|bool
+        - poc_installed|default(false)|bool == false
+      block:
+        - name: update OS packages
+          yum:
+            name: '*'
+            state: latest
+          register: os_packages_updated
+
+        - name: reboot hosts
+          shell: ( /bin/sleep 5 ; shutdown -r now "Ansible triggered reboot" ) &
+          async: 30
+          poll: 0
+          ignore_errors: true
+          when: os_packages_updated.changed
+
+        - name: wait for hosts to go down
+          wait_for:
+            state: stopped
+            host: "{{ ansible_ssh_host }}"
+            port: 22
+            timeout: 300
+          delegate_to: "{{ hostvars[groups['bastion'][0]]['ansible_ssh_host'] }}"
+          when: os_packages_updated.changed
+
+        # meta-action for reseting control master connections would be used, but it does not work currently
+        # https://github.com/ansible/ansible/issues/27520
+        - name: wait for control master processes to time out
+          pause: seconds=30
+          when: os_packages_updated.changed
+
+        - name: wait for connectivity on port 22 on hosts
+          shell: ssh {{ ansible_ssh_host }} 'echo success'
+          register: result
+          until: result.stdout.find('success') != -1
+          retries: 30
+          delay: 10
+          changed_when: false
+          delegate_to: localhost
+          when: os_packages_updated.changed
+      #endblock
