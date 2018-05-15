@@ -1,3 +1,32 @@
+- name: disable auto-updates on Pouta
+  file:
+    name: /etc/cron.daily/automatic_updates
+    state: absent
+
+- name: remove default base repo file
+  file:
+    name: /etc/yum.repos.d/CentOS-Base.repo
+    state: absent
+
+- name: lock operating system minor version in repo config
+  yum_repository:
+    name: "{{ item.name }}"
+    baseurl: "http://mirror.centos.org/centos/{{ os_version | default(ansible_distribution_version) }}/{{ item.subpath }}/$basearch/"
+    description: "CentOS-{{ os_version | default(ansible_distribution_version) }} - {{ item.name }}"
+    enabled: "{{ item.enabled }}"
+    gpgcheck: yes
+    gpgkey: "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7"
+  with_items:
+    - { name: 'base', subpath: 'os', enabled: yes }
+    - { name: 'updates', subpath: 'updates', enabled: yes }
+    - { name: 'extras', subpath: 'extras', enabled: yes }
+    - { name: 'centosplus', subpath: 'centosplus', enabled: no }
+
+- name: yum clean metadata
+  command: yum clean metadata
+  args:
+    warn: no
+
 - name: install basic tools
   yum: pkg={{item}} state=present
   with_items:
@@ -22,6 +51,7 @@
     - jq
     - sysstat
     - logrotate
+    - python-pip
 
 - name: install virtualenv for Python
   pip: name=virtualenv state=present
