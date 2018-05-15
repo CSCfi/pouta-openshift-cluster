@@ -1,4 +1,9 @@
 ---
+- name: Install nmap-ncat
+  yum:
+    name: nmap-ncat
+    state: present
+
 - name: allow connections from the monitoring server to monitoring daemons
   lineinfile:
     line: "-A INPUT -p tcp -m tcp -s {{ monitoring_server_ip }} --dport {{ item }} -j ACCEPT"

@@ -362,15 +362,16 @@
       delay: 5
       changed_when: false
 
-- name: Install nmap-ncat on bastion if need be
+- name: Configure bastion
   hosts: bastion
-  gather_facts: no
   become: yes
-  tasks:
-    - name: Install nmap-ncat
-      yum:
-        name: nmap-ncat
-        state: present
+  roles:
+    - base
+    - ansible-role-nrpe
+    - ansible-role-nrpe-plugins
+    - cluster_common
+    - bastion
+    - ansible-role-mod_gearman
 
 - name: Wait for SSH to work on all other hosts
   hosts: all
