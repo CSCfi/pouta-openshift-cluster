@@ -34,11 +34,71 @@ check_route_url() {
     return $curl_status
 }
 
-@test "test default namespace pod health" {
-    all_pods_count=$(oc get pods -n default -o json | jq '[.items[].status.phase]|length')
-    running_pods_count=$(oc get pods -n default -o json | jq '[.items[].status.phase|select(. == "Running")]|length')
+# Make sure the given namespace contains only healthy pods. Only check
+# namespaces that exist.
+# $1 - namespace
+check_namespace_pod_health() {
+    namespace_grep=$(oc get namespaces | grep "$1 ")
+    if [[ -z $namespace_grep ]]; then
+        skip "Namespace $1 does not exist, skipping pod health check"
+    fi
+
+    all_pods_count=$(oc get pods -n $1 -o json | jq '[.items[].status.phase]|length')
+    running_pods_count=$(oc get pods -n $1 -o json | jq '[.items[].status.phase|select((. == "Running") or (. == "Succeeded"))]|length')
 
     [ $all_pods_count -eq $running_pods_count ]
+}
+
+@test "test default namespace pod health" {
+    check_namespace_pod_health default
+}
+
+@test "test default-www namespace pod health" {
+    check_namespace_pod_health default-www
+}
+
+@test "test glusterfs namespace pod health" {
+    check_namespace_pod_health glusterfs
+}
+
+@test "test kube-public namespace pod health" {
+    check_namespace_pod_health kube-public
+}
+
+@test "test kube-service-catalog namespace pod health" {
+    check_namespace_pod_health kube-service-catalog
+}
+
+@test "test kube-system namespace pod health" {
+    check_namespace_pod_health kube-system
+}
+
+@test "test logging namespace pod health" {
+    check_namespace_pod_health logging
+}
+
+@test "test management-infra namespace pod health" {
+    check_namespace_pod_health management-infra
+}
+
+@test "test monitoring-infra namespace pod health" {
+    check_namespace_pod_health monitoring-infra
+}
+
+@test "test openshift namespace pod health" {
+    check_namespace_pod_health openshift
+}
+
+@test "test openshift-infra namespace pod health" {
+    check_namespace_pod_health openshift-infra
+}
+
+@test "test openshift-node namespace pod health" {
+    check_namespace_pod_health openshift-node
+}
+
+@test "test openshift-web-console namespace pod health" {
+    check_namespace_pod_health openshift-web-console
 }
 
 @test "test connectivity to registry URL" {
