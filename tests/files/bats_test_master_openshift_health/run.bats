@@ -38,7 +38,7 @@ check_route_url() {
 # namespaces that exist.
 # $1 - namespace
 check_namespace_pod_health() {
-    namespace_grep=$(oc get namespaces | grep "$1 ")
+    namespace_grep=$(oc get namespaces | grep "$1 ") || true
     if [[ -z $namespace_grep ]]; then
         skip "Namespace $1 does not exist, skipping pod health check"
     fi
