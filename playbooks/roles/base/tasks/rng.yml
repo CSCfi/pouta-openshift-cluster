@@ -7,7 +7,11 @@
 
 # our options here seem to be checking rngd -v output or grepping for rdrand processor flag
 - name: check if hardware source for entropy exists
-  shell: "rngd -v | grep -q 'Available entropy sources'"
+  shell: >
+    rngd -v
+    | grep -A 1 '^Available entropy sources'
+    | grep -v -q '^Available entropy sources'
+
   failed_when: false
   register: hardware_entropy_check
 
