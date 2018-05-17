@@ -12,6 +12,18 @@ The scaleup playbook location in openshift-ansible differs between OpenShift ver
 so there are several versions of the site_scaleup playbook. Use the most recent one if
 a playbook isn't available for your specific version.
 
+## Replacing VMs from multiple groups
+
+If VMs from multiple groups need to be replaced, you will need to prepare them all at the same time and
+include the possible custom extra variables (-e ...) for all of them.
+
+To check which hosts will be included in scaleup, run
+
+```bash
+cd ~/poc/playbooks
+ansible all -o -m shell -a 'if [[ ! -f /var/lib/POC_INSTALLED ]]; then echo "POC installation flag not found"; fi'
+```
+
 ## Replacing a VM
 
 ### Rebuild
@@ -77,36 +89,45 @@ For example for OpenShift 3.9:
 ansible-playbook -v site_scaleup_3.9.yml
 ```
 
-## Secondary and Tertiary masters
+## Masters
 
-Same procedure as for nodes. Here we are running OpenShift 3.9:
+Restore etc/origin from backups
 
 ```bash
+export HOST_TO_REPLACE=$ENV_NAME-master-X
+scp $ENV_NAME-bastion:backup/$HOST_TO_REPLACE/etc-origin-$HOST_TO_REPLACE-*.tar.gz /tmp/
+latest_backup=$(ls /tmp/etc-origin-$HOST_TO_REPLACE*.tar.gz | sort | tail -1)
+scp $latest_backup $HOST_TO_REPLACE:/tmp/etc-origin-backup.latest.tar.gz
+
+# extract the backup
+ssh $HOST_TO_REPLACE sudo tar xvf /tmp/etc-origin-backup.latest.tar.gz -C /etc
+```
+
+Then run scaleup. Here we are running OpenShift 3.9:
+
+```bash
+# second and third master
 ansible-playbook -v site_scaleup_3.9.yml
 ```
 
-Check the node state on the master after running the playbook and set it schedulable
-if necessary
+For the first master there is an additional safety in place because running scaleup against
+an empty master-1 will create a new CA and result in a conflict between new and old CAs. Make sure
+the backup has been extracted properly before running this.
 
 ```bash
-ssh [cluster_name]-master-1
-oc get nodes
-oc adm manage-node [host] --schedulable=true
-```
-
-## Primary master (master-1)
-
-The primary master acts as the CA for the cluster, so there are additional steps when restoring that.
-Before running 'site.yml', restore '/etc/origin' from the latest backup.
-
-Then, run ansible with an additional safety flag turned on:
-
-```bash
+# primary master
 ansible-playbook -v -e allow_first_master_scaleup=1 site_scaleup_3.9.yml
 ```
 
-The additional safety is in place because running scaleup against an empty master-1 will create
-a new CA and result in a conflict between new and old CAs.
+Check the node state on the master after running the playbook and set it schedulable
+if necessary. Also remove the 'compute' node label that may be added:
+
+```bash
+ssh $ENV_NAME-master-1
+oc get nodes
+oc adm manage-node [host] --schedulable=true
+oc label node [host] node-role.kubernetes.io/compute-
+```
 
 ## Load balancers
 
@@ -127,19 +148,16 @@ in the future.
 ansible-playbook -v -t loadbalancer ../../openshift-ansible/playbooks/byo/config.yml
 ```
 
-## Etcd
+## Etcd-2 and etcd-3
 
-Etcd recovery is fairly straight forward. Etcd-1 is a bit more involved, because
-openshift-ansible uses that as 'etcd_ca_host' by default, creating certificates for all hosts
-and clients (=masters) there. However, openshift-ansible will create copies on other hosts, too,
-and the CSC copy includes a patch to allow setting 'etcd_ca_host' to some other host than
-etcd-1.
+Etcd recovery is fairly straight forward. Etcd-1 is a bit more involved, see below.
 
 Remove the faulty node from etcd-cluster by logging in to a surviving member and using etcdctl
-there:
+there (install etcd to obtain 'etcdctl' if necessary):
 
 ```bash
-ssh [cluster-name]-etcd-1
+ssh $ENV_NAME-etcd-1
+sudo yum install -y etcd
 
 sudo etcdctl -endpoints https://[cluster-name]-etcd-1:2379 \
   --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key \
@@ -156,5 +174,50 @@ Then run site_scaleup_<version>.yml, e.g.:
 ansible-playbook -v site_scaleup_3.9.yml
 ```
 
-If you are replacing etcd-1, change the endpoint host and add
-'-e etcd_ca_host=[surviving member]' in the playbook command above.
+## Etcd-1
+
+Openshift-ansible uses etcd-1 as 'etcd_ca_host' by default, creating certificates for all hosts
+and clients (=masters) there. In that case, you will need to restore the certificates from backups, place them
+on a surviving host and pass that host to the scaleup playbook.
+
+First restore /etc/etcd from backup to etcd-1 and etcd-2, that will work as a temporary certificate host
+
+```bash
+# copy /etc/etcd backups to deployment container, then copy the latest to etcd-1 and etcd-2
+scp $ENV_NAME-bastion:backup/$ENV_NAME-etcd-1/etc-etcd-$ENV_NAME-etcd-1*.tar.gz /tmp/
+latest_backup=$(ls /tmp/etc-etcd-$ENV_NAME-etcd-1*.tar.gz | sort | tail -1)
+scp $latest_backup $ENV_NAME-etcd-1:/tmp/etc-etcd-1.latest.tar.gz
+scp $latest_backup $ENV_NAME-etcd-2:/tmp/etc-etcd-1.latest.tar.gz
+
+# extract the whole archive in etcd-1
+ssh $ENV_NAME-etcd-1 sudo tar xvf /tmp/etc-etcd-1.latest.tar.gz -C /etc
+# extract the CA files and generated certificates on etcd-2
+ssh $ENV_NAME-etcd-2 sudo tar xvf /tmp/etc-etcd-1.latest.tar.gz etcd/ca etcd/generated_certs -C /etc
+```
+
+Then remove the old member entry for etcd-1 from the cluster (install etcd to obtain 'etcdctl' if necessary)
+```bash
+ssh $ENV_NAME-etcd-2
+sudo yum install -y etcd
+
+sudo etcdctl -endpoints https://[cluster-name]-etcd-2:2379 \
+  --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key \
+  cluster-health
+
+sudo etcdctl -endpoints https://[cluster-name]-etcd-2:2379 \
+  --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key \
+  member remove [id_of_the_failed_member]
+
+```
+
+Then run site_scaleup.yml, pointing the playbook to use etcd-2 as the cluster endpoint and the source
+for certificates:
+
+```bash
+ansible-playbook -v site_scaleup_3.9.yml -e etcd_ca_host=$ENV_NAME-etcd-2
+```
+
+# Notes
+
+Rebuild servers right before running site_scaleup, otherwise they may be autoupdated before our
+repository locking code is run.
