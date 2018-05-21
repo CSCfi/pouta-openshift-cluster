@@ -19,13 +19,16 @@
         shell: oc new-app -n default-www --name default-www-app {{ default_www_app_repo }}
         when: existing_default_www_app.stdout_lines | length == 0
 
-      - name: scale to 2 pods
+      - name: scale to 2 pods, add a livenessProbe and a readinessProbe
         oc_edit:
           name: default-www-app
           namespace: default-www
           kind: deploymentconfig
           content:
             spec.replicas: 2
+            spec.template.spec.containers[0].livenessProbe.tcpSocket.port: 8000
+            spec.template.spec.containers[0].readinessProbe.httpGet.path: /
+            spec.template.spec.containers[0].readinessProbe.httpGet.port: 8000
 
       - name: update buildconfig
         oc_edit:
