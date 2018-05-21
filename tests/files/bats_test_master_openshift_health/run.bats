@@ -101,6 +101,14 @@ check_namespace_pod_health() {
     check_namespace_pod_health openshift-web-console
 }
 
+@test "test openshift-ansible-service-broker namespace pod health" {
+    check_namespace_pod_health openshift-ansible-service-broker
+}
+
+@test "test openshift-template-service-broker namespace pod health" {
+    check_namespace_pod_health openshift-template-service-broker
+}
+
 @test "test connectivity to registry URL" {
     run check_route_url default docker-registry-reencrypt
 
