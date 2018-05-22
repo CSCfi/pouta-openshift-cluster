@@ -29,9 +29,9 @@ TODO: create a playbook to automate this
 1. Increase the size of the GlusterFS host group size in Heat
   * This is configured by the `glusterfs_vm_group_size` variable
 
-2. Run a scaleup to add the new GlusterFS nodes to the cluster:
+2. Run a scaleup to add the new GlusterFS nodes to the cluster, e.g.:
 ```bash
-ansible-playbook -e allow_heat_stack_update_glusterfs=1 site_scaleup.yml
+ansible-playbook -e allow_heat_stack_update_glusterfs=1 site_scaleup_3.9.yml
 ```
 
 3. Login to a master node:

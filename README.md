@@ -23,7 +23,7 @@ is done with the official [installer playbook](https://github.com/openshift/open
     - VMs
     - volumes
     - security groups
-    - networks 
+    - networks
 - uses OpenStack Heat for provisioning
 - always updates heat stack for base resources (bastion, networks, basic security groups, ...)
 - optionally updates other Heat stacks. The variables are:
@@ -39,8 +39,8 @@ is done with the official [installer playbook](https://github.com/openshift/open
     - persistent storage
     - docker storage by creating docker-storage-setup configuration
     - internal DNS
-- docker installation is left to openshift-ansible by default, 'docker_package_name' 
-  and 'docker_package_state' variables can be set to manually override this and install 
+- docker installation is left to openshift-ansible by default, 'docker_package_name'
+  and 'docker_package_state' variables can be set to manually override this and install
   docker during pre-install
 
 ### post_install.yml
@@ -51,22 +51,73 @@ is done with the official [installer playbook](https://github.com/openshift/open
 - optionally deploys default www page and Prometheus based monitoring
 
 
-### scaleup.yml and site_scaleup.yml
+### scaleup_<version>.yml and site_scaleup_<version>.yml
 
-*scaleup.yml* runs OpenShift Ansible scaleup playbooks for any host that does not 
-have /var/lib/POC_INSTALLED flag on them. The playbooks are
-    
+*scaleup_<version>.yml* runs OpenShift Ansible scaleup playbooks for any host that does not
+have /var/lib/POC_INSTALLED flag on them. Select the version number that matches
+your OpenShift version. If you can't find a corresponding version for your OpenShift version, use
+the most recent playbook. In 3.7 and older, the playbooks in openshift-ansible are
+
     playbooks/byo/openshift-master/scaleup.yml
     playbooks/byo/openshift-node/scaleup.yml
     playbooks/byo/openshift-etcd/scaleup.yml
 
-*site_scaleup.yml* is a wrapper around scaleup.yml that calls provision.yml, pre_install.yml, 
-scaleup.yml and post_install.yml. See "Heat stack updates" and recovery documentation in docs/ for 
-usage instructions.
+In 3.9 and newer, the playbooks are
+
+    playbooks/openshift-master/scaleup.yml
+    playbooks/openshift-node/scaleup.yml
+    playbooks/openshift-etcd/scaleup.yml
+
+*site_scaleup_<version>.yml* is a wrapper around scaleup.yml that calls
+provision.yml, pre_install.yml, scaleup.yml and post_install.yml. See "Heat
+stack updates" and recovery documentation in docs/ for usage instructions.
+
+### scaledown_nodes.yml
+
+This playbook can be used to remove nodes from the cluster. You need to provide
+a list of nodes to remove as a variable called `nodes_to_remove`, e.g.:
+
+```yaml
+nodes_to_remove:
+  - oso-devel-ssdnode-3
+  - oso-devel-ssdnode-4
+```
+
+Put the nodes to remove in a file. Let's call the file `nodes_to_remove.yaml`.
+Also set the new number of the type of node you are scaling down by setting
+the corresponding Heat resource group size parameter. Nodes are always removed
+from the end of the resource group, so if you have four nodes now and want to
+remove the last two, put nodes 3 and 4 into nodes_to_remove and set the resource
+group size to 2.
+
+You'll also need to set the correct parameters to allow Heat to update the
+correct node stacks. In this example we allow Heat to update the "ssdnode" stack
+by setting `allow_heat_stack_update_node_groups` accordingly. Set this variable
+so that all the stacks with nodes to remove are included.
+
+Once the preparations are done, you can run this to scale the nodes down:
+
+```bash
+ansible-playbook scaledown_nodes.yml \
+-e '{allow_heat_stack_update_node_groups: ["ssdnode"]}' \
+-e @nodes_to_remove.yaml
+```
+
+This might fail because one or more of the nodes had pods with local data. We
+default to failing if this is the case to be on the safe side, but there is an
+option that can be set to also delete local data. If you're sure pod local data
+can be removed, run this command instead:
+
+```bash
+ansible-playbook scaledown_nodes.yml \
+-e '{allow_heat_stack_update_node_groups: ["ssdnode"]}' \
+-e @nodes_to_remove.yaml
+-e delete_local_data=1
+```
 
 ## Prerequisites
 
-All that is needed is 
+All that is needed is
 - a working docker installation
 - git client
 - access to repositories
@@ -85,22 +136,22 @@ installing (see https://github.com/openshift/openshift-ansible#getting-the-corre
     cd ~/git/openshift-ansible
     git checkout release-1.5
 
-We have a deployment container with all dependencies preinstalled. To build the container, 
+We have a deployment container with all dependencies preinstalled. To build the container,
 run the build script located in `poc/container-src/poc-deployer`:
- 
-    cd ~/git/poc/container-src/poc-deployer 
+
+    cd ~/git/poc/container-src/poc-deployer
     sudo ./build.bash
 
 If Docker containers can be launched without 'sudo', that can be left out in the commands above.
 
 __Note on SELinux__: If you are running under SELinux enforcing mode, the container processes
-may not be able to access the volumes by default. To enable access from containerized 
+may not be able to access the volumes by default. To enable access from containerized
 processes, change the labels on the mounted directories:
- 
+
     cd ~/git
     chcon -Rt svirt_sandbox_file_t poc openshift-ansible openshift-environments
 
-Installation data is contained in the openshift-environments repository. The format of the repository/directory 
+Installation data is contained in the openshift-environments repository. The format of the repository/directory
 is as follows:
 
 ```
@@ -179,7 +230,7 @@ To launch a shell in a temporary container for deploying environment 'oso-devel-
       -i
 
 Run site.yml to provision infrastructure on OpenStack and install OpenShift on this infrastructure:
-    
+
     cd poc/playbooks
     ansible-playbook site.yml
 
@@ -189,21 +240,21 @@ Single step alternative for non-interactive runs:
     sudo scripts/run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm/secret/vaultpass \
       ./run_playbook.bash site.yml
 
-If you run the above from terminal locally while developing, add '-i' option to attach the terminal 
+If you run the above from terminal locally while developing, add '-i' option to attach the terminal
 to the process for the color coding and ctrl+c to work.
 
 ### Heat stack updates
 
-Normally only base stack is updated when running site or provisioning playbooks. In case you need to 
-update an existing Heat stack, set the corresponding variable (allow_heat_stack_update_*) to true. See 
-the description for provision.yml for a list of variables 
+Normally only base stack is updated when running site or provisioning playbooks. In case you need to
+update an existing Heat stack, set the corresponding variable (allow_heat_stack_update_*) to true. See
+the description for provision.yml for a list of variables
 
-Here is how you would update the stack for ssdnodes, e.g. for scale up purposes: 
+Here is how you would update the stack for ssdnodes, e.g. for scale up purposes:
 
-    ansible-playbook site_scaleup.yml -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}'
+    ansible-playbook site_scaleup_3.9.yml -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}'
 
-Note that some configuration changes like VM image may result in all VMs in the stack to be reprovisioned.
-Be careful and test with non-critical resources first.
+Note that some configuration changes like VM image may result in all VMs in the
+stack to be reprovisioned. Be careful and test with non-critical resources first.
 
 ## Deprovisioning
 
@@ -218,7 +269,7 @@ OpenStack versions.
 
 ## Recovery
 
-See [docs/full_restore.md](docs/full_restore.md) and 
+See [docs/full_restore.md](docs/full_restore.md) and
 [docs/recover_single_vm_failure.md](docs/recover_single_vm_failure.md) for recovering from failures.
 
 ## Security groups

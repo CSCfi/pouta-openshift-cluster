@@ -62,3 +62,6 @@ crashlytics-build.properties
 
 # Roles installed with ansible-galaxy
 galaxy-roles
+
+# Temporary file created for node scaledown
+nodes_to_remove.yaml

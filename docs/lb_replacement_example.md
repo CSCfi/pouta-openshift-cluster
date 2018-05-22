@@ -18,7 +18,7 @@ Take a fresh backup
 ansible-playbook -v backup.yml
 ```
 
-Run site.yml to create the new security group rules under base stack 
+Run site.yml to create the new security group rules under base stack
 
 ```bash
 ansible-playbook -v site.yml
@@ -34,7 +34,7 @@ Wipe old volume contents (docker storage pool) from /dev/vdb on LBs.
 
 ```bash
 ansible lb -m shell -a "uptime"
-ansible lb -m shell -a "dd if=/dev/zero of=/dev/vdb bs=1M count=1k" 
+ansible lb -m shell -a "dd if=/dev/zero of=/dev/vdb bs=1M count=1k"
 ansible lb -m shell -a "shutdown -r 1"
 sleep 70
 while ! ansible lb -m shell -a "uptime" ; do sleep 10; done
@@ -53,10 +53,11 @@ Apply loadbalancer role to enable API access
 ansible-playbook -v -t loadbalancer ../../openshift-ansible/playbooks/byo/config.yml
 ```
 
-Run site scaleup to install node processes on LBs
+Run site_scaleup_<version>.yml to install node processes on LBs. For example, when
+running OpenShift 3.9 you would run:
 
 ```bash
-ansible-playbook -v site_scaleup.yml
+ansible-playbook -v site_scaleup_3.9.yml
 ```
 
 ## Alternative

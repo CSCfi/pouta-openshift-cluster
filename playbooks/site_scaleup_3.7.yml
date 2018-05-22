@@ -9,7 +9,7 @@
   include: pre_install.yml
 
 - name: Scale up installation
-  include: scaleup.yml
+  include: scaleup_3.7.yml
 
 - name: Do post installation steps for OpenShift
   include: post_install.yml

@@ -1,0 +1,50 @@
+---
+- name: Remove nodes from the cluster
+  hosts: masters[0]
+  tasks:
+    - name: get list of nodes
+      command: oc get nodes
+      register: current_nodes
+
+    - name: ensure all nodes to be removed actually exist
+      assert:
+        that: "'{{ item }}' in current_nodes.stdout"
+        msg: "Node {{ item }} does not exist in the cluster - check your node list."
+      with_items: "{{ nodes_to_remove }}"
+
+    - name: drain nodes
+      command: oc adm drain {{ item }} {{ (delete_local_data|d()|bool == True) | ternary('--delete-local-data','') }}
+      with_items: "{{ nodes_to_remove }}"
+
+    - name: remove nodes
+      command: oc delete node {{ item }}
+      with_items: "{{ nodes_to_remove }}"
+
+- name: Clear up generated configs
+  hosts: masters
+  tasks:
+    - name: remove generated config dirs
+      file:
+        path: /etc/origin/generated-configs/node-{{ item }}
+        state: absent
+      with_items: "{{ nodes_to_remove }}"
+
+    - name: remove generated config archives
+      file:
+        path: /etc/origin/generated-configs/node-{{ item }}.tgz
+        state: absent
+      with_items: "{{ nodes_to_remove }}"
+
+- name: Clean up /etc/hosts in the cluster
+  hosts: all
+  become: yes
+  tasks:
+    - name: remove outdated lines in /etc/hosts
+      lineinfile:
+        state: absent
+        dest: /etc/hosts
+        regexp: "^.*{{ item }}.*$"
+      with_items: "{{ nodes_to_remove }}"
+
+- name: Update Heat stacks to remove nodes
+  import_playbook: provision.yml
