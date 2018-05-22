@@ -3,22 +3,24 @@
   hosts: masters[0]
   tasks:
     - name: get list of nodes
-      command: oc get nodes
+      shell: oc get nodes -o name | cut -d'/' -f2 | xargs
       register: current_nodes
 
-    - name: ensure all nodes to be removed actually exist
-      assert:
-        that: "'{{ item }}' in current_nodes.stdout"
-        msg: "Node {{ item }} does not exist in the cluster - check your node list."
-      with_items: "{{ nodes_to_remove }}"
+    - name: put current nodes in a list
+      set_fact:
+        current_nodes_list: "{{ current_nodes.stdout.split(' ') }}"
+
+    - name: create a list of nodes to drain
+      set_fact:
+        nodes_to_drain: "{{ current_nodes_list | intersect(nodes_to_remove) }}"
 
     - name: drain nodes
       command: oc adm drain {{ item }} {{ (delete_local_data|d()|bool == True) | ternary('--delete-local-data','') }}
-      with_items: "{{ nodes_to_remove }}"
+      with_items: "{{ nodes_to_drain }}"
 
-    - name: remove nodes
+    - name: remove nodes that were drained
       command: oc delete node {{ item }}
-      with_items: "{{ nodes_to_remove }}"
+      with_items: "{{ nodes_to_drain }}"
 
 - name: Clear up generated configs
   hosts: masters

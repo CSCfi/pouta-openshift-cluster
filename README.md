@@ -111,7 +111,7 @@ can be removed, run this command instead:
 ```bash
 ansible-playbook scaledown_nodes.yml \
 -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}' \
--e @nodes_to_remove.yaml
+-e @nodes_to_remove.yaml \
 -e delete_local_data=1
 ```
 
