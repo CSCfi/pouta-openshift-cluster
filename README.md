@@ -58,15 +58,19 @@ have /var/lib/POC_INSTALLED flag on them. Select the version number that matches
 your OpenShift version. If you can't find a corresponding version for your OpenShift version, use
 the most recent playbook. In 3.7 and older, the playbooks in openshift-ansible are
 
-    playbooks/byo/openshift-master/scaleup.yml
-    playbooks/byo/openshift-node/scaleup.yml
-    playbooks/byo/openshift-etcd/scaleup.yml
+```
+playbooks/byo/openshift-master/scaleup.yml
+playbooks/byo/openshift-node/scaleup.yml
+playbooks/byo/openshift-etcd/scaleup.yml
+```
 
 In 3.9 and newer, the playbooks are
 
-    playbooks/openshift-master/scaleup.yml
-    playbooks/openshift-node/scaleup.yml
-    playbooks/openshift-etcd/scaleup.yml
+```
+playbooks/openshift-master/scaleup.yml
+playbooks/openshift-node/scaleup.yml
+playbooks/openshift-etcd/scaleup.yml
+```
 
 *site_scaleup_<version>.yml* is a wrapper around scaleup.yml that calls
 provision.yml, pre_install.yml, scaleup.yml and post_install.yml. See "Heat
@@ -83,7 +87,18 @@ nodes_to_remove:
   - oso-devel-ssdnode-4
 ```
 
-Put the nodes to remove in a file. Let's call the file `nodes_to_remove.yaml`.
+Put the nodes to remove in a file. Let's put the file in
+`/tmp/nodes_to_remove.yaml` in the deployment container:
+
+```bash
+vi /tmp/nodes_to_remove.yaml
+```
+
+Note that the deployment container has vi but no other editors. You can also
+edit the file outside the deployment container if you then put it in a location
+that is also mounted on the deployment container (e.g. `~/poc/playbooks` in the
+container).
+
 Also set the new number of the type of node you are scaling down by setting
 the corresponding Heat resource group size parameter. Nodes are always removed
 from the end of the resource group, so if you have four nodes now and want to
@@ -98,9 +113,10 @@ so that all the stacks with nodes to remove are included.
 Once the preparations are done, you can run this to scale the nodes down:
 
 ```bash
+cd ~/poc/playbooks
 ansible-playbook scaledown_nodes.yml \
 -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}' \
--e @nodes_to_remove.yaml
+-e @/tmp/nodes_to_remove.yaml
 ```
 
 This might fail because one or more of the nodes had pods with local data. We
@@ -109,9 +125,10 @@ option that can be set to also delete local data. If you're sure pod local data
 can be removed, run this command instead:
 
 ```bash
+cd ~/poc/playbooks
 ansible-playbook scaledown_nodes.yml \
 -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}' \
--e @nodes_to_remove.yaml \
+-e @/tmp/nodes_to_remove.yaml \
 -e delete_local_data=1
 ```
 
@@ -124,23 +141,29 @@ All that is needed is
 
 Clone POC and openshift-ansible -installer.
 
-    mkdir -p ~/git
-    cd ~/git
-    git clone https://gitlab.csc.fi/c14n/poc
-    git clone https://gitlab.csc.fi/c14n/openshift-environments
-    git clone https://github.com/openshift/openshift-ansible
+```bash
+mkdir -p ~/git
+cd ~/git
+git clone https://gitlab.csc.fi/c14n/poc
+git clone https://gitlab.csc.fi/c14n/openshift-environments
+git clone https://github.com/openshift/openshift-ansible
+```
 
 Check out a revision of openshift-ansible that matches the version of openshift you are
 installing (see https://github.com/openshift/openshift-ansible#getting-the-correct-version)
 
-    cd ~/git/openshift-ansible
-    git checkout release-1.5
+```bash
+cd ~/git/openshift-ansible
+git checkout release-1.5
+```
 
 We have a deployment container with all dependencies preinstalled. To build the container,
 run the build script located in `poc/container-src/poc-deployer`:
 
-    cd ~/git/poc/container-src/poc-deployer
-    sudo ./build.bash
+```bash
+cd ~/git/poc/container-src/poc-deployer
+sudo ./build.bash
+```
 
 If Docker containers can be launched without 'sudo', that can be left out in the commands above.
 
@@ -148,8 +171,10 @@ __Note on SELinux__: If you are running under SELinux enforcing mode, the contai
 may not be able to access the volumes by default. To enable access from containerized
 processes, change the labels on the mounted directories:
 
-    cd ~/git
-    chcon -Rt svirt_sandbox_file_t poc openshift-ansible openshift-environments
+```bash
+cd ~/git
+chcon -Rt svirt_sandbox_file_t poc openshift-ansible openshift-environments
+```
 
 Installation data is contained in the openshift-environments repository. The format of the repository/directory
 is as follows:
@@ -224,21 +249,27 @@ for doing this.
 Once you have all of this configured, running the actual installation is simple.
 To launch a shell in a temporary container for deploying environment 'oso-devel-singlemaster', run
 
-    sudo scripts/run_deployment_container.bash \
-      -e oso-devel-singlemaster \
-      -p /dev/shm/secret/vaultpass \
-      -i
+```bash
+sudo scripts/run_deployment_container.bash \
+  -e oso-devel-singlemaster \
+  -p /dev/shm/secret/vaultpass \
+  -i
+```
 
 Run site.yml to provision infrastructure on OpenStack and install OpenShift on this infrastructure:
 
-    cd poc/playbooks
-    ansible-playbook site.yml
+```bash
+cd poc/playbooks
+ansible-playbook site.yml
+```
 
 Single step alternative for non-interactive runs:
 
-    cd ~/git/poc
-    sudo scripts/run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm/secret/vaultpass \
-      ./run_playbook.bash site.yml
+```bash
+cd ~/git/poc
+sudo scripts/run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm/secret/vaultpass \
+  ./run_playbook.bash site.yml
+```
 
 If you run the above from terminal locally while developing, add '-i' option to attach the terminal
 to the process for the color coding and ctrl+c to work.
@@ -251,7 +282,9 @@ the description for provision.yml for a list of variables
 
 Here is how you would update the stack for ssdnodes, e.g. for scale up purposes:
 
-    ansible-playbook site_scaleup_3.9.yml -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}'
+```bash
+ansible-playbook site_scaleup_3.9.yml -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}'
+```
 
 Note that some configuration changes like VM image may result in all VMs in the
 stack to be reprovisioned. Be careful and test with non-critical resources first.
@@ -260,8 +293,10 @@ stack to be reprovisioned. Be careful and test with non-critical resources first
 
 From the deployment container, run
 
-    cd poc/playbooks
-    ansible-playbook deprovision.yml
+```bash
+cd poc/playbooks
+ansible-playbook deprovision.yml
+```
 
 Partial deletes are not currently supported, as the Heat stack update process
 does not nicely replace missing resources. This may be possible in newer
