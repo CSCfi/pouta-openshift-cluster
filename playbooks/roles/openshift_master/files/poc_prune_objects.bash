@@ -8,5 +8,5 @@ export PATH="${PATH}:/usr/local/bin/"
 
 for object in builds deployments; do
     echo "pruning $object"
-    oadm prune $object --orphans --keep-complete=5 --keep-failed=1 --keep-younger-than=168h --confirm
+    oc adm prune $object --orphans --keep-complete=5 --keep-failed=1 --keep-younger-than=168h --confirm
 done
