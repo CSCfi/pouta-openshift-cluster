@@ -16,11 +16,23 @@ a playbook isn't available for your specific version.
 
 ### Rebuild
 
-A corrupted VM can be reinitialized with !OpenStack rebuild -command.
+A corrupted VM can be reinitialized with the `openstack server rebuild` command.
 
 ```bash
-openstack rebuild --image CentOS-7-c14n-20171012 [server-name]
+openstack server rebuild [server-name]
 ```
+
+You can optionally specify the image to use with `--image <image name>` in the
+command above, but this is unnecessary in most cases. If no image is specified,
+the same image is used that was used to build the server initially.
+
+In some cases it may be necessary to run `nova evacuate` on the server instead:
+```bash
+nova evacuate [server-name]
+```
+
+This will rebuild the server in some cases where rebuild fails. However, the
+evacuate command needs admin access to the OpenStack APIs.
 
 If the VM has state on disk, too, you will need to remove the LV hosting docker images, too.
 
@@ -28,6 +40,9 @@ If the VM has state on disk, too, you will need to remove the LV hosting docker 
 ssh [host]
 sudo lvremove vg_data/docker-pool
 ```
+
+Don't delete and recreate servers - this can lead to Heat stacks going into a
+state that requires OpenStack admin intervention to fix.
 
 ### Recreate (not working at the moment)
 
