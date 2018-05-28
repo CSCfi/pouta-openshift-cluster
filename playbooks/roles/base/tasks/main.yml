@@ -3,29 +3,40 @@
     name: /etc/cron.daily/automatic_updates
     state: absent
 
-- name: remove default base repo file
-  file:
-    name: /etc/yum.repos.d/CentOS-Base.repo
-    state: absent
+- name: templatize base repo config file
+  template:
+    src: base.repo.j2
+    dest: /etc/yum.repos.d/CentOS-Base.repo
+  register: templatize_base_repo_config_file
 
-- name: lock operating system minor version in repo config
+- name: optionally lock operating system minor version in repo config
   yum_repository:
     name: "{{ item.name }}"
-    baseurl: "http://mirror.centos.org/centos/{{ os_version | default(ansible_distribution_version) }}/{{ item.subpath }}/$basearch/"
+    baseurl: "http://vault.centos.org/centos/{{ os_version | default(ansible_distribution_version) }}/{{ item.subpath }}/$basearch/"
     description: "CentOS-{{ os_version | default(ansible_distribution_version) }} - {{ item.name }}"
     enabled: "{{ item.enabled }}"
     gpgcheck: yes
     gpgkey: "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7"
   with_items:
-    - { name: 'base', subpath: 'os', enabled: yes }
-    - { name: 'updates', subpath: 'updates', enabled: yes }
-    - { name: 'extras', subpath: 'extras', enabled: yes }
-    - { name: 'centosplus', subpath: 'centosplus', enabled: no }
+    - name: 'base'
+      subpath: 'os'
+      enabled: "{{ (lock_os_minor_version|default(false)|bool) | ternary('1', '0') }}"
+    - name: 'updates'
+      subpath: 'updates'
+      enabled: "{{ (lock_os_minor_version|default(false)|bool) | ternary('1', '0') }}"
+    - name: 'extras'
+      subpath: 'extras'
+      enabled: "{{ (lock_os_minor_version|default(false)|bool) | ternary('1', '0') }}"
+    - name: 'centosplus'
+      subpath: 'centosplus'
+      enabled: no
+  register: create_locked_yum_repo_configs
 
 - name: yum clean metadata
   command: yum clean metadata
   args:
     warn: no
+  when: templatize_base_repo_config_file.changed or create_locked_yum_repo_configs.changed
 
 - name: install basic tools
   yum: pkg={{item}} state=present
