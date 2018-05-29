@@ -11,12 +11,11 @@
           shell: './generic_bats_wrapper.bash {{ item }} >> /tmp/poc/test_results.log'
           args:
             chdir: '/tmp/poc/tests'
-          register: test_output
           with_items: "{{ test_directories.stdout_lines }}"
           when:
             - item not in poc_test_blacklist|default([])
 
-      rescue:
+      always:
         - name: put test results in a var
           command: 'cat /tmp/poc/test_results.log'
           register: test_results
@@ -25,7 +24,6 @@
           debug:
             var: "{{ test_results.stdout.split('\n') | quote }}"
 
-      always:
         - name: cleanup test files
           file:
             path: /tmp/poc
@@ -45,7 +43,6 @@
           shell: './generic_bats_wrapper.bash {{ item }} >> /tmp/poc/test_results.log'
           args:
             chdir: '/tmp/poc/tests'
-          register: test_output
           with_items: "{{ test_directories.stdout_lines }}"
           when:
             - item not in poc_test_blacklist|default([])
@@ -58,12 +55,11 @@
           shell: './openshift_bats_wrapper.bash {{ item }} >> /tmp/poc/test_results.log'
           args:
             chdir: '/tmp/poc/tests'
-          register: test_output
           with_items: "{{ test_directories.stdout_lines }}"
           when:
             - item not in poc_test_blacklist|default([])
 
-      rescue:
+      always:
         - name: put test results in a var
           command: 'cat /tmp/poc/test_results.log'
           register: test_results
@@ -72,7 +68,6 @@
           debug:
             var: "{{ test_results.stdout.split('\n') | quote }}"
 
-      always:
         - name: cleanup test files
           file:
             path: /tmp/poc
