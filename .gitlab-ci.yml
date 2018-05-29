@@ -57,7 +57,7 @@ deploy_ci_openshift_job:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
+    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash site_3.9.yml
   environment:
     name: oso-ci
 
