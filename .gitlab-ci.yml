@@ -1,5 +1,5 @@
 ---
-image: docker:latest
+image: docker:18.03.1-ce
 
 variables:
   DOCKER_DRIVER: overlay
