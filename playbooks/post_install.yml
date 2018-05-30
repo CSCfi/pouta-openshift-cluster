@@ -28,3 +28,6 @@
     - set_fact:
         ansible_service_broker_install: "{{ inv_ansible_service_broker_install }}"
         template_service_broker_install: "{{ inv_template_service_broker_install }}"
+      when:
+        - inv_ansible_service_broker_install is defined
+        - inv_template_service_broker_install is defined
