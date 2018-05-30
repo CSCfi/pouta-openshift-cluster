@@ -18,4 +18,6 @@
 # post-install phase.
 - name: Install service brokers
   import_playbook: "{{ os_ansible_path|default('../../openshift-ansible') }}/playbooks/openshift-service-catalog/config.yml"
-  when: ansible_service_broker_install or template_service_broker_install
+  when:
+    - ansible_service_broker_install or template_service_broker_install
+    - groups['new_masters']|default([])|length == groups['masters']|default([])|length
