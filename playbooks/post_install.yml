@@ -21,3 +21,10 @@
 # Fix: make sure origin-master-controllers have up to date resolv.conf with local resolution
 - name: Fix - restart master controllers
   include: fix_restart_master_controllers.yml
+
+- name: Set service broker feature flags based on inventory
+  hosts: all
+  tasks:
+    - set_fact:
+        ansible_service_broker_install: "{{ inv_ansible_service_broker_install }}"
+        template_service_broker_install: "{{ inv_template_service_broker_install }}"
