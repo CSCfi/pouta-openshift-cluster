@@ -7,7 +7,7 @@ variables:
   GITHUB_MIRROR: git@github.com:CSCfi/pouta-openshift-cluster.git
 
 services:
-  - docker:dind
+  - docker:18.03.1-ce-dind
 
 before_script:
   - docker version
