@@ -1,4 +1,21 @@
 ---
+- name: Store inventory value of service broker feature flags
+  hosts: all
+  tasks:
+    - set_fact:
+        inv_ansible_service_broker_install: "{{ ansible_service_broker_install }}"
+        inv_template_service_broker_install: "{{ template_service_broker_install }}"
+
+# We will enable these if they are enabled in the inventory once we have a
+# usable dynamic storage class configured in post-install. Installing these
+# will fail if no storage is available.
+- name: Disable installation of service brokers during main openshift-ansible install
+  hosts: all
+  tasks:
+    - set_fact:
+        ansible_service_broker_install: False
+        template_service_broker_install: False
+
 - name: Configure cluster common parts
   hosts:
     - masters

@@ -9,7 +9,15 @@
   import_playbook: pre_install.yml
 
 - name: Install OpenShift
-  import_playbook: "install_3.7.yml"
+  import_playbook: install_3.7.yml
 
 - name: Do post installation steps for OpenShift
   import_playbook: post_install.yml
+
+# These need a working storage class in place, so install only after the
+# post-install phase.
+- name: Install service brokers
+  import_playbook: "{{ os_ansible_path|default('../../openshift-ansible') }}/playbooks/byo/openshift-cluster/service-catalog.yml"
+  when:
+    - ansible_service_broker_install or template_service_broker_install
+    - groups['new_masters']|default([])|length == groups['masters']|default([])|length
