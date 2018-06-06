@@ -140,3 +140,26 @@ check_namespace_pod_health() {
 
     [ $status -eq 0 ]
 }
+
+@test "test that InfluxDB responds" {
+    run check_route_url monitoring-infra influxdb-route
+
+    [ $status -eq 0 ]
+}
+
+@test "test that InfluxDB requires auth" {
+    url=$(oc get route -n monitoring-infra -o json -o jsonpath='{.spec.host}' influxdb-route)
+
+    run bash -c "curl -G --data-urlencode \"db=prometheus\" --data-urlencode \"q=SELECT * FROM \"default_prom_rp\".\"machine_cpu_cores\" LIMIT 1\" https://$url/query"
+
+    [[ "$output" =~ "{\"error\":\"unable to parse authentication credentials\"}" ]]
+}
+
+@test "test query against InfluxDB" {
+    token=$(oc get -o template secret monitoring-token --template={{.data.token}} -n monitoring-infra | base64 -d)
+    url=$(oc get route -n monitoring-infra -o json -o jsonpath='{.spec.host}' influxdb-route)
+
+    run bash -c "curl -G -u admin:$token --data-urlencode \"db=prometheus\" --data-urlencode \"q=SELECT * FROM \"default_prom_rp\".\"machine_cpu_cores\" LIMIT 1\" https://$url/query"
+
+    [[ "$output" =~ "kubernetes_io_hostname" ]]
+}

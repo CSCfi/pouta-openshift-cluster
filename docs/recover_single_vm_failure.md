@@ -221,6 +221,38 @@ for certificates:
 ansible-playbook -v site_scaleup_3.9.yml -e etcd_ca_host=$ENV_NAME-etcd-2
 ```
 
+## InfluxDB
+
+Run the scaleup playbook to reconfigure the InfluxDB node:
+```bash
+ansible-playbook -v site_scaleup_3.9.yml -e influxdb_create_prom_db=0
+```
+
+Here we skip the creation of the Prometheus database as this will come from
+the backup. If we don't skip it, then the restore process will fail because
+the Prometheus database is already in place.
+
+Get the latest backup from the bastion over to the InfluxDB node:
+```bash
+latest_backup=$(ssh $ENV_NAME-bastion ls -t backup/influxdb/$ENV_NAME-influxdb-1 | head -1)
+
+# You may need to remove known_hosts on the bastion if you've run the following scp
+# command before for a different incarnation of the InfluxDB machine
+ssh $ENV_NAME-bastion rm .ssh/known_hosts
+
+scp -r \
+$ENV_NAME-bastion:backup/influxdb/$ENV_NAME-influxdb-1/$latest_backup/* \
+$ENV_NAME-influxdb-1:/mnt/local-storage/disk1/influxdb_backups/
+
+ssh -t $ENV_NAME-influxdb-1 sudo chown influxdb:influxdb /mnt/local-storage/disk1/influxdb_backups/*
+```
+
+Run the restore_influxdb playbook:
+```bash
+cd ~/poc/playbooks
+ansible-playbook restore/restore_influxdb.yml
+```
+
 # Notes
 
 ## Automatic updates

@@ -1,26 +1,29 @@
 - name: Additional master configuration
-  include: extra_master_config.yml
+  import_playbook: extra_master_config.yml
 
 - name: Additional OpenShift config via the API
-  include: extra_oso_config.yml
+  import_playbook: extra_oso_config.yml
 
 - name: Additional Docker registry configuration
-  include: registry_config.yml
+  import_playbook: registry_config.yml
 
 - name: Setup default www app
-  include: setup_default_www_app.yml
+  import_playbook: setup_default_www_app.yml
+
+- name: Setup InfluxDB nodes
+  import_playbook: setup_influxdb_nodes.yml
 
 - name: Deploy monitoring
-  include: deploy_monitoring.yml
+  import_playbook: deploy_monitoring.yml
   when: deploy_monitoring|default(false)|bool
 
 - name: Deploy app templates and related objects
-  include: add_app_templates.yml
+  import_playbook: add_app_templates.yml
   when: add_app_templates|default(true)|bool
 
 # Fix: make sure origin-master-controllers have up to date resolv.conf with local resolution
 - name: Fix - restart master controllers
-  include: fix_restart_master_controllers.yml
+  import_playbook: fix_restart_master_controllers.yml
 
 - name: Set service broker feature flags based on inventory
   hosts: all

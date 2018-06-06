@@ -197,11 +197,49 @@
         path: "/tmp/glusterfs-{{ inventory_hostname }}.tar.gz"
         state: absent
 
+- name: Backup InfluxDB
+  hosts: influxdb
+  become: yes
+  gather_facts: no
+  vars:
+    - backup_time: "{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}"
+  tasks:
+
+    - name: create a backup directory on the bastion
+      file:
+        path: "{{ backup_bastion_base_dir }}/influxdb/{{ inventory_hostname }}/{{ backup_time }}/"
+        state: directory
+        owner: cloud-user
+        group: cloud-user
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: sync InfluxDB backup to bastion
+      synchronize:
+        src: "/mnt/local-storage/disk1/influxdb_backups/"
+        dest: "{{ backup_bastion_base_dir }}/influxdb/{{ inventory_hostname }}/{{ backup_time }}/"
+        mode: pull
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: remove backups from InfluxDB host
+      file:
+        path: "/mnt/local-storage/disk1/influxdb_backups/"
+        owner: influxdb
+        group: influxdb
+        setype: 'container_file_t'
+        seuser: 'system_u'
+        serole: 'object_r'
+        mode: 0770
+        state: "{{ item }}"
+      with_items:
+        - absent
+        - directory
+
 - name: Clean up old backup data from bastion
   hosts: bastion
   gather_facts: no
   vars:
     - l_backup_retention_time: "{{ backup_retention_time|default('1w') }}"
+    - l_influxdb_backup_retention_time: "{{ influxdb_backup_retention_time|default('2d') }}"
   tasks:
     - name: get backup dirs older than {{ l_backup_retention_time }}
       find:
@@ -225,8 +263,22 @@
         file_type: file
       register: old_backup_files
 
+    - name: get InfluxDB backup files older than {{ l_influxdb_backup_retention_time }}
+      find:
+        path: "{{ backup_bastion_base_dir }}/influxdb"
+        age: "{{ l_influxdb_backup_retention_time }}"
+        recurse: yes
+        file_type: any
+      register: old_influxdb_backup_files
+
     - name: remove old backup files
       file:
         path: "{{ item.path }}"
         state: absent
       with_items: "{{ old_backup_files.files }}"
+
+    - name: remove old InfluxDB backup files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ old_influxdb_backup_files.files }}"

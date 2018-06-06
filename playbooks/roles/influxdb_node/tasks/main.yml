@@ -1,0 +1,28 @@
+---
+- name: Add a user for InfluxDB
+  user:
+    name: influxdb
+    comment: InfluxDB user
+    uid: '1234'
+
+- name: Add cloud-user to the influxdb group
+  user:
+    name: cloud-user
+    append: yes
+    groups: influxdb
+
+- name: Create and/or set permissions for local storage dirs
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: influxdb
+    group: influxdb
+    setype: 'container_file_t'
+    seuser: 'system_u'
+    serole: 'object_r'
+    mode: 0770
+    recurse: yes
+  with_items:
+    - '/mnt/local-storage/disk1'
+    - '/mnt/local-storage/disk1/influxdb'
+    - '/mnt/local-storage/disk1/influxdb_backups'

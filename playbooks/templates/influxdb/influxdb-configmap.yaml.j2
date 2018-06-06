@@ -1,0 +1,29 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: influxdb-configmap
+  namespace: monitoring-infra
+data:
+  influxdb.conf: |
+    # Managed via Kubernetes ConfigMap
+
+    # RPC service for backup and restore
+    bind-address = ":8088"
+
+    [meta]
+    dir = "/var/lib/influxdb/meta"
+
+    [data]
+    dir = "/var/lib/influxdb/data"
+    engine = "tsm1"
+    wal-dir = "/var/lib/influxdb/wal"
+
+    [http]
+    enabled = true
+    bind-address = ":8086"
+    auth-enabled = true
+    log-enabled = true
+    write-tracing = false
+    pprof-enabled = false
+    https-enabled = false

@@ -47,6 +47,16 @@
       tags:
         - skip_ansible_lint
 
+    - name: Register stack creation status (compute nodes)
+      shell: openstack stack environment show -f json {{ cluster_name }}-{{ item.stack_name }}
+      register: stack_output_compute_nodes
+      failed_when: false
+      changed_when: false
+      no_log: True
+      with_items: "{{ compute_node_groups }}"
+      tags:
+        - skip_ansible_lint
+
     - block:
       - name: Format output from GlusterFS Heat stack environment as JSON
         set_fact:
@@ -299,15 +309,15 @@
 
     - name: Build/update compute node stack(s)
       os_stack:
-        name: "{{ cluster_name }}-{{ item.stack_name }}"
+        name: "{{ cluster_name }}-{{ item.item.stack_name }}"
         state: present
         template: "files/openshift-heat-stack-compute-nodes.yml"
         wait: yes
-        parameters: "{{ item.heat_parameters | combine(base_stack_outputs) }}"
-      with_items: "{{ compute_node_groups }}"
+        parameters: "{{ item.item.heat_parameters | combine(base_stack_outputs) }}"
+      with_items: "{{ stack_output_compute_nodes.results }}"
       when:
-        - stack_output_base.stderr.find('Stack not found') != -1 or
-          item.stack_name in allow_heat_stack_update_node_groups|default([])
+        - item.stderr.find('Stack not found') != -1 or
+          item.item.stack_name in allow_heat_stack_update_node_groups|default([])
 
     - name: Remove inventory cache
       file:

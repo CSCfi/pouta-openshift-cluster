@@ -1,0 +1,29 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: restore-influxdb-{{ restore_job_number }}
+spec:
+  template:
+    spec:
+      serviceAccountName: influxdb
+      securityContext:
+        runAsUser: 1234
+      nodeSelector:
+        type: influxdb
+      containers:
+      - name: influxdb
+        image: {{ influxdb_image | default('influxdb') }}
+        command:
+        - "/bin/bash"
+        - "-c"
+        - "influxd restore -portable -host influxdb:8088 /mnt"
+        volumeMounts:
+        - mountPath: /mnt
+          name: backup-data
+      volumes:
+      - name: backup-data
+        persistentVolumeClaim:
+          claimName: influxdb-backup-pvc
+      restartPolicy: Never
+  backoffLimit: 1

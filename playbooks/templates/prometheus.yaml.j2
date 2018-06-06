@@ -311,3 +311,6 @@ items:
         static_configs:
         - targets:
           - heketi-metrics-exporter.{{ openshift_public_hostname }}
+
+      remote_write:
+        - url: "http://influxdb:9201/write"
