@@ -1,2 +1,8 @@
 - name: restart chronyd
   service: name=chronyd state=restarted
+
+- name: restart rsyslog
+  service: name=rsyslog state=restarted
+
+- name: systemctl daemon-reload
+  command: systemctl daemon-reload
