@@ -118,4 +118,17 @@
     - NetworkManager
     - chronyd
 
+- name: increase open file handle limit for rsyslog
+  ini_file:
+    path: '/usr/lib/systemd/system/rsyslog.service'
+    backup: yes
+    create: no
+    no_extra_spaces: yes
+    section: 'Service'
+    option: 'LimitNOFILE'
+    value: '10000'
+  notify:
+    - systemctl daemon-reload
+    - restart rsyslog
+
 - include: rng.yml
