@@ -57,7 +57,7 @@ deploy_ci_openshift_job:
     - cd scripts
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash site_3.9.yml
+    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
   environment:
     name: oso-ci
 
@@ -101,7 +101,7 @@ deploy_qa_openshift_job:
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
     - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_backup.bash
-    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash site_3.9.yml
+    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
   environment:
     name: oso-qa
   only:
@@ -142,7 +142,7 @@ deploy_rahti_int_job:
     - docker pull $IMAGE_TAG
     - docker tag $IMAGE_TAG cscfi/poc-deployer
     - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_backup.bash
-    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash site_3.9.yml
+    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
   environment:
     name: production/rahti-int
   when: manual
