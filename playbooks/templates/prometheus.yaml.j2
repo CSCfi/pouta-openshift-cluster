@@ -303,6 +303,7 @@ items:
           target_label: kubernetes_name
 
       - job_name: 'heketi'
+        scrape_interval: 5m
         scheme: https
         basic_auth:
           username: token
