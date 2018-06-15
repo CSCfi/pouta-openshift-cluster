@@ -1,15 +1,15 @@
 ---
 - name: Fork public image to be used as base image for VMs if needed
-  include: fork_public_image.yml
+  import_playbook: fork_public_image.yml
 
 - name: Provision resources for OpenShift using Heat
-  include: provision.yml
+  import_playbook: provision.yml
 
 - name: Prepare hosts for OpenShift installation
-  include: pre_install.yml
+  import_playbook: pre_install.yml
 
 - name: Scale up installation
-  include: scaleup_3.9.yml
+  import_playbook: scaleup_3.9.yml
 
 - name: Do post installation steps for OpenShift
-  include: post_install.yml
+  import_playbook: post_install.yml
