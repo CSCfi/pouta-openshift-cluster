@@ -45,3 +45,12 @@
     marker: '-A OPENSHIFT-ADMIN-OUTPUT-RULES -m comment --comment "{mark} ANSIBLE MANAGED BLOCK OPENSHIFT-ADMIN-OUTPUT-RULES"'
   when: "'masters' not in group_names"
   notify: restart iptables
+
+- name: add a cron entry for restarting rsyslog
+  cron:
+    name: "Restart rsyslog"
+    hour: "04"
+    minute: "{{ 59|random(seed=ansible_host) }}"
+    cron_file: poc_restart_rsyslog
+    user: root
+    job: "systemctl restart rsyslog"
