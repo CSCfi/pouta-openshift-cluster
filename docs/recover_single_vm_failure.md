@@ -132,20 +132,24 @@ oc label node [host] node-role.kubernetes.io/compute-
 ## Load balancers
 
 Load balancers are infra nodes that run HAProxy routers for customer traffic. They also forward
-traffic to the API on masters. First, recover the node part:
+traffic to the API on masters. First, recover the node part, but leave keepalived disabled so that the recovered node
+won't pick up the VIP before all steps have been completed:
 
 ```bash
-ansible-playbook -v site_scaleup_3.9.yml
+ansible-playbook -v site_scaleup_3.9.yml -e keepalived_skip_restart=1
 ```
 
 After this, application traffic should already work on the lb. However, to forward API traffic too,
-we need to apply the 'openshift_load_balancer' -role. Currently this is done by
-running 'byo/config.yaml' -playbook with a tag selector 'loadbalancer'. The downside is that while the role
-is successfully applied, the playbook execution fails later on. A cleaner solution should be introduced
-in the future.
+we need to apply the 'openshift_load_balancer' -role.
 
 ```bash
-ansible-playbook -v -t loadbalancer ../../openshift-ansible/playbooks/byo/config.yml
+ansible-playbook -v ../../openshift-ansible/playbooks/openshift-loadbalancer/config.yml
+```
+
+Then start keepalived:
+
+```bash
+ansible lb -m systemd -a "name=keepalived state=started"
 ```
 
 ## Etcd-2 and etcd-3
@@ -219,5 +223,23 @@ ansible-playbook -v site_scaleup_3.9.yml -e etcd_ca_host=$ENV_NAME-etcd-2
 
 # Notes
 
+## Automatic updates
+
 Rebuild servers right before running site_scaleup, otherwise they may be autoupdated before our
 repository locking code is run.
+
+## Etcd recovery
+
+As of 2018-07-11, etcd scaleup playbook in release-3.9 -branch of openshift-ansible does not complete successfully, but
+fails in the last stage when configuring etcd urls in master configs. For recovery, this is not a problem because the
+URLs remain the same. Other cases may require editing the master configs manually.
+
+Workaround is to verify that etcd cluster is fully healthy (see etcd sections) and create /var/lib/POC_INSTALLED 
+manually after the scaleup has completed:
+
+```bash
+ssh RECOVERED_NODE
+sudo touch /var/lib/POC_INSTALLED
+```
+
+TODO: check the need for this with later releases.
