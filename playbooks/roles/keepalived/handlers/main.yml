@@ -1,3 +1,4 @@
 ---
 - name: restart keepalived
   service: name=keepalived state=restarted
+  when: keepalived_skip_restart|default(false)|bool == false
