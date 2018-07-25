@@ -96,14 +96,15 @@
         path: "/etc/origin/etc-origin-{{ inventory_hostname }}.tar.gz"
         state: absent
 
-    - name: ensure python-heketi is installed
-      yum:
-        pkg: python-heketi
+    - name: install heketi python client libraries in a virtual environment
+      pip:
+        name: "git+https://github.com/heketi/heketi.git@release/6#subdirectory=client/api/python"
+        virtualenv: "~/backup/venv"
 
     - name: drop backup script to ansible user's home directory
       copy:
         src: "files/heketi_backup.py"
-        dest: "~/heketi_backup.py"
+        dest: "~/backup/heketi_backup.py"
         mode: 0755
 
     - name: get Heketi secret
@@ -117,7 +118,7 @@
 
     - name: backup Heketi BoltDB via Heketi API
       shell: >
-        python ~/heketi_backup.py
+        ~/backup/venv/bin/python ~/backup/heketi_backup.py
         --user admin
         --key {{ heketi_secret.results.decoded.key }}
         --host https://heketi-storage-glusterfs.{{ openshift_public_hostname }}
