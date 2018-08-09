@@ -4,28 +4,56 @@
 # access rights for the file are set so that it is accessible from a deployment
 # container.
 
+
+# Check the OS
+OS="$(uname -s)"
+
+case "${OS}" in
+    Darwin*)
+        # Create a 10mb RAM disk if it doesn't exist
+        if [ ! -d "/Volumes/rRAMDisk" ]; then
+            dev=$(hdiutil attach -nomount ram://$((20480)))
+            diskutil eraseVolume HFS+ rRAMDisk $dev
+        fi
+        disk='/Volumes/rRAMDisk'
+        ;;
+    Linux*)
+        disk='/dev/shm'
+esac
+
 # Create a directory on ramdisk
-mkdir -p /dev/shm/secret
-chmod 750 /dev/shm/secret
+mkdir -p $disk/secret
+chmod 750 $disk/secret
 
 # Prepare the password file
-touch /dev/shm/secret/vaultpass
-chmod 640 /dev/shm/secret/vaultpass
-chcon -Rt svirt_sandbox_file_t /dev/shm/secret/vaultpass
+touch $disk/secret/vaultpass
+chmod 640 $disk/secret/vaultpass
 
 # Change the group to match the gid of user 'deployer' in the container
-sudo chgrp -R 29295 /dev/shm/secret
-
+sudo chgrp -R 29295 $disk/secret
 echo "Make sure the vault pass is in the clipboard, then press enter."
 read
 
-# Populate the password from a password manager with xclip:
-xclip -o > /dev/shm/secret/vaultpass
+case "${OS}" in
+    Darwin*)
+        # Populate the password from a password manager with pbpaste:
+        pbpaste > /Volumes/rRAMDisk/secret/vaultpass
 
-# Clear the vault pass from the clipboard
-echo -n "empty" | xclip -selection clipboard
-echo -n "empty" | xclip -selection primary
-echo -n "empty" | xclip -selection secondary
+        # Clear the vault pass from the clipboard
+        pbcopy < /dev/null
+        ;;
+    Linux*)
+        # SELinux setting
+        chcon -Rt svirt_sandbox_file_t $disk/secret/vaultpass
+
+        # Populate the password from a password manager with xclip:
+        xclip -o > /dev/shm/secret/vaultpass
+
+        # Clear the vault pass from the clipboard
+        echo -n "empty" | xclip -selection clipboard
+        echo -n "empty" | xclip -selection primary
+        echo -n "empty" | xclip -selection secondary
+esac
 
 echo "Wrote the vaultpass onto RAM disk and cleared it from the clipboard."
 echo "Happy deployments!"
