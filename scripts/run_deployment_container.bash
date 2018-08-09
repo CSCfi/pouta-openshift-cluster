@@ -27,6 +27,9 @@ print_usage_and_exit()
 
 docker_opts=''
 
+# Check the OS
+OS="$(uname -s)"
+
 while getopts "p:P:e:o:ish" opt; do
     case $opt in
         p)
@@ -58,7 +61,9 @@ while getopts "p:P:e:o:ish" opt; do
             docker_opts="$docker_opts -e ENV_NAME=$env_name"
             ;;
         i)
-            docker_opts="$docker_opts -it"
+            if [[ $OS != "Darwin"* ]]; then
+                docker_opts="$docker_opts -it"
+            fi
             ;;
         s)
             docker_opts="$docker_opts -e SKIP_SSH_CONFIG=1"
@@ -69,6 +74,10 @@ while getopts "p:P:e:o:ish" opt; do
     esac
 done
 shift "$((OPTIND-1))"
+
+if [[ $OS = "Darwin"* ]]; then
+    docker_opts="$docker_opts -it"
+fi
 
 docker run --rm \
     -v $SCRIPT_DIR/../../openshift-environments:/opt/deployment/openshift-environments:ro \
