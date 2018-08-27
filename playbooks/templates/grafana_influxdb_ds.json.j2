@@ -1,0 +1,20 @@
+{
+    "access": "proxy",
+    "basicAuth": true,
+    "basicAuthPassword": "{{ influxdb_prom_reader_password }}",
+    "basicAuthUser": "prom_reader",
+    "database": "prometheus",
+    "isDefault": false,
+    "jsonData": {
+        "timeInterval": "1m"
+    },
+    "name": "local_influxdb",
+    "orgId": 1,
+    "password": "",
+    "secureJsonFields": {},
+    "type": "influxdb",
+    "typeLogoUrl": "",
+    "url": "http://influxdb:8086",
+    "user": "",
+    "withCredentials": false
+}

@@ -1,0 +1,23 @@
+---
+kind: Route
+apiVersion: v1
+metadata:
+  name: influxdb-route
+  namespace: monitoring-infra
+  annotations:
+    haproxy.router.openshift.io/ip_whitelist: "{{ ip_whitelist_monitoring|join(' ') }}"
+spec:
+  host: "influxdb.{{ openshift_public_hostname }}"
+  port:
+    targetPort: influxdb-api
+  to:
+    name: influxdb
+  tls:
+    termination: Edge
+    insecureEdgeTerminationPolicy: Redirect
+    caCertificate: |
+      {{ api_domain_cert.tls_ca_certificate|indent(width=6) }}
+    certificate: |
+      {{ api_domain_cert.tls_certificate|indent(width=6) }}
+    key: |
+      {{ api_domain_cert.tls_secret_key|indent(width=6) }}

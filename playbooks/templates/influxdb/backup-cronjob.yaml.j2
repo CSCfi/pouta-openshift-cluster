@@ -1,0 +1,34 @@
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: influxdb-backup
+spec:
+  schedule: "{{ influxdb_backup_cronjob_schedule | default('0 0 * * *') }}"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            parent: cronjob-influxdb-backup
+        spec:
+          serviceAccountName: influxdb
+          securityContext:
+            runAsUser: 1234
+          nodeSelector:
+            type: influxdb
+          containers:
+          - name: influxdb
+            image: {{ influxdb_image | default('influxdb') }}
+            command:
+            - "/bin/bash"
+            - "-c"
+            - "influxd backup -portable -host influxdb:8088 /mnt && find /mnt -mmin +45 -type f -delete"
+            volumeMounts:
+            - mountPath: /mnt
+              name: backup-data
+          volumes:
+          - name: backup-data
+            persistentVolumeClaim:
+              claimName: influxdb-backup-pvc
+          restartPolicy: OnFailure

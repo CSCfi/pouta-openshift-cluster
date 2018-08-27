@@ -65,3 +65,11 @@
           spec.template.spec.containers[0].resources.requests.memory: "{{ poc_heketi_memory_request|default('1Gi') }}"
           spec.template.spec.containers[0].image: "{{ poc_heketi_image|default('heketi/heketi:6') }}"
           spec.template.spec.containers[0].imagePullPolicy: Always
+
+    - name: Deploy glusterblock-storage-provisioner-dc on master nodes by adding a node selector
+      oc_edit:
+        namespace: glusterfs
+        kind: deploymentconfig
+        name: glusterblock-storage-provisioner-dc
+        content:
+          spec.template.spec.nodeSelector.type: master

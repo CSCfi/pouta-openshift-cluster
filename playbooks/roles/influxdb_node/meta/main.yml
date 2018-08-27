@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  author: Risto Laurikainen
+  description: OpenShift InfluxDB node config
+  company: CSC - IT Center for Science
+  license: MIT
+  min_ansible_version: 2.3
+  platforms:
+  - name: EL
+    versions:
+    - 7
+  categories:
+  - cloud
+dependencies: []
