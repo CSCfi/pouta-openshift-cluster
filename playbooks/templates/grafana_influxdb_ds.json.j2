@@ -3,12 +3,12 @@
     "basicAuth": true,
     "basicAuthPassword": "{{ influxdb_prom_reader_password }}",
     "basicAuthUser": "prom_reader",
-    "database": "prometheus",
+    "database": "{{ influxdb_database_name }}",
     "isDefault": false,
     "jsonData": {
-        "timeInterval": "1m"
+        "timeInterval": "{{ influxdb_database_interval }}"
     },
-    "name": "local_influxdb",
+    "name": "influxdb_{{ influxdb_database_name }}",
     "orgId": 1,
     "password": "",
     "secureJsonFields": {},

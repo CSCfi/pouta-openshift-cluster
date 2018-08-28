@@ -58,7 +58,7 @@ spec:
         - remote_storage_adapter
         - -influxdb-url=http://localhost:8086
         - -influxdb.database=prometheus
-        - -influxdb.retention-policy=default_prom_rp
+        - -influxdb.retention-policy=1m
         - -influxdb.username=admin
         env:
         - name: INFLUXDB_PW

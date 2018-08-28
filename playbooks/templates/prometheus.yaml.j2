@@ -314,3 +314,16 @@ items:
 
       remote_write:
         - url: "http://influxdb:9201/write"
+
+      rule_files:
+      # Recording rules to make certain things queryable via InfluxDB
+      - rules_for_influxdb.yml
+
+    rules_for_influxdb.yml: |
+      groups:
+      - name: cpu_capacity_rules
+        rules:
+        - record: cpu_consumed_per_node
+          expr: sort_desc(sum by (kubernetes_io_hostname,type) (rate(container_cpu_usage_seconds_total{id="/"}[5m])))
+        - record: cpu_consumed_per_node_type
+          expr: sort_desc(sum by (type) (rate(container_cpu_usage_seconds_total{id="/"}[5m])))
