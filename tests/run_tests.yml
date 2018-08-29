@@ -8,7 +8,7 @@
           register: test_directories
 
         - name: run bats tests
-          shell: './generic_bats_wrapper.bash {{ item }} >> /tmp/poc/test_results.log'
+          shell: './generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log'
           args:
             chdir: '/tmp/poc/tests'
           with_items: "{{ test_directories.stdout_lines }}"
@@ -17,7 +17,7 @@
 
       always:
         - name: put test results in a var
-          command: 'cat /tmp/poc/test_results.log'
+          command: 'cat /tmp/poc/tests/test_results.log'
           register: test_results
 
         - name: print test output in human readable form
@@ -40,7 +40,7 @@
           register: test_directories
 
         - name: run bats tests
-          shell: './generic_bats_wrapper.bash {{ item }} >> /tmp/poc/test_results.log'
+          shell: './generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log'
           args:
             chdir: '/tmp/poc/tests'
           with_items: "{{ test_directories.stdout_lines }}"
@@ -52,7 +52,7 @@
           register: test_directories
 
         - name: run bats tests from OpenShift project context
-          shell: './openshift_bats_wrapper.bash {{ item }} >> /tmp/poc/test_results.log'
+          shell: './openshift_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log'
           args:
             chdir: '/tmp/poc/tests'
           with_items: "{{ test_directories.stdout_lines }}"
@@ -61,7 +61,7 @@
 
       always:
         - name: put test results in a var
-          command: 'cat /tmp/poc/test_results.log'
+          command: 'cat /tmp/poc/tests/test_results.log'
           register: test_results
 
         - name: print test output in human readable form
