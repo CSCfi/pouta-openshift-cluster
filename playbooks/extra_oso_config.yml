@@ -73,3 +73,6 @@
         name: glusterblock-storage-provisioner-dc
         content:
           spec.template.spec.nodeSelector.type: master
+      when:
+        - openshift_release|version_compare('3.9', '>=')
+        - set_glusterblock_storage_provisioner_node_selector|default(true)|bool
