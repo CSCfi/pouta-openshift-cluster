@@ -8,11 +8,14 @@
         name: bats
         state: present
 
-    - name: create test directory
+    - name: create test directory and ensure it is fresh
       file:
         dest: /tmp/poc/tests
-        state: directory
+        state: "{{ item }}"
         owner: cloud-user
+      with_items:
+        - absent
+        - directory
 
     - name: copy test files
       copy:
