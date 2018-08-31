@@ -326,3 +326,14 @@
         force_basic_auth: yes
         status_code: 200
         body_format: json
+
+    - name: add or update InfluxDB dashboard
+      uri:
+        url: https://grafana.{{ openshift_public_hostname }}/api/dashboards/db
+        method: POST
+        user: admin
+        password: "{{ monitoring_access_token }}"
+        body: "{{ lookup('template','files/grafana_influxdb_dashboard.json.j2') }}"
+        force_basic_auth: yes
+        status_code: 200
+        body_format: json
