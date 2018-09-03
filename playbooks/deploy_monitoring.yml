@@ -97,6 +97,16 @@
           htpasswd: "{{ proxy_htpasswd['content'] }}"
           token: "{{ monitoring_access_token | b64encode }}"
 
+    - name: upsert kube-state-metrics deployment
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: monitoring-infra
+        template_base_name: "{{ item | basename }}"
+        template_sub_dir: "kube-state-metrics/"
+        name: "{{ item | basename }}"
+      with_fileglob:
+        - templates/kube-state-metrics/kube-state-metrics-*
+
     - name: upsert grafana data volume
       include: tasks/upsert_k8s_object.yml
       vars:
