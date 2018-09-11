@@ -7,7 +7,7 @@
     "editable": true,
     "gnetId": null,
     "graphTooltip": 0,
-    "iteration": 1536157044269,
+    "iteration": 1536588104145,
     "links": [],
     "panels": [
       {
@@ -267,7 +267,7 @@
           "x": 12,
           "y": 2
         },
-        "id": 253,
+        "id": 270,
         "legend": {
           "avg": false,
           "current": false,
@@ -325,7 +325,7 @@
                 },
                 {
                   "params": [],
-                  "type": "mean"
+                  "type": "sum"
                 }
               ],
               [
@@ -337,7 +337,7 @@
                 },
                 {
                   "params": [],
-                  "type": "mean"
+                  "type": "sum"
                 }
               ]
             ],
@@ -368,7 +368,7 @@
               }
             ],
             "intervalFactor": 1,
-            "measurement": "container_spec_cpu_shares",
+            "measurement": "cpu_reservations_per_node",
             "orderByTime": "ASC",
             "policy": "$data_interval",
             "refId": "A",
@@ -384,12 +384,6 @@
                 {
                   "params": [],
                   "type": "sum"
-                },
-                {
-                  "params": [
-                    " / 1024"
-                  ],
-                  "type": "math"
                 }
               ],
               [
@@ -402,12 +396,6 @@
                 {
                   "params": [],
                   "type": "sum"
-                },
-                {
-                  "params": [
-                    " / 1024"
-                  ],
-                  "type": "math"
                 }
               ]
             ],
@@ -416,12 +404,6 @@
                 "key": "type",
                 "operator": "=",
                 "value": "ssd"
-              },
-              {
-                "condition": "AND",
-                "key": "pod_name",
-                "operator": "!~",
-                "value": "/^$/"
               }
             ]
           }
@@ -1016,2032 +998,1869 @@
         }
       },
       {
-        "collapsed": true,
+        "collapsed": false,
         "gridPos": {
           "h": 1,
           "w": 24,
           "x": 0,
           "y": 22
         },
-        "id": 192,
-        "panels": [
+        "id": 265,
+        "panels": [],
+        "title": "Reserved CPUs per node",
+        "type": "row"
+      },
+      {
+        "aliasColors": {
+          "Reserved CPUs": "#bf1b00",
+          "Total CPUs": "#629e51"
+        },
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "$influxdb_rp",
+        "fill": 6,
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 0,
+          "y": 23
+        },
+        "id": 263,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "hideEmpty": true,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "links": [],
+        "minSpan": 6,
+        "nullPointMode": "null",
+        "percentage": false,
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "repeat": "node",
+        "repeatDirection": "h",
+        "scopedVars": {
+          "node": {
+            "selected": false,
+            "text": "oso-devel-singlemaster-glusterfs-1",
+            "value": "oso-devel-singlemaster-glusterfs-1"
+          }
+        },
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
           {
-            "aliasColors": {
-              "Reserved CPUs": "#bf1b00",
-              "Total CPUs": "#629e51"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 9,
-              "w": 4,
-              "x": 0,
-              "y": 23
-            },
-            "id": 194,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": "node",
-            "repeatDirection": "h",
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-1",
-                "value": "oso-devel-singlemaster-glusterfs-1"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
+            "alias": "Total CPUs",
+            "groupBy": [
               {
-                "alias": "Total CPUs",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
+                "params": [
+                  "$data_interval"
                 ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
+                "type": "time"
               },
               {
-                "alias": "Reserved CPUs",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
+                "params": [
+                  "null"
                 ],
-                "intervalFactor": 1,
-                "measurement": "container_spec_cpu_shares",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
+                "type": "fill"
+              }
+            ],
+            "measurement": "machine_cpu_cores",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "B",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
                   ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "pod_name",
-                    "operator": "!~",
-                    "value": "/^$/"
-                  }
-                ]
-              }
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
             ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
+            "tags": [
               {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": "0",
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
               }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
+            ]
           },
           {
-            "aliasColors": {
-              "Reserved CPUs": "#bf1b00",
-              "Total CPUs": "#629e51"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 9,
-              "w": 4,
-              "x": 4,
-              "y": 23
-            },
-            "id": 254,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044269,
-            "repeatPanelId": 194,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-2",
-                "value": "oso-devel-singlemaster-glusterfs-2"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
+            "alias": "Reserved CPUs",
+            "expr": "",
+            "format": "time_series",
+            "groupBy": [
               {
-                "alias": "Total CPUs",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
+                "params": [
+                  "$data_interval"
                 ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
+                "type": "time"
               },
               {
-                "alias": "Reserved CPUs",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
+                "params": [
+                  "null"
                 ],
-                "intervalFactor": 1,
-                "measurement": "container_spec_cpu_shares",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
+                "type": "fill"
+              }
+            ],
+            "intervalFactor": 1,
+            "measurement": "cpu_reservations_per_node",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "A",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
                   ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "pod_name",
-                    "operator": "!~",
-                    "value": "/^$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": "0",
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Reserved CPUs": "#bf1b00",
-              "Total CPUs": "#629e51"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 9,
-              "w": 4,
-              "x": 8,
-              "y": 23
-            },
-            "id": 255,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044269,
-            "repeatPanelId": 194,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-3",
-                "value": "oso-devel-singlemaster-glusterfs-3"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total CPUs",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
                   ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Reserved CPUs",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_spec_cpu_shares",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "pod_name",
-                    "operator": "!~",
-                    "value": "/^$/"
-                  }
-                ]
-              }
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
             ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
+            "tags": [
               {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": "0",
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
               }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Reserved CPUs": "#bf1b00",
-              "Total CPUs": "#629e51"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 9,
-              "w": 4,
-              "x": 12,
-              "y": 23
-            },
-            "id": 256,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044269,
-            "repeatPanelId": 194,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-influxdb-1",
-                "value": "oso-devel-singlemaster-influxdb-1"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total CPUs",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Reserved CPUs",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_spec_cpu_shares",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "pod_name",
-                    "operator": "!~",
-                    "value": "/^$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": "0",
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Reserved CPUs": "#bf1b00",
-              "Total CPUs": "#629e51"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 9,
-              "w": 4,
-              "x": 16,
-              "y": 23
-            },
-            "id": 257,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044269,
-            "repeatPanelId": 194,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-master-1",
-                "value": "oso-devel-singlemaster-master-1"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total CPUs",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Reserved CPUs",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_spec_cpu_shares",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "pod_name",
-                    "operator": "!~",
-                    "value": "/^$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": "0",
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Reserved CPUs": "#bf1b00",
-              "Total CPUs": "#629e51"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 9,
-              "w": 4,
-              "x": 20,
-              "y": 23
-            },
-            "id": 258,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044269,
-            "repeatPanelId": 194,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-1",
-                "value": "oso-devel-singlemaster-ssdnode-1"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total CPUs",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Reserved CPUs",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_spec_cpu_shares",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "pod_name",
-                    "operator": "!~",
-                    "value": "/^$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": "0",
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Reserved CPUs": "#bf1b00",
-              "Total CPUs": "#629e51"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 9,
-              "w": 4,
-              "x": 0,
-              "y": 32
-            },
-            "id": 259,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044269,
-            "repeatPanelId": 194,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-2",
-                "value": "oso-devel-singlemaster-ssdnode-2"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total CPUs",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Reserved CPUs",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_spec_cpu_shares",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "pod_name",
-                    "operator": "!~",
-                    "value": "/^$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": "0",
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Reserved CPUs": "#bf1b00",
-              "Total CPUs": "#629e51"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 9,
-              "w": 4,
-              "x": 4,
-              "y": 32
-            },
-            "id": 260,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044269,
-            "repeatPanelId": 194,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-3",
-                "value": "oso-devel-singlemaster-ssdnode-3"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total CPUs",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Reserved CPUs",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_spec_cpu_shares",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "pod_name",
-                    "operator": "!~",
-                    "value": "/^$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": "0",
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Reserved CPUs": "#bf1b00",
-              "Total CPUs": "#629e51"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 9,
-              "w": 4,
-              "x": 8,
-              "y": 32
-            },
-            "id": 261,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044269,
-            "repeatPanelId": 194,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-4",
-                "value": "oso-devel-singlemaster-ssdnode-4"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total CPUs",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Reserved CPUs",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_spec_cpu_shares",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    },
-                    {
-                      "params": [
-                        " / 1024"
-                      ],
-                      "type": "math"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "pod_name",
-                    "operator": "!~",
-                    "value": "/^$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": "0",
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
+            ]
           }
         ],
-        "title": "Reserved CPU capacity per node",
-        "type": "row"
+        "thresholds": [],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Reserved CPUs on $node",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": "0",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {
+          "Reserved CPUs": "#bf1b00",
+          "Total CPUs": "#629e51"
+        },
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "$influxdb_rp",
+        "fill": 6,
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 6,
+          "y": 23
+        },
+        "id": 271,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "hideEmpty": true,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "links": [],
+        "minSpan": 6,
+        "nullPointMode": "null",
+        "percentage": false,
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "repeat": null,
+        "repeatDirection": "h",
+        "repeatIteration": 1536588104145,
+        "repeatPanelId": 263,
+        "scopedVars": {
+          "node": {
+            "selected": false,
+            "text": "oso-devel-singlemaster-glusterfs-2",
+            "value": "oso-devel-singlemaster-glusterfs-2"
+          }
+        },
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Total CPUs",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "measurement": "machine_cpu_cores",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "B",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          },
+          {
+            "alias": "Reserved CPUs",
+            "expr": "",
+            "format": "time_series",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "intervalFactor": 1,
+            "measurement": "cpu_reservations_per_node",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "A",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Reserved CPUs on $node",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": "0",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {
+          "Reserved CPUs": "#bf1b00",
+          "Total CPUs": "#629e51"
+        },
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "$influxdb_rp",
+        "fill": 6,
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 12,
+          "y": 23
+        },
+        "id": 272,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "hideEmpty": true,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "links": [],
+        "minSpan": 6,
+        "nullPointMode": "null",
+        "percentage": false,
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "repeat": null,
+        "repeatDirection": "h",
+        "repeatIteration": 1536588104145,
+        "repeatPanelId": 263,
+        "scopedVars": {
+          "node": {
+            "selected": false,
+            "text": "oso-devel-singlemaster-glusterfs-3",
+            "value": "oso-devel-singlemaster-glusterfs-3"
+          }
+        },
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Total CPUs",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "measurement": "machine_cpu_cores",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "B",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          },
+          {
+            "alias": "Reserved CPUs",
+            "expr": "",
+            "format": "time_series",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "intervalFactor": 1,
+            "measurement": "cpu_reservations_per_node",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "A",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Reserved CPUs on $node",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": "0",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {
+          "Reserved CPUs": "#bf1b00",
+          "Total CPUs": "#629e51"
+        },
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "$influxdb_rp",
+        "fill": 6,
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 18,
+          "y": 23
+        },
+        "id": 273,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "hideEmpty": true,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "links": [],
+        "minSpan": 6,
+        "nullPointMode": "null",
+        "percentage": false,
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "repeat": null,
+        "repeatDirection": "h",
+        "repeatIteration": 1536588104145,
+        "repeatPanelId": 263,
+        "scopedVars": {
+          "node": {
+            "selected": false,
+            "text": "oso-devel-singlemaster-influxdb-1",
+            "value": "oso-devel-singlemaster-influxdb-1"
+          }
+        },
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Total CPUs",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "measurement": "machine_cpu_cores",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "B",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          },
+          {
+            "alias": "Reserved CPUs",
+            "expr": "",
+            "format": "time_series",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "intervalFactor": 1,
+            "measurement": "cpu_reservations_per_node",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "A",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Reserved CPUs on $node",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": "0",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {
+          "Reserved CPUs": "#bf1b00",
+          "Total CPUs": "#629e51"
+        },
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "$influxdb_rp",
+        "fill": 6,
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 0,
+          "y": 30
+        },
+        "id": 274,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "hideEmpty": true,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "links": [],
+        "minSpan": 6,
+        "nullPointMode": "null",
+        "percentage": false,
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "repeat": null,
+        "repeatDirection": "h",
+        "repeatIteration": 1536588104145,
+        "repeatPanelId": 263,
+        "scopedVars": {
+          "node": {
+            "selected": false,
+            "text": "oso-devel-singlemaster-master-1",
+            "value": "oso-devel-singlemaster-master-1"
+          }
+        },
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Total CPUs",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "measurement": "machine_cpu_cores",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "B",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          },
+          {
+            "alias": "Reserved CPUs",
+            "expr": "",
+            "format": "time_series",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "intervalFactor": 1,
+            "measurement": "cpu_reservations_per_node",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "A",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Reserved CPUs on $node",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": "0",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {
+          "Reserved CPUs": "#bf1b00",
+          "Total CPUs": "#629e51"
+        },
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "$influxdb_rp",
+        "fill": 6,
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 6,
+          "y": 30
+        },
+        "id": 275,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "hideEmpty": true,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "links": [],
+        "minSpan": 6,
+        "nullPointMode": "null",
+        "percentage": false,
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "repeat": null,
+        "repeatDirection": "h",
+        "repeatIteration": 1536588104145,
+        "repeatPanelId": 263,
+        "scopedVars": {
+          "node": {
+            "selected": false,
+            "text": "oso-devel-singlemaster-ssdnode-1",
+            "value": "oso-devel-singlemaster-ssdnode-1"
+          }
+        },
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Total CPUs",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "measurement": "machine_cpu_cores",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "B",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          },
+          {
+            "alias": "Reserved CPUs",
+            "expr": "",
+            "format": "time_series",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "intervalFactor": 1,
+            "measurement": "cpu_reservations_per_node",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "A",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Reserved CPUs on $node",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": "0",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {
+          "Reserved CPUs": "#bf1b00",
+          "Total CPUs": "#629e51"
+        },
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "$influxdb_rp",
+        "fill": 6,
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 12,
+          "y": 30
+        },
+        "id": 276,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "hideEmpty": true,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "links": [],
+        "minSpan": 6,
+        "nullPointMode": "null",
+        "percentage": false,
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "repeat": null,
+        "repeatDirection": "h",
+        "repeatIteration": 1536588104145,
+        "repeatPanelId": 263,
+        "scopedVars": {
+          "node": {
+            "selected": false,
+            "text": "oso-devel-singlemaster-ssdnode-2",
+            "value": "oso-devel-singlemaster-ssdnode-2"
+          }
+        },
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Total CPUs",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "measurement": "machine_cpu_cores",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "B",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          },
+          {
+            "alias": "Reserved CPUs",
+            "expr": "",
+            "format": "time_series",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "intervalFactor": 1,
+            "measurement": "cpu_reservations_per_node",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "A",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Reserved CPUs on $node",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": "0",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {
+          "Reserved CPUs": "#bf1b00",
+          "Total CPUs": "#629e51"
+        },
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "$influxdb_rp",
+        "fill": 6,
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 18,
+          "y": 30
+        },
+        "id": 277,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "hideEmpty": true,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "links": [],
+        "minSpan": 6,
+        "nullPointMode": "null",
+        "percentage": false,
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "repeat": null,
+        "repeatDirection": "h",
+        "repeatIteration": 1536588104145,
+        "repeatPanelId": 263,
+        "scopedVars": {
+          "node": {
+            "selected": false,
+            "text": "oso-devel-singlemaster-ssdnode-3",
+            "value": "oso-devel-singlemaster-ssdnode-3"
+          }
+        },
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Total CPUs",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "measurement": "machine_cpu_cores",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "B",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          },
+          {
+            "alias": "Reserved CPUs",
+            "expr": "",
+            "format": "time_series",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "intervalFactor": 1,
+            "measurement": "cpu_reservations_per_node",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "A",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Reserved CPUs on $node",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": "0",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {
+          "Reserved CPUs": "#bf1b00",
+          "Total CPUs": "#629e51"
+        },
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "$influxdb_rp",
+        "fill": 6,
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 0,
+          "y": 37
+        },
+        "id": 278,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "hideEmpty": true,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "links": [],
+        "minSpan": 6,
+        "nullPointMode": "null",
+        "percentage": false,
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "repeat": null,
+        "repeatDirection": "h",
+        "repeatIteration": 1536588104145,
+        "repeatPanelId": 263,
+        "scopedVars": {
+          "node": {
+            "selected": false,
+            "text": "oso-devel-singlemaster-ssdnode-4",
+            "value": "oso-devel-singlemaster-ssdnode-4"
+          }
+        },
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Total CPUs",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "measurement": "machine_cpu_cores",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "B",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          },
+          {
+            "alias": "Reserved CPUs",
+            "expr": "",
+            "format": "time_series",
+            "groupBy": [
+              {
+                "params": [
+                  "$data_interval"
+                ],
+                "type": "time"
+              },
+              {
+                "params": [
+                  "null"
+                ],
+                "type": "fill"
+              }
+            ],
+            "intervalFactor": 1,
+            "measurement": "cpu_reservations_per_node",
+            "orderByTime": "ASC",
+            "policy": "$data_interval",
+            "refId": "A",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ],
+              [
+                {
+                  "params": [
+                    "mean_value"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "sum"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "kubernetes_io_hostname",
+                "operator": "=~",
+                "value": "/^$node$/"
+              }
+            ]
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Reserved CPUs on $node",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": "0",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
       },
       {
         "collapsed": true,
@@ -3049,7 +2868,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 23
+          "y": 44
         },
         "id": 10,
         "panels": [
@@ -3893,7 +3712,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 24
+          "y": 45
         },
         "id": 15,
         "panels": [
@@ -4785,7 +4604,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 25
+          "y": 46
         },
         "id": 66,
         "panels": [
@@ -6714,7 +6533,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 26
+          "y": 47
         },
         "id": 68,
         "panels": [
@@ -8751,7 +8570,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 27
+          "y": 48
         },
         "id": 149,
         "panels": [
@@ -10287,6 +10106,7 @@
         },
         {
           "current": {
+            "tags": [],
             "text": "influxdb_ds_prom_7d",
             "value": "influxdb_ds_prom_7d"
           },
