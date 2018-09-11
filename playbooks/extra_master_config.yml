@@ -2,6 +2,7 @@
 # Currently configures:
 #  - GitHub OAuth integration
 #  - oc bash-completion
+#  - Openshift admission webhooks API
 ---
 - name: Additional master configuration
   hosts: masters
@@ -13,6 +14,9 @@
       when: configure_auth|default(true)|bool
       vars:
         local_auth_mapping_htaccess_entries: "{{ openshift_master_htpasswd_users }}"
+
+    - role: openshift_admission_webhooks
+      when: enable_openshift_admission_webhooks|default(false)|bool
   tasks:
     - name: generate bash completion with oc
       shell: oc completion bash > /etc/bash_completion.d/oc
