@@ -64,6 +64,13 @@ parameters:
     description: >
       What OpenStack flavor to use for compute nodes.
     type: string
+  compute_node_flavor_update_policy:
+    description: >
+      What to do when the flavor of compute nodes is changed.
+      Possible values are RESIZE and REPLACE. Sometimes RESIZE is not
+      possible, but it is the default to be on the safe side.
+    type: string
+    default: "RESIZE"
   ansible_group_name:
     description: >
       What Ansible group these compute nodes should be be placed in.
@@ -114,6 +121,7 @@ resources:
                     network_prefix: { get_param: network_prefix }
                     compute_node_resource_group_identifier: { get_param: compute_node_resource_group_identifier }
           flavor: { get_param: compute_node_flavor }
+          flavor_update_policy: { get_param: compute_node_flavor_update_policy }
           metadata:
             group: { get_param: ansible_group_name }
             stack: { get_param: env_name }
