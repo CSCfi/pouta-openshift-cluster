@@ -146,7 +146,7 @@ mkdir -p ~/git
 cd ~/git
 git clone https://gitlab.csc.fi/c14n/poc
 git clone https://gitlab.csc.fi/c14n/openshift-environments
-git clone https://github.com/openshift/openshift-ansible
+git clone https://github.com/CSCfi/openshift-ansible
 ```
 
 Check out a revision of openshift-ansible that matches the version of openshift you are
@@ -154,7 +154,7 @@ installing (see https://github.com/openshift/openshift-ansible#getting-the-corre
 
 ```bash
 cd ~/git/openshift-ansible
-git checkout release-1.5
+git checkout release-3.9-csc
 ```
 
 We have a deployment container with all dependencies preinstalled. To build the container,

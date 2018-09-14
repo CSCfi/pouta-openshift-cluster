@@ -1,0 +1,136 @@
+- name: check if webhook project, secret and mutating config already exist
+  hosts: masters[0]
+  tasks:
+  - name: create project webhooks if it doesn't exist
+    oc_project:
+      name: webhooks
+      node_selector: "type=master"
+
+  - name: check if webhooks secret exists
+    oc_secret:
+      state: list
+      name: ns-webhook-certs
+      namespace: webhooks
+    register: existing_webhooks_secret
+
+  - name: check if ns webhook deployment exists
+    shell: oc get dc -n webhooks ns-project-label-webhook
+    register: existing_ns_webhook_deployment
+    ignore_errors: yes
+
+- name: create CA bundle on the deployment container
+  hosts: localhost
+  tasks:
+  - name: end current play if webhook secrets already exist
+    meta: end_play
+    when: hostvars[groups['masters'][0]]['existing_webhooks_secret'].results.exists or
+          generate_new_ns_webhook_certs|default(false)|bool
+
+  - name: create temp directory for templating
+    command: mktemp -d
+    register: mktemp
+    changed_when: False
+
+  - name: generate OpenSSL private key
+    openssl_privatekey:
+      path: "{{ mktemp.stdout }}/webhookCA.key"
+      size: 4096
+    register: key
+
+  - name: generate OpenSSL certificate signing request
+    openssl_csr:
+      path: "{{ mktemp.stdout }}/webhookCA.csr"
+      privatekey_path: "{{ mktemp.stdout }}/webhookCA.key"
+      common_name: ns-project-label-webhook.webhooks.svc
+
+  - name: generate signed OpenSSL certificate
+    openssl_certificate:
+      path: "{{ mktemp.stdout }}/webhook.crt"
+      privatekey_path: "{{ mktemp.stdout }}/webhookCA.key"
+      csr_path: "{{ mktemp.stdout }}/webhookCA.csr"
+      provider: selfsigned
+
+  - name: save the certificate file
+    shell: cat "{{ mktemp.stdout }}/webhook.crt"
+    register: crtfile
+    changed_when: False
+
+  - name: save the key file
+    shell: cat "{{ mktemp.stdout }}/webhookCA.key"
+    register: keyfile
+    changed_when: False
+
+
+- name: deploy the namespace project label controller
+  hosts: masters
+  run_once: true
+  tasks:
+  - name: upsert webhook server certificates in webhooks project
+    oc_secret:
+      state: present
+      namespace: webhooks
+      name: ns-webhook-certs
+      contents:
+      - path: key
+        data: "{{ hostvars['localhost']['keyfile'].stdout }}"
+      - path: cert
+        data: "{{ hostvars['localhost']['crtfile'].stdout }}"
+    register: cabundle
+    when: not existing_webhooks_secret.results.exists or
+          generate_new_ns_webhook_certs|default(false)|bool
+
+  - name: upsert ldap secrets in webhooks project
+    oc_secret:
+      state: present
+      namespace: webhooks
+      name: ldap-auth
+      contents:
+      - path: server
+        data: "{{ ldap_protocol }}://{{ ldap_auth_host }}"
+      - path: user
+        data: "{{ ldap_bind_account_dn | regex_replace(' ', '\ ') }}"
+      - path: password
+        data: "{{ ldap_bind_account_password }}"
+      - path: user_query
+        data: "{{ ldap_user_base }}"
+      - path: project_query
+        data: "{{ ldap_project_base }}"
+    register: ldap_upsert
+
+  - name: upsert namespace label webhook deployment
+    include_tasks: tasks/upsert_k8s_object.yml
+    vars:
+      namespace: webhooks
+      template_base_name: ns_project_label_webhook.yaml.j2
+      name: ns-webhook
+
+  - name: restart the webhook if it already existed and secrets changed
+    shell: oc -n webhooks rollout latest ns-project-label-webhook
+    when: ( ldap_upsert.changed or cabundle.changed ) and
+          existing_ns_webhook_deployment.stdout_lines | length > 0
+
+  - name: upsert namespace label webhook service
+    include_tasks: tasks/upsert_k8s_object.yml
+    vars:
+      namespace: webhooks
+      template_base_name: ns_project_label_service.yaml.j2
+
+  - name: upsert namespace label mutating config
+    include_tasks: tasks/upsert_k8s_object.yml
+    vars:
+      namespace: webhooks
+      ca_bundle: "{{ hostvars['localhost']['crtfile'].stdout | b64encode }}"
+      template_base_name: ns_project_label_mutating_config.yaml.j2
+    when: not existing_webhooks_secret.results.exists or
+          generate_new_ns_webhook_certs|default(false)|bool
+
+  - name: wait for namespace label webhook to start
+    uri:
+      url: https://ns-project-label-webhook.webhooks.svc/ping
+      method: GET
+      validate_certs: no
+    failed_when: false
+    register: namespace_label_webhook_up
+    until: namespace_label_webhook_up.status|default(999) == 204
+    retries: 30
+    delay: 10

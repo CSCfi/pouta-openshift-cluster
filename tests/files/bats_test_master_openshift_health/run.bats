@@ -111,6 +111,10 @@ check_namespace_pod_health() {
 
 @test "test poc-housekeeping namespace pod health" {
     check_namespace_pod_health poc-housekeeping
+{
+
+@test "test webhooks namespace pod health" {
+    check_namespace_pod_health webhooks
 }
 
 @test "test connectivity to registry URL" {
