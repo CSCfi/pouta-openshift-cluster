@@ -16,6 +16,11 @@
     dest: /usr/local/share/keepalived
     mode: 0755
 
+- name: WARNING - using legacy variable for broadcast address, please update your inventory
+  set_fact:
+    keepalived_vip_broadcast: "{{ keepalived_vip_mask }}"
+  when: keepalived_vip_broadcast is undefined
+
 - name: configure keepalived
   template:
     src: keepalived.conf.j2
