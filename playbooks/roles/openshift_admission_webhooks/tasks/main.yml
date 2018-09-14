@@ -1,0 +1,19 @@
+- name: Enable Openshift admission webhooks API
+  yedit:
+    src: "{{ openshift_master_config_file }}"
+    key: admissionConfig.pluginConfig
+    update: true
+    value: |
+      ValidatingAdmissionWebhook:
+        configuration:
+          apiVersion: "v1"
+          kind: "DefaultAdmissionConfig"
+          disable: false
+      MutatingAdmissionWebhook:
+        configuration:
+          apiVersion: "v1"
+          kind: "DefaultAdmissionConfig"
+          disable: false
+  notify:
+    - restart master
+    - restart master api
