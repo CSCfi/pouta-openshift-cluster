@@ -11,14 +11,14 @@ vrrp_script check_app_routes {
 vrrp_instance vrrp_group_1 {
     state {{ keepalived_state }}
     interface {{ keepalived_interface }}
-    virtual_router_id 1
+    virtual_router_id {{ keepalived_virtual_router_id|default(1) }}
     priority {{ keepalived_priority }}
     authentication {
         auth_type AH
         auth_pass {{ keepalived_password }}
     }
     virtual_ipaddress {
-        {{ keepalived_vip }}/{{ keepalived_vip_mask_bits }} brd {{ keepalived_vip_mask }} dev {{ keepalived_interface }}
+        {{ keepalived_vip }}/{{ keepalived_vip_mask_bits }} brd {{ keepalived_vip_broadcast }} dev {{ keepalived_interface }}
     }
     track_interface {
         {{ keepalived_interface }}
