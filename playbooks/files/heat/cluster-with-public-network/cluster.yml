@@ -1,0 +1,300 @@
+---
+heat_template_version: newton
+
+description: >
+  Provision central resources for OpenShift public IP network.
+
+parameters:
+  env_name:
+    description: >
+      A name for the OpenShift environment to be used for naming resources.
+    type: string
+    default: { get_param: 'OS::stack_name' }
+  key_name:
+    description: >
+      The name of the SSH key to initially insert into VMs.
+    type: string
+  secgroup_id_infra:
+    description: >
+      Id of infra security group
+    type: string
+  secgroup_id_common:
+    description: >
+      Id of common security group
+    type: string
+  secgroup_id_ext_access:
+    description: >
+      Id for external access security group
+    type: string
+  network_id:
+    description: >
+      Id of cluster network
+    type: string
+  public_ip_network_id:
+    description: >
+      Id of public IP network
+    type: string
+  public_ip_subnet_id:
+    description: >
+      Id of public IP subnet (needed for allowed address pairs)
+    type: string
+  subnet_id:
+    description: >
+      Id of cluster subnet
+    type: string
+  network_prefix:
+    description: >
+      The first two (/16) or three (/24) octets of a private network CIDR.
+    type: string
+    default: "192.168"
+  lb_vm_group_size:
+    description: >
+      How many load balancer VMs to start.
+    type: number
+  lb_vm_image:
+    description: >
+      What OpenStack image to use for load balancer hosts.
+    type: string
+  lb_vm_flavor:
+    description: >
+      What OpenStack flavor to use for load balancer VMs.
+    type: string
+  lb_vol_size:
+    description: >
+      The size of the Cinder volume to attach to LB VMs.
+    type: number
+  lb_vip_ip:
+    description: >
+      The IP to use as the VIP for keepalived on the LB nodes.
+    type: string
+  nfs_vm_group_size:
+    description: >
+      How many NFS VMs to start.
+    type: number
+  nfs_vm_image:
+    description: >
+      What OpenStack image to use for NFS hosts.
+    type: string
+  nfs_vm_flavor:
+    description: >
+      What OpenStack flavor to use for NFS VMs.
+    type: string
+  nfs_vol_size:
+    description: >
+      The size of the Cinder volume to attach to NFS VMs.
+    type: number
+  master_vm_group_size:
+    description: >
+      How many master VMs to start.
+    type: number
+  master_vm_image:
+    description: >
+      What OpenStack image to use for master hosts.
+    type: string
+  master_vm_flavor:
+    description: >
+      What OpenStack flavor to use for master VMs.
+    type: string
+  lb_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the LB
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "2."
+  master_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the master
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "3."
+  nfs_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the NFS
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "4."
+
+resources:
+
+  #-----------------------------------
+  # Security groups
+  #-----------------------------------
+
+  secgroup_lb:
+    type: ../common/secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: lb
+      rules:
+        - protocol: tcp
+          port_range_min: 80
+          port_range_max: 80
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+        - protocol: tcp
+          port_range_min: 443
+          port_range_max: 443
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+        - protocol: tcp
+          port_range_min: 8443
+          port_range_max: 8443
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+        - protocol: 112
+          remote_mode: remote_group_id
+
+  secgroup_master:
+    type: ../common/secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: master
+      rules:
+        - protocol: udp
+          port_range_min: 53
+          port_range_max: 53
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+        - protocol: tcp
+          port_range_min: 53
+          port_range_max: 53
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+        - protocol: tcp
+          port_range_min: 8443
+          port_range_max: 8443
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+
+  secgroup_nfs:
+    type: ../common/secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: nfs
+      rules:
+        - remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+          protocol: tcp
+          port_range_min: 2049
+          port_range_max: 2049
+
+  #-----------------------------------
+  # Ports
+  #-----------------------------------
+
+  lb_vip_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: public_ip_network_id }
+      fixed_ips:
+        - ip_address: { get_param: lb_vip_ip }
+
+  #-----------------------------------
+  # Nova server groups (anti-affinity)
+  #-----------------------------------
+
+  lb:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: lb
+      policies: ['anti-affinity']
+
+  nfs:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: nfs
+      policies: ['anti-affinity']
+
+  master:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: master
+      policies: ['anti-affinity']
+
+  #-----------------------------------
+  # VM resource groups
+  #-----------------------------------
+
+  lb_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: lb_vm_group_size }
+      removal_policies: [{'resource_list': ['0']}]
+      resource_def:
+        type: ../common/vm_with_volume.yaml
+        properties:
+          vm_name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "lb"
+          image: { get_param: lb_vm_image }
+          networks:
+            - subnet: { get_param: subnet_id }
+              fixed_ip:
+                str_replace:
+                  template: network_prefix.lb_resource_group_identifier%index%
+                  params:
+                    network_prefix: { get_param: network_prefix }
+                    lb_resource_group_identifier: { get_param: lb_resource_group_identifier }
+            - subnet: { get_param: public_ip_subnet_id }
+              port_extra_properties:
+                allowed_address_pairs:
+                  - ip_address: { get_param: lb_vip_ip }
+          flavor: { get_param: lb_vm_flavor }
+          metadata:
+            groups: "lb,node_lbs"
+            stack: { get_param: env_name }
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_resource: secgroup_lb }
+            - { get_param: secgroup_id_infra }
+            - { get_param: secgroup_id_common }
+            - { get_param: secgroup_id_ext_access }
+          scheduler_hints:
+            group: { get_resource: lb }
+          vol_name_suffix: "data"
+          vol_size: { get_param: lb_vol_size }
+
+  master_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: master_vm_group_size }
+      removal_policies: [{'resource_list': ['0']}]
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "master"
+          image: { get_param: master_vm_image }
+          networks:
+            - network: { get_param: network_id }
+              fixed_ip:
+                str_replace:
+                  template: network_prefix.master_resource_group_identifier%index%
+                  params:
+                    network_prefix: { get_param: network_prefix }
+                    master_resource_group_identifier: { get_param: master_resource_group_identifier }
+            - network: { get_param: public_ip_network_id }
+          flavor: { get_param: master_vm_flavor }
+          metadata:
+            groups: "masters,node_masters"
+            stack: { get_param: env_name }
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_param: secgroup_id_infra }
+            - { get_param: secgroup_id_common }
+            - { get_resource: secgroup_master }
+          scheduler_hints:
+            group: { get_resource: master }

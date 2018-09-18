@@ -76,7 +76,7 @@ resources:
   #-----------------------------------
 
   secgroup_bastion:
-    type: secgroup.yaml
+    type: ../common/secgroup.yaml
     properties:
       env_name: { get_param: env_name }
       name_suffix: "bastion"
@@ -92,7 +92,7 @@ resources:
             remote_ip_prefix: <%cidr%>
 
   secgroup_common:
-    type: secgroup.yaml
+    type: ../common/secgroup.yaml
     properties:
       env_name: { get_param: env_name }
       name_suffix: "common"
@@ -107,7 +107,7 @@ resources:
           port_range_max: 4789
 
   secgroup_infra:
-    type: secgroup.yaml
+    type: ../common/secgroup.yaml
     properties:
       env_name: { get_param: env_name }
       name_suffix: infra
@@ -115,7 +115,7 @@ resources:
         - remote_mode: remote_group_id
 
   secgroup_ext_access:
-    type: secgroup.yaml
+    type: ../common/secgroup.yaml
     properties:
       env_name: { get_param: env_name }
       name_suffix: "ext-access"

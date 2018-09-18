@@ -168,156 +168,15 @@
       set_fact:
         secgroup_ext_access_rules: "{{ api_fw_rules + lb_fw_rules + extra_secgroup_ext_access_rules|default([]) }}"
 
-    - name: Build/update the OpenShift Heat stack (base)
-      register: heat_stack_base
-      os_stack:
-        name: "{{ cluster_name }}-base"
-        state: present
-        template: "files/openshift-heat-stack-base.yml"
-        wait: yes
-        parameters:
-          env_name: "{{ cluster_name }}"
-          key_name: "{{ cluster_name }}"
-          secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
-          openshift_network_cidr: "{{ openshift_network_cidr }}"
-          openshift_network_allocation_pool_start: "{{ openshift_network_allocation_pool_start }}"
-          openshift_network_allocation_pool_end: "{{ openshift_network_allocation_pool_end }}"
-          openshift_router: "{{ openshift_router }}"
-          bastion_vm_image: "{{ bastion_vm_image }}"
-          bastion_vm_flavor: "{{ bastion_vm_flavor }}"
-          bastion_cloud_config: "{{ bastion_cloud_config|default({}) }}"
-          bastion_allow_cidrs: "{{ ip_whitelist_bastion }}"
-          bastion_allow_ports: "{{ bastion_allow_ports }}"
-
-    - name: Put base stack output into a dict
-      set_fact:
-        base_stack_outputs: "{{ heat_stack_base.stack.outputs[0].output_value }}"
-
-    - name: Build/update the OpenShift Heat stack (multimaster - etcd)
-      os_stack:
-        name: "{{ cluster_name }}-etcd"
-        state: present
-        template: "files/openshift-heat-stack-etcd.yml"
-        wait: yes
-        parameters:
-          env_name: "{{ cluster_name }}"
-          key_name: "{{ cluster_name }}"
-          etcd_vm_group_size: "{{ etcd_vm_group_size }}"
-          etcd_vm_image: "{{ etcd_vm_image }}"
-          etcd_vm_flavor: "{{ etcd_vm_flavor }}"
-          secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
-          secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
-          network_id: "{{ base_stack_outputs.network_id}}"
-          network_prefix: "{{ openshift_network_prefix }}"
-          resource_group_identifier: "{{ etcd_resource_group_identifier }}"
+    - name: Provision resources with floating IP network
+      include_tasks: tasks/provision_with_floating_ips.yml
       when:
-        - master_vm_group_size > 1
-        - stack_output_etcd.stderr.find('Stack not found') != -1 or
-          allow_heat_stack_update_etcd|default(false)|bool
+        - poc_public_ip_network|default('') == ''
 
-    - block:
-      - name: Get id of LB VIP floating IP
-        command: openstack floating ip show -f value -c id {{ openshift_public_ip }}
-        register: cmd_lb_vip_floatingip_id
-
-      - name: Build/update the OpenShift Heat stack (cluster/multimaster)
-        os_stack:
-          name: "{{ cluster_name }}-cluster"
-          state: present
-          template: "files/openshift-heat-stack-cluster.yml"
-          wait: yes
-          parameters:
-            env_name: "{{ cluster_name }}"
-            key_name: "{{ cluster_name }}"
-            secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
-            secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
-            secgroup_id_ext_access: "{{ base_stack_outputs.secgroup_id_ext_access }}"
-            network_id: "{{ base_stack_outputs.network_id }}"
-            subnet_id: "{{ base_stack_outputs.subnet_id }}"
-            network_prefix: "{{ openshift_network_prefix }}"
-            lb_vm_group_size: "{{ lb_vm_group_size }}"
-            lb_vm_image: "{{ lb_vm_image }}"
-            lb_vm_flavor: "{{ lb_vm_flavor }}"
-            lb_vol_size: "{{ lb_vol_size }}"
-            lb_vip_floatingip_id: "{{ cmd_lb_vip_floatingip_id.stdout }}"
-            nfs_vm_group_size: "{{ nfs_vm_group_size }}"
-            nfs_vm_image: "{{ nfs_vm_image }}"
-            nfs_vm_flavor: "{{ nfs_vm_flavor }}"
-            nfs_vol_size: "{{ nfs_vol_size }}"
-            master_vm_group_size: "{{ master_vm_group_size }}"
-            master_vm_image: "{{ master_vm_image }}"
-            master_vm_flavor: "{{ master_vm_flavor }}"
-            lb_resource_group_identifier: "{{ lb_resource_group_identifier }}"
-            lb_vip_ip: "{{ lb_vip_ip }}"
-            master_resource_group_identifier: "{{ master_resource_group_identifier }}"
-            nfs_resource_group_identifier: "{{ nfs_resource_group_identifier }}"
+    - name: Provision resources with public IP network
+      include_tasks: tasks/provision_with_public_ips.yml
       when:
-        - master_vm_group_size > 1
-        - stack_output_cluster.stderr.find('Stack not found') != -1 or
-          allow_heat_stack_update_cluster|default(false)|bool
-
-    - name: Build/update the OpenShift Heat stack (cluster/singlemaster)
-      register: heat_stack
-      os_stack:
-        name: "{{ cluster_name }}-cluster"
-        state: present
-        template: "files/openshift-heat-stack-minimal.yml"
-        wait: yes
-        parameters:
-          env_name: "{{ cluster_name }}"
-          key_name: "{{ cluster_name }}"
-          secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
-          secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
-          secgroup_id_ext_access: "{{ base_stack_outputs.secgroup_id_ext_access }}"
-          network_id: "{{ base_stack_outputs.network_id }}"
-          network_prefix: "{{ openshift_network_prefix }}"
-          master_vm_group_size: "{{ master_vm_group_size }}"
-          master_vm_image: "{{ master_vm_image }}"
-          master_vm_flavor: "{{ master_vm_flavor }}"
-          master_vm_vol_size: "{{ master_vm_vol_size }}"
-          master_resource_group_identifier: "{{ master_resource_group_identifier }}"
-      when:
-        - master_vm_group_size == 1
-        - stack_output_cluster.stderr.find('Stack not found') != -1 or
-          allow_heat_stack_update_cluster|default(false)|bool
-
-    - name: Build/update the OpenShift Heat stack (glusterfs)
-      os_stack:
-        name: "{{ cluster_name }}-glusterfs"
-        state: present
-        template: "files/openshift-heat-stack-glusterfs.yml"
-        wait: yes
-        parameters:
-          env_name: "{{ cluster_name }}"
-          key_name: "{{ cluster_name }}"
-          glusterfs_vm_group_size: "{{ glusterfs_vm_group_size }}"
-          glusterfs_vm_image: "{{ glusterfs_vm_image }}"
-          glusterfs_vm_flavor: "{{ glusterfs_vm_flavor }}"
-          glusterfs_vol_1_size: "{{ glusterfs_docker_vol_size|default('10') }}"
-          glusterfs_vol_2_size: "{{ glusterfs_vol_size }}"
-          glusterfs_extension_volume_group_size: "{{ glusterfs_extension_volume_group_size|default(0) }}"
-          glusterfs_extension_volume_size: "{{ glusterfs_extension_volume_size|default(0) }}"
-          glusterfs_volume_deletion_policy: "{{ glusterfs_volume_deletion_policy|default('Retain') }}"
-          secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
-          secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
-          network_id: "{{ base_stack_outputs.network_id }}"
-          network_prefix: "{{ openshift_network_prefix }}"
-          resource_group_identifier: "{{ glusterfs_resource_group_identifier }}"
-      when:
-        - stack_output_glusterfs.stderr.find('Stack not found') != -1 or
-          allow_heat_stack_update_glusterfs|default(false)|bool
-
-    - name: Build/update compute node stack(s)
-      os_stack:
-        name: "{{ cluster_name }}-{{ item.item.stack_name }}"
-        state: present
-        template: "files/openshift-heat-stack-compute-nodes.yml"
-        wait: yes
-        parameters: "{{ item.item.heat_parameters | combine(base_stack_outputs) }}"
-      with_items: "{{ stack_output_compute_nodes.results }}"
-      when:
-        - item.stderr.find('Stack not found') != -1 or
-          item.item.stack_name in allow_heat_stack_update_node_groups|default([])
+        - poc_public_ip_network|default('') != ''
 
     - name: Remove inventory cache
       file:
@@ -327,26 +186,31 @@
     - name: Refresh dynamic inventory
       meta: refresh_inventory
 
-    - name: Associate floating IP with bastion host
-      os_floating_ip:
-        server: "{{ cluster_name }}-bastion"
-        floating_ip_address: "{{ bastion_public_ip }}"
+    # Floating IP setup
+    - when:
+        - poc_public_ip_network|default('') == ''
+      block:
+        - name: Associate floating IP with bastion host
+          os_floating_ip:
+            server: "{{ cluster_name }}-bastion"
+            floating_ip_address: "{{ bastion_public_ip }}"
 
-    - name: Associate floating IP with singlemaster
-      os_floating_ip:
-        server: "{{ cluster_name }}-master-1"
-        floating_ip_address: "{{ openshift_public_ip }}"
-      when:
-        - master_vm_group_size == 1
-        - skip_public_ip_association|default(false)|bool == false
+        - name: Associate floating IP with singlemaster
+          os_floating_ip:
+            server: "{{ cluster_name }}-master-1"
+            floating_ip_address: "{{ openshift_public_ip }}"
+          when:
+            - master_vm_group_size == 1
+            - skip_public_ip_association|default(false)|bool == false
 
-    - name: Assign extra floating IPs
-      os_floating_ip:
-        server: "{{ item.assign_to }}"
-        floating_ip_address: "{{ item.address }}"
-      with_items: "{{ ip_address_data|default([]) }}"
-      when:
-        - item.assign_to is defined
+        - name: Assign extra floating IPs
+          os_floating_ip:
+            server: "{{ item.assign_to }}"
+            floating_ip_address: "{{ item.address }}"
+          with_items: "{{ ip_address_data|default([]) }}"
+          when:
+            - item.assign_to is defined
+      # endblock
 
     - name: Refresh dynamic inventory
       meta: refresh_inventory

@@ -1,0 +1,159 @@
+---
+heat_template_version: newton
+
+description: >
+  Provision glusterfs cluster VMs for OpenShift with public IP network.
+
+parameters:
+  env_name:
+    description: >
+      A name for the OpenShift environment to be used for naming resources.
+    type: string
+    default: { get_param: 'OS::stack_name' }
+  key_name:
+    description: >
+      The name of the SSH key to initially insert into VMs.
+    type: string
+  glusterfs_vm_group_size:
+    description: >
+      How many virtual machines to put in the glusterfs cluster.
+    type: number
+  glusterfs_vm_image:
+    description: >
+      What OpenStack image to use for glusterfs hosts.
+    type: string
+  glusterfs_vm_flavor:
+    description: >
+      What OpenStack flavor to use for glusterfs hosts.
+    type: string
+  glusterfs_vol_1_size:
+    description: >
+      The size of the Cinder volume 1 to attach to glusterfs VMs.
+    type: number
+    default: "0"
+  glusterfs_vol_2_size:
+    description: >
+      The size of the Cinder volume 2 to attach to glusterfs VMs.
+    type: number
+    default: "0"
+  glusterfs_extension_volume_group_size:
+    description: >
+      How many extension volumes to add to each GlusterFS VM.
+    type: number
+    default: 0
+  glusterfs_extension_volume_size:
+    description: >
+      How big each extension volume should be.
+    type: number
+    default: 0
+  glusterfs_volume_deletion_policy:
+    description: >
+      What the deletion policy should be for GlusterFS volumes should be.
+      See https://docs.openstack.org/heat/latest/template_guide/hot_spec.html
+      The idea would be to set this to Retain for production and Delete for
+      development systems.
+    type: string
+    default: "Retain"
+  secgroup_id_infra:
+    description: >
+      Id of infra security group
+    type: string
+  secgroup_id_common:
+    description: >
+      Id of common security group
+    type: string
+  network_id:
+    description: >
+      Id of cluster network
+    type: string
+  network_prefix:
+    description: >
+      The first two (/16) or three (/24) octets of a private network CIDR.
+    type: string
+    default: "192.168"
+  resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the glusterfs resource
+      group. Comes after network prefix but before index (1-9). Ends with a dot
+      (when cluster network is /16) or not (when cluster network is /24).
+    type: string
+    default: "5."
+  public_ip_network_id:
+    description: >
+      Id of public IP network
+    type: string
+
+resources:
+
+  #-----------------------------------
+  # Security groups
+  #-----------------------------------
+
+  secgroup_glusterfs:
+    type: ../common/secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: glusterfs
+      rules:
+        - protocol: tcp
+          port_range_min: 20000
+          port_range_max: 65535
+          remote_mode: remote_group_id
+          remote_group_id: { get_param: secgroup_id_common }
+
+  #-----------------------------------
+  # Nova server groups (anti-affinity)
+  #-----------------------------------
+
+  glusterfs:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: glusterfs
+      policies: ['anti-affinity']
+
+  #-----------------------------------
+  # VM resource groups
+  #-----------------------------------
+
+  glusterfs_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: glusterfs_vm_group_size }
+      removal_policies: [{'resource_list': ['0']}]
+      resource_def:
+        type: ../common/vm_with_volumes.yaml
+        properties:
+          vm_name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "glusterfs"
+          image: { get_param: glusterfs_vm_image }
+          networks:
+            - network: { get_param: network_id }
+              fixed_ip:
+                str_replace:
+                  template: network_prefix.resource_group_identifier%index%
+                  params:
+                    network_prefix: { get_param: network_prefix }
+                    resource_group_identifier: { get_param: resource_group_identifier }
+            - network: { get_param: public_ip_network_id }
+          flavor: { get_param: glusterfs_vm_flavor }
+          metadata:
+            groups: "glusterfs"
+            stack: { get_param: env_name }
+          key_name: { get_param: key_name }
+          security_groups:
+            - { get_resource: secgroup_glusterfs }
+            - { get_param: secgroup_id_common }
+            - { get_param: secgroup_id_infra }
+          scheduler_hints:
+            group: { get_resource: glusterfs }
+          vol_name_suffix_1: "vol-1"
+          vol_size_1: { get_param: glusterfs_vol_1_size }
+          vol_name_suffix_2: "vol-2"
+          vol_size_2: { get_param: glusterfs_vol_2_size }
+          extension_volume_group_size: { get_param: glusterfs_extension_volume_group_size }
+          extension_volume_size: { get_param: glusterfs_extension_volume_size }
+          volume_deletion_policy: { get_param: glusterfs_volume_deletion_policy }

@@ -1,0 +1,33 @@
+- name: list interfaces
+  shell : "ip link"
+  register: ip_link_output
+
+- name: check if eth1 is present
+  set_fact:
+    poc_eth1_present: ip_link_output.stdout.find(' eth1:') != -1
+
+- name: create a network script for eth1
+  copy:
+    dest: "/etc/sysconfig/network-scripts/ifcfg-eth1"
+    owner: root
+    group: root
+    mode: 0644
+    content: |
+      # Created by Ansible
+      #
+      BOOTPROTO=dhcp
+      DEVICE=eth1
+      ONBOOT=yes
+      TYPE=Ethernet
+      USERCTL=no
+  register: eth1_script
+  when:
+    - poc_eth1_present
+
+- name: restart network
+  service:
+    name: network
+    state: restarted
+  when:
+    - poc_eth1_present
+    - eth1_script.changed

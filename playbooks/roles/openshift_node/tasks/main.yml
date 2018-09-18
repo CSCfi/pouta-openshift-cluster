@@ -6,18 +6,30 @@
   when: "'masters' not in group_names"
   notify: restart iptables
 
+  # Here we insert our own blocking rule and the rules that would be inserted by OpenShift as well to prevent
+  # OpenShift overriding our rule.
+  # see https://trello.com/c/vwOxBiXn/253-iptables-make-it-possible-to-specify-the-chain-in-which-to-insert-the-accept-vxlan-rule-operations
+- name: populate basic input chain rules
+  set_fact:
+    _iptables_input_rules:
+      - -A INPUT -s 10.128.0.0/14 -d 192.168.0.0/16 -p udp -m udp --dport 53 -j ACCEPT
+      - -A INPUT -s 10.128.0.0/14 -d 192.168.0.0/16 -p tcp -m tcp --dport 53 -j ACCEPT
+      - -A INPUT -d 192.168.0.0/16 -i tun0 -j REJECT --reject-with icmp-port-unreachable
+      - -A INPUT -m comment --comment "firewall overrides" -j OPENSHIFT-FIREWALL-ALLOW
+      - -A INPUT -s 192.168.0.0/16 -j ACCEPT
+
+- name: allow VRRP traffic to load balancers when using eth1
+  set_fact:
+    _iptables_input_rules: "{{ _iptables_input_rules + ['-A INPUT -i eth1 -d 224.0.0.0/4 -j ACCEPT'] }}"
+  when:
+    - "'lb' in group_names"
+    - keepalived_interface|default('') == 'eth1'
+
 - name: block access from SDN to internal network (INPUT)
   blockinfile:
     dest: /etc/sysconfig/iptables
     insertbefore: '^-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT'
-  # here we insert our own blocking rule and the rules that would be inserted by OpenShift as well to prevent
-  # OpenShift overriding our rule. see https://trello.com/c/vwOxBiXn/253-iptables-make-it-possible-to-specify-the-chain-in-which-to-insert-the-accept-vxlan-rule-operations
-    block: |
-      -A INPUT -s 10.128.0.0/14 -d 192.168.0.0/16 -p udp -m udp --dport 53 -j ACCEPT
-      -A INPUT -s 10.128.0.0/14 -d 192.168.0.0/16 -p tcp -m tcp --dport 53 -j ACCEPT
-      -A INPUT -d 192.168.0.0/16 -i tun0 -j REJECT --reject-with icmp-port-unreachable
-      -A INPUT -m comment --comment "firewall overrides" -j OPENSHIFT-FIREWALL-ALLOW
-      -A INPUT -s 192.168.0.0/16 -j ACCEPT
+    block: "{{ _iptables_input_rules|join('\n') }}"
     marker: '-A INPUT -m comment --comment "{mark} ANSIBLE MANAGED BLOCK INPUT"'
   when: "'masters' not in group_names"
   notify: restart iptables
