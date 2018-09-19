@@ -136,18 +136,30 @@ check_namespace_pod_health() {
 }
 
 @test "test that heketi-metrics-exporter responds and authorization is required" {
+    if [[ $POC_DEPLOY_MONITORING == 'False' ]]; then
+        skip "Monitoring deployment is not enabled, skipping check"
+    fi
+
     run check_route_url glusterfs heketi-metrics-exporter "Authorization Required"
 
     [ $status -eq 0 ]
 }
 
 @test "test that InfluxDB responds" {
+    if [[ $POC_DEPLOY_MONITORING == 'False' ]]; then
+        skip "Monitoring deployment is not enabled, skipping check"
+    fi
+
     run check_route_url monitoring-infra influxdb-route
 
     [ $status -eq 0 ]
 }
 
 @test "test that InfluxDB requires auth" {
+    if [[ $POC_DEPLOY_MONITORING == 'False' ]]; then
+        skip "Monitoring deployment is not enabled, skipping check"
+    fi
+
     url=$(oc get route -n monitoring-infra -o json -o jsonpath='{.spec.host}' influxdb-route)
 
     run bash -c "curl -G --data-urlencode 'db=prometheus' --data-urlencode 'q=SELECT * FROM \"1m\".\"machine_cpu_cores\" LIMIT 1' https://$url/query"
@@ -156,6 +168,10 @@ check_namespace_pod_health() {
 }
 
 @test "test query against InfluxDB" {
+    if [[ $POC_DEPLOY_MONITORING == 'False' ]]; then
+        skip "Monitoring deployment is not enabled, skipping check"
+    fi
+
     token=$(oc get -o template secret monitoring-token --template={{.data.token}} -n monitoring-infra | base64 -d)
     url=$(oc get route -n monitoring-infra -o json -o jsonpath='{.spec.host}' influxdb-route)
 

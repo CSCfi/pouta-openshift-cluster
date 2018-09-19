@@ -40,7 +40,9 @@
           register: test_directories
 
         - name: run bats tests
-          shell: './generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log'
+          shell: >
+            POC_DEPLOY_MONITORING={{ deploy_monitoring|bool }}
+            ./generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log
           args:
             chdir: '/tmp/poc/tests'
           with_items: "{{ test_directories.stdout_lines }}"
