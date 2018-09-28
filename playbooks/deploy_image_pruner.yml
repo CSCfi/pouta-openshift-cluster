@@ -1,0 +1,18 @@
+---
+- name: Deploy the registry image pruner
+  hosts: masters
+  run_once: true
+  tasks:
+    - name: create project poc-housekeeping if it doesn't exist
+      oc_project:
+        name: poc-housekeeping
+        node_selector: "type=master"
+
+    - name: upsert the registry image pruner cronjob
+      include: tasks/upsert_k8s_object.yml
+      vars:
+        namespace: poc-housekeeping
+        template_base_name: "{{ item | basename }}"
+        template_sub_dir: "registry-image-pruner/"
+      with_fileglob:
+      - templates/registry-image-pruner/*
