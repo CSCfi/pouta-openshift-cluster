@@ -7,6 +7,9 @@ metadata:
   labels:
     app: influxdb
 spec:
+  progressDeadlineSeconds: 600
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: influxdb
@@ -25,8 +28,8 @@ spec:
         image: {{ influxdb_image | default('influxdb') }}
         resources:
           requests:
-            memory: {{ influxdb_req_mem | default('4Gi') }}
-            cpu: {{ influxdb_req_cpu | default('800m') }}
+            memory: {{ influxdb_req_mem | default('6Gi') }}
+            cpu: {{ influxdb_req_cpu | default('1500m') }}
           limits:
             memory: {{ influxdb_lim_mem | default('6Gi') }}
             cpu: {{ influxdb_lim_cpu | default('1500m') }}
@@ -44,13 +47,15 @@ spec:
           httpGet:
             path: /ping
             port: 8086
-          initialDelaySeconds: 15
+          initialDelaySeconds: 60
+          periodSeconds: 10
           timeoutSeconds: 2
         readinessProbe:
           httpGet:
             path: /ping
             port: 8086
-          initialDelaySeconds: 5
+          initialDelaySeconds: 60
+          periodSeconds: 10
           timeoutSeconds: 2
       - name: prometheus-remote-storage-adapter
         image: {{ prometheus_remote_storage_adapter_image | default('docker.io/rlaurika/prometheus_remote_storage_adapter') }}
