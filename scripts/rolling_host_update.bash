@@ -15,8 +15,11 @@ print_usage_and_exit()
     echo
     echo "Usage: $me [options] hosts"
     echo "  where options are"
-    echo "  -a [rebuild|update]     action(s) to take on hosts, "
-    echo "                          can be specified multiple times"
+    echo "  -a [rebuild|update]     action(s) to take on hosts. "
+    echo "                          - 'rebuild' runs 'openstack server rebuild',"
+    echo "                             updates packages in the base image"
+    echo "                             and runs scaleup playbook"
+    echo "                          - 'update' runs 'yum update'"
     echo "  -s service              stop service before actions"
     echo "                          can be specified multiple times"
     echo "  -d                      drain nodes before actions using given control host"
@@ -24,7 +27,7 @@ print_usage_and_exit()
     echo "                          Note: rebuilding automatically activates nodes"
     echo "  -c control-host         control host to use for draining"
     echo "  -p                      power cycle after actions"
-    echo "  -i image                image to rebuild on"
+    echo "  -v                      scaleup playbook version (optional, default '3.9')"
     echo
     echo "Example:"
     echo "  $me -a update -dup -c \$ENV_NAME-master-1 \$ENV_NAME-node-{1..4}"
@@ -38,9 +41,8 @@ log() {
 
 rebuild_server() {
     host=$1
-    opt_image=$2
-    log "rebuilding $host with image $opt_image"
-    openstack server rebuild --image $opt_image $host
+    log "rebuilding $host"
+    openstack server rebuild $host
     while ! openstack server list | grep $host | grep -q " ACTIVE "; do
         log "waiting for server to be active"
         sleep 5
@@ -80,7 +82,7 @@ stop_service() {
 drain_server() {
     host=$1
     log "draining node $host"
-    ansible $opt_control_host -m shell -a "oc adm drain $host --delete-local-data --force --ignore-daemonsets --grace-period=10"
+    ansible $opt_control_host -m shell -a "oc adm drain $host --delete-local-data --ignore-daemonsets"
 }
 
 uncordon_server() {
@@ -105,10 +107,10 @@ opt_drain=
 opt_uncordon=
 opt_control_host=
 opt_power_cycle=
-opt_image=
+opt_scaleup_version="3.9"
 
 # Process options
-while getopts "a:s:c:i:duph" opt; do
+while getopts "a:s:c:i:v:duph" opt; do
     case $opt in
         a)
             opt_actions="${opt_actions}${OPTARG} "
@@ -128,8 +130,8 @@ while getopts "a:s:c:i:duph" opt; do
         c)
             opt_control_host="${OPTARG}"
             ;;
-        i)
-            opt_image="${OPTARG}"
+        v)
+            opt_scaleup_version="${OPTARG}"
             ;;
         *)
             print_usage_and_exit
@@ -144,13 +146,14 @@ if [[ "$opt_actions" == " " ]]; then
     print_usage_and_exit
 fi
 
-if [[ $opt_actions =~ ' rebuild ' && -z $opt_image ]]; then
-    echo "ERROR: need to define image for rebuild action"
+if [[ (! -z $opt_drain || $opt_uncordon) && -z $opt_control_host ]]; then
+    echo "ERROR: need to define control host with drain and uncordon option"
     print_usage_and_exit
 fi
 
-if [[ (! -z $opt_drain || $opt_uncordon) && -z $opt_control_host ]]; then
-    echo "ERROR: need to define control host with drain and uncordon option"
+scaleup_playbook="site_scaleup_${opt_scaleup_version}.yml"
+if [[ ! -e $scaleup_playbook ]]; then
+    echo "ERROR: scaleup playbook $scaleup_playbook does not exist"
     print_usage_and_exit
 fi
 
@@ -168,18 +171,20 @@ for host in $*; do
     if [[ $opt_actions =~ ' rebuild ' ]]; then
         log "action: rebuild"
         [[ -n $opt_drain ]] && drain_server $host
-        rebuild_server $host $opt_image
-        log "run site_scaleup.yml"
-        ansible-playbook -v site_scaleup.yml
+        rebuild_server $host
+        update_server $host
+        [[ -n $opt_power_cycle ]] && power_cycle_server $host
+        log "apply $scaleup_playbook"
+        ansible-playbook -v $scaleup_playbook
+        [[ -n $opt_power_cycle ]] && power_cycle_server $host
     fi
 
     if [[ $opt_actions =~ ' update ' ]]; then
         log "action: update"
         [[ -n $opt_drain ]] && drain_server $host
         update_server $host
+        [[ -n $opt_power_cycle ]] && power_cycle_server $host
     fi
-
-    [[ -n $opt_power_cycle ]] && power_cycle_server $host
 
     [[ -n $opt_uncordon ]] && uncordon_server $host
 done
