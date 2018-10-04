@@ -1,0 +1,29 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: registry-image-pruner
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            parent: "cronjob-registry-image-pruner"
+        spec:
+          serviceAccountName: image-pruner
+          nodeSelector:
+            type: master
+          containers:
+          - name: registry-image-pruner
+            image: {{ registry_pruner_image }}
+            imagePullPolicy: Always
+            env:
+            - name: API_URL
+              value: {{ openshift_public_hostname }}
+            - name: KEEP_REVISIONS
+              value: "4"
+            - name: IMAGE_AGE
+              value: "1000h"
+            command: ["/usr/bin/prune-images.sh"]
+          restartPolicy: OnFailure

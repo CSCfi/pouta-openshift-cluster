@@ -21,6 +21,9 @@
   import_playbook: add_app_templates.yml
   when: add_app_templates|default(true)|bool
 
+- name: Deploy the registry image pruner
+  import_playbook: deploy_image_pruner.yml
+
 # Fix: make sure origin-master-controllers have up to date resolv.conf with local resolution
 - name: Fix - restart master controllers
   import_playbook: fix_restart_master_controllers.yml
