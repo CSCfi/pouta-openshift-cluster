@@ -314,6 +314,12 @@ items:
 
       remote_write:
         - url: "http://influxdb:9201/write"
+{% if prometheus_metrics_to_archive is defined %}
+          write_relabel_configs:
+          - source_labels: ['__name__']
+            regex: '{{ prometheus_metrics_to_archive | join('|') }}'
+            action: keep
+{% endif %}
 
       rule_files:
       # Recording rules to make certain things queryable via InfluxDB
