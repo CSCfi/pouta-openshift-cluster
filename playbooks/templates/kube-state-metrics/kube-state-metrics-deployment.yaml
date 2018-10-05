@@ -16,6 +16,8 @@ spec:
         k8s-app: kube-state-metrics
     spec:
       serviceAccountName: kube-state-metrics
+      nodeSelector:
+        type: master
       containers:
       - name: kube-state-metrics
         image: quay.io/coreos/kube-state-metrics:v1.4.0
