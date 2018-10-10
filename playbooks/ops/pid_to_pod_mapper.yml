@@ -1,0 +1,67 @@
+#
+# This ansible playbook maps the host PID to the relevant Openshift pod.
+# How to run: ansible-playbook -v ops/pid_to_pod_mapper.yml --extra-vars "host=HOST pid=PID get_user_mail=BOOL"
+# The get_user_mail variable is optional and defaults to false.
+# Examples on how to run:
+#   * ansible-playbook -v ops/pid_to_pod_mapper.yml --extra-vars "host=$ENV_NAME-ssdnode-2 pid=12345"
+#   * ansible-playbook -v ops/pid_to_pod_mapper.yml --extra-vars "host=$ENV_NAME-ssdnode-2 pid=12345 get_user_mail=true"
+#
+
+- name: Get pod namespace and pod name from PID
+  hosts: "{{ host }}"
+  tasks:
+    - name: get cpuset cgroup of the process
+      shell: "sudo cat /proc/{{ pid }}/cpuset"
+      register: cpuset_file
+
+    - name: get container ID from cpuset_file
+      set_fact:
+        container_id: "{{ cpuset_file.stdout | regex_search('docker-(.{12})', '\\1') }}"
+
+    - name: get container info
+      shell: sudo docker inspect -f '{% raw %}{{json .Config.Labels}}{% endraw %}' {{ container_id[0] }}
+      register: container_info
+
+    - name: convert container_info to json
+      set_fact:
+        pod_info_json: "{{ container_info.stdout | from_json }}"
+
+    - name: fetch pod and namespace names
+      set_fact:
+        pod_name: "{{ pod_info_json['io.kubernetes.pod.name'] }}"
+        namespace: "{{ pod_info_json['io.kubernetes.pod.namespace'] }}"
+
+- name: Get the namespace requester and his information
+  hosts: masters
+  run_once: true
+  tasks:
+    - name: get the namespace object
+      oc_project:
+        state: list
+        name: "{{ hostvars[host]['namespace'] }}"
+      register: namespace_object
+
+    - name: fetch the user name
+      set_fact:
+        user: "{{ namespace_object.results.metadata.annotations['openshift.io/requester'] }}"
+
+    - name: install openldap-clients if not installed
+      yum:
+        name: "openldap-clients"
+      when: get_user_mail|default(false)|bool
+
+    - name: get the email address of the user from LDAP
+      shell: "ldapsearch -LLL -x -H '{{ ldap_protocol }}://{{ ldap_auth_host }}' -b '{{ ldap_user_base }}' \
+              -D '{{ ldap_bind_account_dn }}' -w '{{ ldap_bind_account_password_vault }}' 'uid={{ user }}' \
+              mail | grep mail"
+      register: ldap_output
+      when: get_user_mail|default(false)|bool
+
+    - name: output the pod information
+      debug:
+        msg:
+          - "namespace: {{ hostvars[host]['namespace'] }}"
+          - "pod_name: {{ hostvars[host]['pod_name'] }}"
+          - "user: {{ user }}"
+          - "{{ ldap_output.stdout|default('') }}"
+
