@@ -2,7 +2,7 @@
 
 # Script to prune old objects from OpenShift.
 #
-# Ref: https://docs.openshift.org/3.6/admin_guide/pruning_resources.html
+# Ref: https://docs.okd.io/3.6/admin_guide/pruning_resources.html
 
 export PATH="${PATH}:/usr/local/bin/"
 
