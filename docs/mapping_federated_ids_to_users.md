@@ -10,7 +10,7 @@ accounts in OpenShift.
 Much of this document is based on the following documentation page in the
 official OpenShift documentation:
 
-[Configuring Authentication and User Agent](https://docs.openshift.org/latest/install_config/configuring_authentication.html)
+[Configuring Authentication and User Agent](https://docs.okd.io/latest/install_config/configuring_authentication.html)
 
 ## Basic concepts
 

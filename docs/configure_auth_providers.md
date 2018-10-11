@@ -3,12 +3,12 @@
 ## Preface
 
 This document describes the steps to configure authentication sources. See 
-[OpenShift documentation on configuring authentication](https://docs.openshift.org/latest/install_config/configuring_authentication.html)
+[OpenShift documentation on configuring authentication](https://docs.okd.io/latest/install_config/configuring_authentication.html)
 
 ## Common variables
 
 All auth provider methods support setting the method of mapping identities to users. See 
-[OpenShift docs on mapping identities to users](https://docs.openshift.org/latest/install_config/configuring_authentication.html#mapping-identities-to-users).
+[OpenShift docs on mapping identities to users](https://docs.okd.io/latest/install_config/configuring_authentication.html#identity-providers_parameters).
 The variables for controlling the mapping method are prefixed with the auth provider type, and are as follows:
 
 - local_auth_mapping_method 
@@ -45,7 +45,7 @@ where each user is a key and the value is the htpasswd file hash for the passwor
 
 ## Configuring GitHub
 
-See [OpenShift docs on configuring GitHub auth](https://docs.openshift.org/latest/install_config/configuring_authentication.html#GitHub)
+See [OpenShift docs on configuring GitHub auth](https://docs.okd.io/latest/install_config/configuring_authentication.html#GitHub)
 for instructions and [configuration task in POC](/playbooks/roles/openshift_auth_providers/tasks/main.yml) 
 for value mapping details. 
 
@@ -74,7 +74,7 @@ TBA
 
 ### LDAP authentication
 
-See [OpenShift docs on configuring LDAP](https://docs.openshift.org/latest/install_config/configuring_authentication.html#LDAPPasswordIdentityProvider)
+See [OpenShift docs on configuring LDAP](https://docs.okd.io/latest/install_config/configuring_authentication.html#LDAPPasswordIdentityProvider)
 info on the configuration values and [configuration task in POC](/playbooks/roles/openshift_auth_providers/tasks/main.yml) 
 for value mapping details.
 
@@ -102,7 +102,7 @@ The following values are taken from Ansible inventory variables:
 
 ### Syncing groups from LDAP 
 
-See [OpenShift docs on synchronizing groups from LDAP](https://docs.openshift.org/latest/install_config/syncing_groups_with_ldap.html)
+See [OpenShift docs on synchronizing groups from LDAP](https://docs.okd.io/latest/install_config/syncing_groups_with_ldap.html)
 
 The sync process in POC can be enabled by setting *enable_ldap_group_sync* to true. The basic configuration is taken 
 from LDAP auth provider settings. In addition, *ldap_group_sync_schema_params* variable has to be set to match the 
@@ -122,7 +122,7 @@ PODs will originate from the same IP.
 
 ## Configuring OpenID Connect
 
-See [OpenShift docs on configuring OpenID Connect](https://docs.openshift.org/latest/install_config/configuring_authentication.html#OpenID)
+See [OpenShift docs on configuring OpenID Connect](https://docs.okd.io/latest/install_config/configuring_authentication.html#OpenID)
 info on the configuration values and [configuration task in POC](/playbooks/roles/openshift_auth_providers/tasks/main.yml) 
 for value mapping details.
 

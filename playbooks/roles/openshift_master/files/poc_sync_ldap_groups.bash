@@ -2,7 +2,7 @@
 
 # Script to synchronize groups from LDAP.
 #
-# Ref: https://docs.openshift.org/latest/install_config/syncing_groups_with_ldap.html
+# Ref: https://docs.okd.io/latest/install_config/syncing_groups_with_ldap.html
 
 set -e
 
