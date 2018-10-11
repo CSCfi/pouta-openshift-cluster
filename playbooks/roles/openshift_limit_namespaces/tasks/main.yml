@@ -1,0 +1,17 @@
+- name: limit the number of namespaces per user
+  yedit:
+    src: "{{ openshift_master_config_file }}"
+    key: admissionConfig.pluginConfig
+    update: true
+    value: |
+      ProjectRequestLimit:
+        configuration:
+          apiVersion: v1
+          kind: ProjectRequestLimitConfig
+          limits:
+          - selector:
+              namespace_quota: unlimited
+          - maxProjects: "{{ default_max_namespaces_per_user }}"
+  notify:
+    - restart master
+    - restart master api

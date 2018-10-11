@@ -3,6 +3,7 @@
 #  - GitHub OAuth integration
 #  - oc bash-completion
 #  - Openshift admission webhooks API
+#  - Restrict the number of namespaces per user
 ---
 - name: Additional master configuration
   hosts: masters
@@ -17,6 +18,9 @@
 
     - role: openshift_admission_webhooks
       when: enable_openshift_admission_webhooks|default(false)|bool
+
+    - role: openshift_limit_namespaces
+      when: enable_openshift_limit_namespaces|default(true)|bool
   tasks:
     - name: generate bash completion with oc
       shell: oc completion bash > /etc/bash_completion.d/oc
