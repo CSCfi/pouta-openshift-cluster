@@ -2,7 +2,7 @@
 heat_template_version: newton
 
 description: >
-  Provision compute node resource groups for OpenShift.
+  Provision compute node resource groups for OpenShift with public IP network.
 
 parameters:
   env_name:
@@ -75,6 +75,10 @@ parameters:
     description: >
       What Ansible group these compute nodes should be be placed in.
     type: string
+  public_ip_network_id:
+    description: >
+      Id of public IP network
+    type: string
 
 resources:
 
@@ -89,7 +93,7 @@ resources:
       policies: ['anti-affinity']
 
   secgroup_node:
-    type: secgroup.yaml
+    type: ../common/secgroup.yaml
     properties:
       env_name: { get_param: env_name }
       name_suffix: { get_param: name_suffix }
@@ -120,6 +124,7 @@ resources:
                   params:
                     network_prefix: { get_param: network_prefix }
                     compute_node_resource_group_identifier: { get_param: compute_node_resource_group_identifier }
+            - network: { get_param: public_ip_network_id }
           flavor: { get_param: compute_node_flavor }
           flavor_update_policy: { get_param: compute_node_flavor_update_policy }
           metadata:

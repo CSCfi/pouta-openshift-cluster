@@ -86,7 +86,7 @@ resources:
   #-----------------------------------
 
   secgroup_glusterfs:
-    type: secgroup.yaml
+    type: ../common/secgroup.yaml
     properties:
       env_name: { get_param: env_name }
       name_suffix: glusterfs
@@ -117,7 +117,7 @@ resources:
       count: { get_param: glusterfs_vm_group_size }
       removal_policies: [{'resource_list': ['0']}]
       resource_def:
-        type: vm_with_volumes.yaml
+        type: ../common/vm_with_volumes.yaml
         properties:
           vm_name:
             str_replace:

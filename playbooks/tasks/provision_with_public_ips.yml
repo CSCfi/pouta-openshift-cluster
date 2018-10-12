@@ -1,0 +1,170 @@
+- name: Get id for the network with public IPs
+  command: openstack network show  -f value -c id {{ poc_public_ip_network }}
+  register: cmd_public_ip_network
+
+- set_fact:
+    public_ip_network_id: "{{ cmd_public_ip_network.stdout }}"
+
+- name: Get id for the public IP subnet
+  command: openstack subnet show  -f value -c id {{ poc_public_ip_subnet }}
+  register: cmd_public_ip_subnet
+
+- set_fact:
+    public_ip_subnet_id: "{{ cmd_public_ip_subnet.stdout }}"
+
+- name: Build/update the OpenShift Heat stack with public IP network (base)
+  register: heat_stack_base
+  os_stack:
+    name: "{{ cluster_name }}-base"
+    state: present
+    template: "files/heat/cluster-with-public-network/base.yml"
+    wait: yes
+    parameters:
+      env_name: "{{ cluster_name }}"
+      key_name: "{{ cluster_name }}"
+      secgroup_ext_access_rules: "{{ secgroup_ext_access_rules }}"
+      openshift_network_cidr: "{{ openshift_network_cidr }}"
+      openshift_network_allocation_pool_start: "{{ openshift_network_allocation_pool_start }}"
+      openshift_network_allocation_pool_end: "{{ openshift_network_allocation_pool_end }}"
+      bastion_vm_image: "{{ bastion_vm_image }}"
+      bastion_vm_flavor: "{{ bastion_vm_flavor }}"
+      bastion_allow_cidrs: "{{ ip_whitelist_bastion }}"
+      bastion_allow_ports: "{{ bastion_allow_ports }}"
+      bastion_public_ip: "{{ bastion_public_ip }}"
+      public_ip_network_id: "{{ public_ip_network_id }}"
+      internal_network_gateway_ip: "{{ internal_network_gateway_ip|default('') }}"
+
+- name: Put base stack output into a dict
+  set_fact:
+    base_stack_outputs: "{{ heat_stack_base.stack.outputs[0].output_value }}"
+
+- name: Build/update the OpenShift Heat stack (multimaster - etcd with public IP network)
+  os_stack:
+    name: "{{ cluster_name }}-etcd"
+    state: present
+    template: "files/heat/cluster-with-public-network/etcd.yml"
+    wait: yes
+    parameters:
+      env_name: "{{ cluster_name }}"
+      key_name: "{{ cluster_name }}"
+      etcd_vm_group_size: "{{ etcd_vm_group_size }}"
+      etcd_vm_image: "{{ etcd_vm_image }}"
+      etcd_vm_flavor: "{{ etcd_vm_flavor }}"
+      secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+      secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+      network_id: "{{ base_stack_outputs.network_id}}"
+      network_prefix: "{{ openshift_network_prefix }}"
+      resource_group_identifier: "{{ etcd_resource_group_identifier }}"
+      public_ip_network_id: "{{ public_ip_network_id }}"
+  when:
+    - master_vm_group_size > 1
+    - stack_output_etcd.stderr.find('Stack not found') != -1 or
+      allow_heat_stack_update_etcd|default(false)|bool
+
+- name: Build/update the OpenShift Heat stack (cluster/multimaster with public IP network)
+  os_stack:
+    name: "{{ cluster_name }}-cluster"
+    state: present
+    template: "files/heat/cluster-with-public-network/cluster.yml"
+    wait: yes
+    parameters:
+      env_name: "{{ cluster_name }}"
+      key_name: "{{ cluster_name }}"
+      secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+      secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+      secgroup_id_ext_access: "{{ base_stack_outputs.secgroup_id_ext_access }}"
+      network_id: "{{ base_stack_outputs.network_id }}"
+      subnet_id: "{{ base_stack_outputs.subnet_id }}"
+      public_ip_network_id: "{{ public_ip_network_id }}"
+      public_ip_subnet_id: "{{ public_ip_subnet_id }}"
+      network_prefix: "{{ openshift_network_prefix }}"
+      lb_vm_group_size: "{{ lb_vm_group_size }}"
+      lb_vm_image: "{{ lb_vm_image }}"
+      lb_vm_flavor: "{{ lb_vm_flavor }}"
+      lb_vol_size: "{{ lb_vol_size }}"
+      nfs_vm_group_size: "{{ nfs_vm_group_size }}"
+      nfs_vm_image: "{{ nfs_vm_image }}"
+      nfs_vm_flavor: "{{ nfs_vm_flavor }}"
+      nfs_vol_size: "{{ nfs_vol_size }}"
+      master_vm_group_size: "{{ master_vm_group_size }}"
+      master_vm_image: "{{ master_vm_image }}"
+      master_vm_flavor: "{{ master_vm_flavor }}"
+      lb_resource_group_identifier: "{{ lb_resource_group_identifier }}"
+      lb_vip_ip: "{{ openshift_public_ip }}"
+      master_resource_group_identifier: "{{ master_resource_group_identifier }}"
+      nfs_resource_group_identifier: "{{ nfs_resource_group_identifier }}"
+  when:
+    - master_vm_group_size > 1
+    - stack_output_cluster.stderr.find('Stack not found') != -1 or
+      allow_heat_stack_update_cluster|default(false)|bool
+
+- name: Build/update the OpenShift Heat stack (cluster/singlemaster with public IP network)
+  register: heat_stack
+  os_stack:
+    name: "{{ cluster_name }}-cluster"
+    state: present
+    template: "files/heat/cluster-with-public-network/minimal.yml"
+    wait: yes
+    parameters:
+      env_name: "{{ cluster_name }}"
+      key_name: "{{ cluster_name }}"
+      secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+      secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+      secgroup_id_ext_access: "{{ base_stack_outputs.secgroup_id_ext_access }}"
+      network_id: "{{ base_stack_outputs.network_id }}"
+      network_prefix: "{{ openshift_network_prefix }}"
+      master_vm_group_size: "{{ master_vm_group_size }}"
+      master_vm_image: "{{ master_vm_image }}"
+      master_vm_flavor: "{{ master_vm_flavor }}"
+      master_vm_vol_size: "{{ master_vm_vol_size }}"
+      master_resource_group_identifier: "{{ master_resource_group_identifier }}"
+      public_ip_network_id: "{{ public_ip_network_id }}"
+      master_public_ip: "{{ openshift_public_ip }}"
+  when:
+    - master_vm_group_size == 1
+    - stack_output_cluster.stderr.find('Stack not found') != -1 or
+      allow_heat_stack_update_cluster|default(false)|bool
+
+- name: Build/update the OpenShift Heat stack (glusterfs)
+  os_stack:
+    name: "{{ cluster_name }}-glusterfs"
+    state: present
+    template: "files/heat/cluster-with-public-network/glusterfs.yml"
+    wait: yes
+    parameters:
+      env_name: "{{ cluster_name }}"
+      key_name: "{{ cluster_name }}"
+      glusterfs_vm_group_size: "{{ glusterfs_vm_group_size }}"
+      glusterfs_vm_image: "{{ glusterfs_vm_image }}"
+      glusterfs_vm_flavor: "{{ glusterfs_vm_flavor }}"
+      glusterfs_vol_1_size: "{{ glusterfs_docker_vol_size|default('10') }}"
+      glusterfs_vol_2_size: "{{ glusterfs_vol_size }}"
+      glusterfs_extension_volume_group_size: "{{ glusterfs_extension_volume_group_size|default(0) }}"
+      glusterfs_extension_volume_size: "{{ glusterfs_extension_volume_size|default(0) }}"
+      glusterfs_volume_deletion_policy: "{{ glusterfs_volume_deletion_policy|default('Retain') }}"
+      secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+      secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+      network_id: "{{ base_stack_outputs.network_id }}"
+      network_prefix: "{{ openshift_network_prefix }}"
+      resource_group_identifier: "{{ glusterfs_resource_group_identifier }}"
+      public_ip_network_id: "{{ public_ip_network_id }}"
+  when:
+    - stack_output_glusterfs.stderr.find('Stack not found') != -1 or
+      allow_heat_stack_update_glusterfs|default(false)|bool
+
+- name: Build/update compute node stack(s) with public IP network
+  os_stack:
+    name: "{{ cluster_name }}-{{ item.item.stack_name }}"
+    state: present
+    template: "files/heat/cluster-with-public-network/compute-nodes.yml"
+    wait: yes
+    parameters: >
+      {{
+        item.item.heat_parameters
+        | combine(base_stack_outputs)
+        | combine({'public_ip_network_id': public_ip_network_id})
+      }}
+  with_items: "{{ stack_output_compute_nodes.results }}"
+  when:
+    - item.stderr.find('Stack not found') != -1 or
+      item.item.stack_name in allow_heat_stack_update_node_groups|default([])

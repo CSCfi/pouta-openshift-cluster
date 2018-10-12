@@ -67,7 +67,7 @@ resources:
   #-----------------------------------
 
   secgroup_lb:
-    type: secgroup.yaml
+    type: ../common/secgroup.yaml
     properties:
       env_name: { get_param: env_name }
       name_suffix: lb
@@ -89,7 +89,7 @@ resources:
           remote_group_id: { get_param: secgroup_id_common }
 
   secgroup_master:
-    type: secgroup.yaml
+    type: ../common/secgroup.yaml
     properties:
       env_name: { get_param: env_name }
       name_suffix: master
@@ -111,7 +111,7 @@ resources:
           remote_group_id: { get_param: secgroup_id_common }
 
   secgroup_nfs:
-    type: secgroup.yaml
+    type: ../common/secgroup.yaml
     properties:
       env_name: { get_param: env_name }
       name_suffix: nfs
@@ -142,7 +142,7 @@ resources:
       count: { get_param: master_vm_group_size }
       removal_policies: [{'resource_list': ['0']}]
       resource_def:
-        type: vm_with_volume.yaml
+        type: ../common/vm_with_volume.yaml
         properties:
           vm_name:
             str_replace:
