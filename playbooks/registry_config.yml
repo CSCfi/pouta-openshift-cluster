@@ -90,6 +90,16 @@
       command: oc rollout latest registry-console -n default
       when: replace_registry_console_cert|default(False)|bool == True
 
+    # workaround to: https://github.com/kubernetes/kubernetes/issues/56348
+    # temporary fix: https://github.com/kubernetes/kubernetes/issues/56348#issuecomment-382633909
+    - name: check if registry console has an orphan finalizer
+      shell: oc get route registry-console -n default -o=jsonpath='{.metadata.finalizers[0]}'
+      register: registry_console_route_finalizer
+
+    - name: remove orphan finalizer from registry console
+      shell: oc patch route registry-console -n default --type=json -p='[{"op":"remove", "path":"/metadata/finalizers/0"}]'
+      when: registry_console_route_finalizer.stdout == "orphan"
+
     - name: modify route to registry console to be in the API domain
       oc_route:
         state: present
