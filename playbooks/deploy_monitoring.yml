@@ -257,9 +257,9 @@
         - 404
       register: prometheus_existing_datasource
 
-    - name: check if influxdb datasource exists already
+    - name: check if default influxdb datasources exist already
       uri:
-        url: https://grafana.{{ openshift_public_hostname }}/api/datasources/name/influxdb_prometheus
+        url: https://grafana.{{ openshift_public_hostname }}/api/datasources/name/influxdb_{{ item.key }}
         method: GET
         user: admin
         password: "{{ monitoring_access_token }}"
@@ -267,7 +267,12 @@
         status_code:
         - 200
         - 404
-      register: influxdb_existing_datasource
+      register: influxdb_existing_default_datasources
+      with_dict:
+        prometheus:
+          interval: "1m"
+        _internal:
+          interval: "1m"
 
     - name: check if additional influxdb datasources exist
       uri:
@@ -294,10 +299,10 @@
         body_format: json
       when: prometheus_existing_datasource.status != 200
 
-    - name: add default influxdb data source
+    - name: add default influxdb data sources
       vars:
-        - influxdb_database_name: "prometheus"
-        - influxdb_database_interval: "1m"
+        - influxdb_database_name: "{{ item.item.key }}"
+        - influxdb_database_interval: "{{ item.item.value.interval }}"
       uri:
         url: https://grafana.{{ openshift_public_hostname }}/api/datasources
         method: POST
@@ -307,7 +312,8 @@
         force_basic_auth: yes
         status_code: 200
         body_format: json
-      when: influxdb_existing_datasource.status != 200
+      with_items: "{{ influxdb_existing_default_datasources.results }}"
+      when: item.status != 200
 
     - name: add additional influxdb data sources
       vars:
@@ -326,24 +332,17 @@
       with_items: "{{ influxdb_existing_additional_datasources.results }}"
       when: item.status != 200
 
-    - name: add or update k8s dashboard
+    - name: add or update Grafana dashboards
       uri:
         url: https://grafana.{{ openshift_public_hostname }}/api/dashboards/db
         method: POST
         user: admin
         password: "{{ monitoring_access_token }}"
-        body: "{{ lookup('file','files/grafana_k8s_dashboard.json') }}"
+        body: "{{ item }}"
         force_basic_auth: yes
         status_code: 200
         body_format: json
-
-    - name: add or update InfluxDB dashboard
-      uri:
-        url: https://grafana.{{ openshift_public_hostname }}/api/dashboards/db
-        method: POST
-        user: admin
-        password: "{{ monitoring_access_token }}"
-        body: "{{ lookup('template','files/grafana_influxdb_dashboard.json.j2') }}"
-        force_basic_auth: yes
-        status_code: 200
-        body_format: json
+      with_items:
+        - "{{ lookup('file','files/grafana_k8s_dashboard.json') }}"
+        - "{{ lookup('template','files/grafana_influxdb_dashboard.json.j2') }}"
+        - "{{ lookup('file', 'files/grafana_influxdb_metamonitoring_dashboard.json') }}"
