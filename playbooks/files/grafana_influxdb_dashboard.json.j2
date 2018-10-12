@@ -8,7 +8,7 @@
     "gnetId": null,
     "graphTooltip": 0,
     "id": null,
-    "iteration": 1539170747515,
+    "iteration": 1539346222638,
     "links": [],
     "panels": [
       {
@@ -999,22 +999,9 @@
         }
       },
       {
-        "collapsed": false,
-        "gridPos": {
-          "h": 1,
-          "w": 24,
-          "x": 0,
-          "y": 22
-        },
-        "id": 265,
-        "panels": [],
-        "title": "Reserved CPUs per node",
-        "type": "row"
-      },
-      {
         "aliasColors": {
-          "Reserved CPUs": "#bf1b00",
-          "Total CPUs": "#629e51"
+          "Registry total space": "#629e51",
+          "Registry used space": "#bf1b00"
         },
         "bars": false,
         "dashLength": 10,
@@ -1022,12 +1009,12 @@
         "datasource": "$influxdb_rp",
         "fill": 6,
         "gridPos": {
-          "h": 7,
-          "w": 6,
-          "x": 0,
-          "y": 23
+          "h": 6,
+          "w": 12,
+          "x": 12,
+          "y": 16
         },
-        "id": 263,
+        "id": 280,
         "legend": {
           "avg": false,
           "current": false,
@@ -1041,21 +1028,18 @@
         "lines": true,
         "linewidth": 1,
         "links": [],
-        "minSpan": 6,
         "nullPointMode": "null",
         "percentage": false,
         "pointradius": 5,
         "points": false,
         "renderer": "flot",
-        "repeat": "node",
-        "repeatDirection": "h",
         "seriesOverrides": [],
         "spaceLength": 10,
         "stack": false,
         "steppedLine": false,
         "targets": [
           {
-            "alias": "Total CPUs",
+            "alias": "Registry total space",
             "groupBy": [
               {
                 "params": [
@@ -1070,7 +1054,7 @@
                 "type": "fill"
               }
             ],
-            "measurement": "machine_cpu_cores",
+            "measurement": "kubelet_volume_stats_capacity_bytes",
             "orderByTime": "ASC",
             "policy": "$data_interval",
             "refId": "B",
@@ -1085,7 +1069,7 @@
                 },
                 {
                   "params": [],
-                  "type": "sum"
+                  "type": "mean"
                 }
               ],
               [
@@ -1097,20 +1081,26 @@
                 },
                 {
                   "params": [],
-                  "type": "sum"
+                  "type": "mean"
                 }
               ]
             ],
             "tags": [
               {
-                "key": "kubernetes_io_hostname",
-                "operator": "=~",
-                "value": "/^$node$/"
+                "key": "namespace",
+                "operator": "=",
+                "value": "default"
+              },
+              {
+                "condition": "AND",
+                "key": "persistentvolumeclaim",
+                "operator": "=",
+                "value": "registry"
               }
             ]
           },
           {
-            "alias": "Reserved CPUs",
+            "alias": "Registry used space",
             "expr": "",
             "format": "time_series",
             "groupBy": [
@@ -1128,7 +1118,7 @@
               }
             ],
             "intervalFactor": 1,
-            "measurement": "cpu_reservations_per_node",
+            "measurement": "kubelet_volume_stats_used_bytes",
             "orderByTime": "ASC",
             "policy": "$data_interval",
             "refId": "A",
@@ -1143,7 +1133,7 @@
                 },
                 {
                   "params": [],
-                  "type": "sum"
+                  "type": "mean"
                 }
               ],
               [
@@ -1155,15 +1145,21 @@
                 },
                 {
                   "params": [],
-                  "type": "sum"
+                  "type": "mean"
                 }
               ]
             ],
             "tags": [
               {
-                "key": "kubernetes_io_hostname",
-                "operator": "=~",
-                "value": "/^$node$/"
+                "key": "namespace",
+                "operator": "=",
+                "value": "default"
+              },
+              {
+                "condition": "AND",
+                "key": "persistentvolumeclaim",
+                "operator": "=",
+                "value": "registry"
               }
             ]
           }
@@ -1171,7 +1167,7 @@
         "thresholds": [],
         "timeFrom": null,
         "timeShift": null,
-        "title": "Reserved CPUs on $node",
+        "title": "Registry free space",
         "tooltip": {
           "shared": true,
           "sort": 0,
@@ -1187,11 +1183,11 @@
         },
         "yaxes": [
           {
-            "format": "short",
+            "format": "decbytes",
             "label": null,
             "logBase": 1,
             "max": null,
-            "min": "0",
+            "min": null,
             "show": true
           },
           {
@@ -1214,7 +1210,225 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 30
+          "y": 22
+        },
+        "id": 265,
+        "panels": [
+          {
+            "aliasColors": {
+              "Reserved CPUs": "#bf1b00",
+              "Total CPUs": "#629e51"
+            },
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "$influxdb_rp",
+            "fill": 6,
+            "gridPos": {
+              "h": 7,
+              "w": 24,
+              "x": 0,
+              "y": 23
+            },
+            "id": 263,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "hideEmpty": true,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 1,
+            "links": [],
+            "minSpan": 6,
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 5,
+            "points": false,
+            "renderer": "flot",
+            "repeat": "node",
+            "repeatDirection": "h",
+            "scopedVars": {
+              "node": {
+                "selected": true,
+                "text": "master-1",
+                "value": "master-1"
+              }
+            },
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "alias": "Total CPUs",
+                "groupBy": [
+                  {
+                    "params": [
+                      "$data_interval"
+                    ],
+                    "type": "time"
+                  },
+                  {
+                    "params": [
+                      "null"
+                    ],
+                    "type": "fill"
+                  }
+                ],
+                "measurement": "machine_cpu_cores",
+                "orderByTime": "ASC",
+                "policy": "$data_interval",
+                "refId": "B",
+                "resultFormat": "time_series",
+                "select": [
+                  [
+                    {
+                      "params": [
+                        "value"
+                      ],
+                      "type": "field"
+                    },
+                    {
+                      "params": [],
+                      "type": "sum"
+                    }
+                  ],
+                  [
+                    {
+                      "params": [
+                        "mean_value"
+                      ],
+                      "type": "field"
+                    },
+                    {
+                      "params": [],
+                      "type": "sum"
+                    }
+                  ]
+                ],
+                "tags": [
+                  {
+                    "key": "kubernetes_io_hostname",
+                    "operator": "=~",
+                    "value": "/^$node$/"
+                  }
+                ]
+              },
+              {
+                "alias": "Reserved CPUs",
+                "expr": "",
+                "format": "time_series",
+                "groupBy": [
+                  {
+                    "params": [
+                      "$data_interval"
+                    ],
+                    "type": "time"
+                  },
+                  {
+                    "params": [
+                      "null"
+                    ],
+                    "type": "fill"
+                  }
+                ],
+                "intervalFactor": 1,
+                "measurement": "cpu_reservations_per_node",
+                "orderByTime": "ASC",
+                "policy": "$data_interval",
+                "refId": "A",
+                "resultFormat": "time_series",
+                "select": [
+                  [
+                    {
+                      "params": [
+                        "value"
+                      ],
+                      "type": "field"
+                    },
+                    {
+                      "params": [],
+                      "type": "sum"
+                    }
+                  ],
+                  [
+                    {
+                      "params": [
+                        "mean_value"
+                      ],
+                      "type": "field"
+                    },
+                    {
+                      "params": [],
+                      "type": "sum"
+                    }
+                  ]
+                ],
+                "tags": [
+                  {
+                    "key": "kubernetes_io_hostname",
+                    "operator": "=~",
+                    "value": "/^$node$/"
+                  }
+                ]
+              }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Reserved CPUs on $node",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": "0",
+                "show": true
+              },
+              {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": true
+              }
+            ],
+            "yaxis": {
+              "align": false,
+              "alignLevel": null
+            }
+          }
+        ],
+        "title": "Reserved CPUs per node",
+        "type": "row"
+      },
+      {
+        "collapsed": true,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 23
         },
         "id": 10,
         "panels": [
@@ -2058,7 +2272,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 31
+          "y": 24
         },
         "id": 15,
         "panels": [
@@ -2076,7 +2290,7 @@
               "h": 7,
               "w": 12,
               "x": 0,
-              "y": 23
+              "y": 25
             },
             "id": 2,
             "interval": "",
@@ -2294,9 +2508,9 @@
               "h": 7,
               "w": 12,
               "x": 12,
-              "y": 23
+              "y": 25
             },
-            "id": 206,
+            "id": 281,
             "interval": "",
             "legend": {
               "avg": false,
@@ -2319,7 +2533,7 @@
             "renderer": "flot",
             "repeat": null,
             "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
+            "repeatIteration": 1539346222635,
             "repeatPanelId": 2,
             "scopedVars": {
               "nodetype": {
@@ -2514,9 +2728,9 @@
               "h": 7,
               "w": 12,
               "x": 0,
-              "y": 30
+              "y": 32
             },
-            "id": 207,
+            "id": 282,
             "interval": "",
             "legend": {
               "avg": false,
@@ -2539,7 +2753,7 @@
             "renderer": "flot",
             "repeat": null,
             "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
+            "repeatIteration": 1539346222635,
             "repeatPanelId": 2,
             "scopedVars": {
               "nodetype": {
@@ -2734,9 +2948,9 @@
               "h": 7,
               "w": 12,
               "x": 12,
-              "y": 30
+              "y": 32
             },
-            "id": 208,
+            "id": 283,
             "interval": "",
             "legend": {
               "avg": false,
@@ -2759,7 +2973,7 @@
             "renderer": "flot",
             "repeat": null,
             "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
+            "repeatIteration": 1539346222635,
             "repeatPanelId": 2,
             "scopedVars": {
               "nodetype": {
@@ -2950,7 +3164,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 32
+          "y": 25
         },
         "id": 66,
         "panels": [
@@ -2966,9 +3180,9 @@
             "fill": 6,
             "gridPos": {
               "h": 7,
-              "w": 4,
+              "w": 24,
               "x": 0,
-              "y": 24
+              "y": 26
             },
             "id": 73,
             "legend": {
@@ -2994,1713 +3208,9 @@
             "repeatDirection": "h",
             "scopedVars": {
               "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-1",
-                "value": "oso-devel-singlemaster-glusterfs-1"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "CPUs available",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "CPUs used",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 2,
-                "measurement": "cpu_consumed_per_node",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "CPUs available": "#629e51",
-              "CPUs used": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 4,
-              "y": 24
-            },
-            "id": 220,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 73,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-2",
-                "value": "oso-devel-singlemaster-glusterfs-2"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "CPUs available",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "CPUs used",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 2,
-                "measurement": "cpu_consumed_per_node",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "CPUs available": "#629e51",
-              "CPUs used": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 8,
-              "y": 24
-            },
-            "id": 221,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 73,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-3",
-                "value": "oso-devel-singlemaster-glusterfs-3"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "CPUs available",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "CPUs used",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 2,
-                "measurement": "cpu_consumed_per_node",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "CPUs available": "#629e51",
-              "CPUs used": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 12,
-              "y": 24
-            },
-            "id": 222,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 73,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-influxdb-1",
-                "value": "oso-devel-singlemaster-influxdb-1"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "CPUs available",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "CPUs used",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 2,
-                "measurement": "cpu_consumed_per_node",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "CPUs available": "#629e51",
-              "CPUs used": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 16,
-              "y": 24
-            },
-            "id": 223,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 73,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-master-1",
-                "value": "oso-devel-singlemaster-master-1"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "CPUs available",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "CPUs used",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 2,
-                "measurement": "cpu_consumed_per_node",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "CPUs available": "#629e51",
-              "CPUs used": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 20,
-              "y": 24
-            },
-            "id": 224,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 73,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-1",
-                "value": "oso-devel-singlemaster-ssdnode-1"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "CPUs available",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "CPUs used",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 2,
-                "measurement": "cpu_consumed_per_node",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "CPUs available": "#629e51",
-              "CPUs used": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 0,
-              "y": 31
-            },
-            "id": 225,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 73,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-2",
-                "value": "oso-devel-singlemaster-ssdnode-2"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "CPUs available",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "CPUs used",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 2,
-                "measurement": "cpu_consumed_per_node",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "CPUs available": "#629e51",
-              "CPUs used": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 4,
-              "y": 31
-            },
-            "id": 226,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 73,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-3",
-                "value": "oso-devel-singlemaster-ssdnode-3"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "CPUs available",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "measurement": "machine_cpu_cores",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "CPUs used",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 2,
-                "measurement": "cpu_consumed_per_node",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "CPUs available": "#629e51",
-              "CPUs used": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 8,
-              "y": 31
-            },
-            "id": 227,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 73,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-4",
-                "value": "oso-devel-singlemaster-ssdnode-4"
+                "selected": true,
+                "text": "master-1",
+                "value": "master-1"
               },
               "nodetype": {
                 "selected": false,
@@ -4879,7 +3389,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 33
+          "y": 26
         },
         "id": 68,
         "panels": [
@@ -4895,9 +3405,9 @@
             "fill": 6,
             "gridPos": {
               "h": 7,
-              "w": 4,
+              "w": 24,
               "x": 0,
-              "y": 25
+              "y": 27
             },
             "id": 78,
             "interval": "",
@@ -4924,1809 +3434,9 @@
             "repeatDirection": "h",
             "scopedVars": {
               "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-1",
-                "value": "oso-devel-singlemaster-glusterfs-1"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total memory",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "measurement": "machine_memory_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "intervalFactor": 2,
-                "measurement": "container_memory_rss",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "transparent": false,
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "decbytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Total memory": "#629e51",
-              "Used memory": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 4,
-              "y": 25
-            },
-            "id": 228,
-            "interval": "",
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 78,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-2",
-                "value": "oso-devel-singlemaster-glusterfs-2"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total memory",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "measurement": "machine_memory_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "intervalFactor": 2,
-                "measurement": "container_memory_rss",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "transparent": false,
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "decbytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Total memory": "#629e51",
-              "Used memory": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 8,
-              "y": 25
-            },
-            "id": 229,
-            "interval": "",
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 78,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-3",
-                "value": "oso-devel-singlemaster-glusterfs-3"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total memory",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "measurement": "machine_memory_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "intervalFactor": 2,
-                "measurement": "container_memory_rss",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "transparent": false,
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "decbytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Total memory": "#629e51",
-              "Used memory": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 12,
-              "y": 25
-            },
-            "id": 230,
-            "interval": "",
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 78,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-influxdb-1",
-                "value": "oso-devel-singlemaster-influxdb-1"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total memory",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "measurement": "machine_memory_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "intervalFactor": 2,
-                "measurement": "container_memory_rss",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "transparent": false,
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "decbytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Total memory": "#629e51",
-              "Used memory": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 16,
-              "y": 25
-            },
-            "id": 231,
-            "interval": "",
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 78,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-master-1",
-                "value": "oso-devel-singlemaster-master-1"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total memory",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "measurement": "machine_memory_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "intervalFactor": 2,
-                "measurement": "container_memory_rss",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "transparent": false,
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "decbytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Total memory": "#629e51",
-              "Used memory": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 20,
-              "y": 25
-            },
-            "id": 232,
-            "interval": "",
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 78,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-1",
-                "value": "oso-devel-singlemaster-ssdnode-1"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total memory",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "measurement": "machine_memory_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "intervalFactor": 2,
-                "measurement": "container_memory_rss",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "transparent": false,
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "decbytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Total memory": "#629e51",
-              "Used memory": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 0,
-              "y": 32
-            },
-            "id": 233,
-            "interval": "",
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 78,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-2",
-                "value": "oso-devel-singlemaster-ssdnode-2"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total memory",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "measurement": "machine_memory_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "intervalFactor": 2,
-                "measurement": "container_memory_rss",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "transparent": false,
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "decbytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Total memory": "#629e51",
-              "Used memory": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 4,
-              "y": 32
-            },
-            "id": 234,
-            "interval": "",
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 78,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-3",
-                "value": "oso-devel-singlemaster-ssdnode-3"
-              },
-              "nodetype": {
-                "selected": false,
-                "text": "glusterfs",
-                "value": "glusterfs"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Total memory",
-                "dsType": "influxdb",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "measurement": "machine_memory_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "refId": "B",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              },
-              {
-                "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "hide": false,
-                "intervalFactor": 2,
-                "measurement": "container_memory_rss",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "sum"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "transparent": false,
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "decbytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {
-              "Total memory": "#629e51",
-              "Used memory": "#890f02"
-            },
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 6,
-            "gridPos": {
-              "h": 7,
-              "w": 4,
-              "x": 8,
-              "y": 32
-            },
-            "id": 235,
-            "interval": "",
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "minSpan": 4,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 78,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-4",
-                "value": "oso-devel-singlemaster-ssdnode-4"
+                "selected": true,
+                "text": "master-1",
+                "value": "master-1"
               },
               "nodetype": {
                 "selected": false,
@@ -6916,7 +3626,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 34
+          "y": 27
         },
         "id": 149,
         "panels": [
@@ -6929,9 +3639,9 @@
             "fill": 0,
             "gridPos": {
               "h": 9,
-              "w": 6,
+              "w": 24,
               "x": 0,
-              "y": 26
+              "y": 28
             },
             "id": 151,
             "legend": {
@@ -6958,1313 +3668,9 @@
             "repeatDirection": "h",
             "scopedVars": {
               "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-1",
-                "value": "oso-devel-singlemaster-glusterfs-1"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Device: [[tag_device]]",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "device"
-                    ],
-                    "type": "tag"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_fs_usage_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT mean(\"value\") FROM \"$data_interval\".\"container_fs_usage_bytes\" WHERE $timeFilter GROUP BY time($__interval), \"pod_name\" fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "device",
-                    "operator": "=~",
-                    "value": "/^.*dev.*$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "bytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 0,
-            "gridPos": {
-              "h": 9,
-              "w": 6,
-              "x": 6,
-              "y": 26
-            },
-            "id": 236,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "rightSide": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 2,
-            "links": [],
-            "minSpan": 6,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 151,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-2",
-                "value": "oso-devel-singlemaster-glusterfs-2"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Device: [[tag_device]]",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "device"
-                    ],
-                    "type": "tag"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_fs_usage_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT mean(\"value\") FROM \"$data_interval\".\"container_fs_usage_bytes\" WHERE $timeFilter GROUP BY time($__interval), \"pod_name\" fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "device",
-                    "operator": "=~",
-                    "value": "/^.*dev.*$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "bytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 0,
-            "gridPos": {
-              "h": 9,
-              "w": 6,
-              "x": 12,
-              "y": 26
-            },
-            "id": 237,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "rightSide": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 2,
-            "links": [],
-            "minSpan": 6,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 151,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-glusterfs-3",
-                "value": "oso-devel-singlemaster-glusterfs-3"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Device: [[tag_device]]",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "device"
-                    ],
-                    "type": "tag"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_fs_usage_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT mean(\"value\") FROM \"$data_interval\".\"container_fs_usage_bytes\" WHERE $timeFilter GROUP BY time($__interval), \"pod_name\" fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "device",
-                    "operator": "=~",
-                    "value": "/^.*dev.*$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "bytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 0,
-            "gridPos": {
-              "h": 9,
-              "w": 6,
-              "x": 18,
-              "y": 26
-            },
-            "id": 238,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "rightSide": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 2,
-            "links": [],
-            "minSpan": 6,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 151,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-influxdb-1",
-                "value": "oso-devel-singlemaster-influxdb-1"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Device: [[tag_device]]",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "device"
-                    ],
-                    "type": "tag"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_fs_usage_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT mean(\"value\") FROM \"$data_interval\".\"container_fs_usage_bytes\" WHERE $timeFilter GROUP BY time($__interval), \"pod_name\" fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "device",
-                    "operator": "=~",
-                    "value": "/^.*dev.*$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "bytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 0,
-            "gridPos": {
-              "h": 9,
-              "w": 6,
-              "x": 0,
-              "y": 35
-            },
-            "id": 239,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "rightSide": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 2,
-            "links": [],
-            "minSpan": 6,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 151,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-master-1",
-                "value": "oso-devel-singlemaster-master-1"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Device: [[tag_device]]",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "device"
-                    ],
-                    "type": "tag"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_fs_usage_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT mean(\"value\") FROM \"$data_interval\".\"container_fs_usage_bytes\" WHERE $timeFilter GROUP BY time($__interval), \"pod_name\" fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "device",
-                    "operator": "=~",
-                    "value": "/^.*dev.*$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "bytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 0,
-            "gridPos": {
-              "h": 9,
-              "w": 6,
-              "x": 6,
-              "y": 35
-            },
-            "id": 240,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "rightSide": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 2,
-            "links": [],
-            "minSpan": 6,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 151,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-1",
-                "value": "oso-devel-singlemaster-ssdnode-1"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Device: [[tag_device]]",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "device"
-                    ],
-                    "type": "tag"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_fs_usage_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT mean(\"value\") FROM \"$data_interval\".\"container_fs_usage_bytes\" WHERE $timeFilter GROUP BY time($__interval), \"pod_name\" fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "device",
-                    "operator": "=~",
-                    "value": "/^.*dev.*$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "bytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 0,
-            "gridPos": {
-              "h": 9,
-              "w": 6,
-              "x": 12,
-              "y": 35
-            },
-            "id": 241,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "rightSide": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 2,
-            "links": [],
-            "minSpan": 6,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 151,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-2",
-                "value": "oso-devel-singlemaster-ssdnode-2"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Device: [[tag_device]]",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "device"
-                    ],
-                    "type": "tag"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_fs_usage_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT mean(\"value\") FROM \"$data_interval\".\"container_fs_usage_bytes\" WHERE $timeFilter GROUP BY time($__interval), \"pod_name\" fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "device",
-                    "operator": "=~",
-                    "value": "/^.*dev.*$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "bytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 0,
-            "gridPos": {
-              "h": 9,
-              "w": 6,
-              "x": 18,
-              "y": 35
-            },
-            "id": 242,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "rightSide": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 2,
-            "links": [],
-            "minSpan": 6,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 151,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-3",
-                "value": "oso-devel-singlemaster-ssdnode-3"
-              }
-            },
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-              {
-                "alias": "Device: [[tag_device]]",
-                "expr": "",
-                "format": "time_series",
-                "groupBy": [
-                  {
-                    "params": [
-                      "$data_interval"
-                    ],
-                    "type": "time"
-                  },
-                  {
-                    "params": [
-                      "device"
-                    ],
-                    "type": "tag"
-                  },
-                  {
-                    "params": [
-                      "null"
-                    ],
-                    "type": "fill"
-                  }
-                ],
-                "intervalFactor": 1,
-                "measurement": "container_fs_usage_bytes",
-                "orderByTime": "ASC",
-                "policy": "$data_interval",
-                "query": "SELECT mean(\"value\") FROM \"$data_interval\".\"container_fs_usage_bytes\" WHERE $timeFilter GROUP BY time($__interval), \"pod_name\" fill(null)",
-                "rawQuery": false,
-                "refId": "A",
-                "resultFormat": "time_series",
-                "select": [
-                  [
-                    {
-                      "params": [
-                        "value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ],
-                  [
-                    {
-                      "params": [
-                        "mean_value"
-                      ],
-                      "type": "field"
-                    },
-                    {
-                      "params": [],
-                      "type": "mean"
-                    }
-                  ]
-                ],
-                "tags": [
-                  {
-                    "key": "device",
-                    "operator": "=~",
-                    "value": "/^.*dev.*$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "kubernetes_io_hostname",
-                    "operator": "=~",
-                    "value": "/^$node$/"
-                  }
-                ]
-              }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "$node",
-            "tooltip": {
-              "shared": true,
-              "sort": 0,
-              "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-              "buckets": null,
-              "mode": "time",
-              "name": null,
-              "show": true,
-              "values": []
-            },
-            "yaxes": [
-              {
-                "format": "bytes",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              },
-              {
-                "format": "short",
-                "label": null,
-                "logBase": 1,
-                "max": null,
-                "min": null,
-                "show": true
-              }
-            ],
-            "yaxis": {
-              "align": false,
-              "alignLevel": null
-            }
-          },
-          {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "$influxdb_rp",
-            "fill": 0,
-            "gridPos": {
-              "h": 9,
-              "w": 6,
-              "x": 0,
-              "y": 44
-            },
-            "id": 243,
-            "legend": {
-              "avg": false,
-              "current": false,
-              "hideEmpty": true,
-              "max": false,
-              "min": false,
-              "rightSide": false,
-              "show": true,
-              "total": false,
-              "values": false
-            },
-            "lines": true,
-            "linewidth": 2,
-            "links": [],
-            "minSpan": 6,
-            "nullPointMode": "null",
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "repeat": null,
-            "repeatDirection": "h",
-            "repeatIteration": 1536157044265,
-            "repeatPanelId": 151,
-            "scopedVars": {
-              "node": {
-                "selected": false,
-                "text": "oso-devel-singlemaster-ssdnode-4",
-                "value": "oso-devel-singlemaster-ssdnode-4"
+                "selected": true,
+                "text": "master-1",
+                "value": "master-1"
               }
             },
             "seriesOverrides": [],
@@ -8443,7 +3849,6 @@
         },
         {
           "current": {
-            "tags": [],
             "text": "influxdb_prometheus",
             "value": "influxdb_prometheus"
           },
@@ -8528,6 +3933,6 @@
     "timezone": "",
     "title": "InfluxDB testing",
     "uid": "000000002",
-    "version": 26
+    "version": 7
   }
 }
