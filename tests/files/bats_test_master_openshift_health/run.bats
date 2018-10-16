@@ -109,6 +109,10 @@ check_namespace_pod_health() {
     check_namespace_pod_health openshift-template-service-broker
 }
 
+@test "test poc-housekeeping namespace pod health" {
+    check_namespace_pod_health poc-housekeeping
+}
+
 @test "test connectivity to registry URL" {
     run check_route_url default docker-registry-reencrypt
 
