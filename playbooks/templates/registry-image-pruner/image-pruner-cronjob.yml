@@ -16,14 +16,14 @@ spec:
             type: master
           containers:
           - name: registry-image-pruner
-            image: {{ registry_pruner_image }}
+            image: "{{ registry_pruner_image }}"
             imagePullPolicy: Always
             env:
             - name: API_URL
-              value: {{ openshift_public_hostname }}
+              value: "{{ openshift_public_hostname }}"
             - name: KEEP_REVISIONS
-              value: "4"
+              value: "{{ registry_pruner_keep_revisions|default('4') }}"
             - name: IMAGE_AGE
-              value: "1000h"
+              value: "{{ registry_pruner_image_age|default('1000h') }}"
             command: ["/usr/bin/prune-images.sh"]
           restartPolicy: OnFailure
