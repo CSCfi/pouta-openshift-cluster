@@ -9,6 +9,17 @@
     dest: /etc/sysconfig/docker-storage-setup
     backup: True
 
+- name: create /etc/docker directory if it does not exist
+  file:
+    path: /etc/docker
+    state: directory
+
+- name: limit the size of docker logs to {{ docker_logs_size_limit }}
+  template:
+    src: etc/docker/daemon.json.j2
+    dest: /etc/docker/daemon.json
+    backup: True
+
 - name: install Red Hat certificate bundle
   yum:
     name: "python-rhsm-certificates"

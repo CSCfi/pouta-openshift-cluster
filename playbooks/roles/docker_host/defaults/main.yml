@@ -1,3 +1,4 @@
 ---
 docker_package_name: 'docker'
 docker_package_state: 'present'
+docker_logs_size_limit: '100m'
