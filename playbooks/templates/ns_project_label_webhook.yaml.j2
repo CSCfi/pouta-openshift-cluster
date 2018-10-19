@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: ns-project-label-webhook
-          image: {{ ns_project_webhook_image }}
+          image: "{{ ns_project_webhook_image }}"
           imagePullPolicy: Always
           env:
           - name: LDAP_SERVER
@@ -43,7 +43,9 @@ spec:
                 name: ldap-auth
                 key: project_query
           - name: VERBOSE
-            value: "0"
+            value: "{{ ns_project_webhook_verbose|default('0')}}"
+          - name: USERS_WHITELIST
+            value: "{{ ns_project_webhook_users_whitelist }}"
           ports:
             - containerPort: 8443
           volumeMounts:
