@@ -42,6 +42,7 @@
         - name: run bats tests
           shell: >
             POC_DEPLOY_MONITORING={{ deploy_monitoring|bool }}
+            POC_DEPLOY_DEFAULT_WWW_APP={{ deploy_default_www_app|bool }}
             ./generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log
           args:
             chdir: '/tmp/poc/tests'

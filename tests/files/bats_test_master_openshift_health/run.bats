@@ -130,6 +130,10 @@ check_namespace_pod_health() {
 }
 
 @test "test connectivity to default www app" {
+    if [[ $POC_DEPLOY_DEFAULT_WWW_APP == 'False' ]]; then
+        skip "Default WWW app deployment disabled, skipping check"
+    fi
+
     run check_route_url default-www default-www-admin "container cloud"
 
     [ $status -eq 0 ]
