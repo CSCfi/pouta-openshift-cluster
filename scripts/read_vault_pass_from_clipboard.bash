@@ -4,6 +4,36 @@
 # access rights for the file are set so that it is accessible from a deployment
 # container.
 
+print_usage_and_exit()
+{
+    me=$(basename "$0")
+    echo
+    echo "Usage: $me [options]"
+    echo "  where options are"
+    echo "  -i vault_id id for the vault file (optional)"
+    echo "              this will be appended to the base vaultpass filename"
+    echo "              with a separating dash (e.g. /dev/shm/secret/vaultpass-prod)"
+    echo "  -h          print this help an exit"
+    echo "Example:"
+    echo "  $me -i prod"
+    echo
+    exit 1
+}
+
+vaultpass_file_name='vaultpass'
+
+# Process options
+while getopts "i:h" opt; do
+    case $opt in
+        i)
+            vaultpass_file_name="${vaultpass_file_name}-${OPTARG}"
+            ;;
+        *)
+            print_usage_and_exit
+            ;;
+    esac
+done
+shift "$((OPTIND-1))"
 
 # Check the OS
 OS="$(uname -s)"
@@ -19,35 +49,44 @@ case "${OS}" in
         ;;
     Linux*)
         disk='/dev/shm'
+        ;;
+    *)
+        echo "Only Darwin and Linux supported"
+        exit 1
+        ;;
 esac
 
-# Create a directory on ramdisk
-mkdir -p $disk/secret
-chmod 750 $disk/secret
+secret_dir="${disk}/secret"
+vaultpass_file_path="${secret_dir}/${vaultpass_file_name}"
 
-# Prepare the password file
-touch $disk/secret/vaultpass
-chmod 640 $disk/secret/vaultpass
+# Create a directory on ramdisk and change the group to match
+# the gid of user 'deployer' in the deployment container
+mkdir -p $secret_dir
+chmod 750 $secret_dir
+chgrp 29295 $secret_dir
 
-# Change the group to match the gid of user 'deployer' in the container
-sudo chgrp -R 29295 $disk/secret
+# Prepare the password file, chown to deployer
+touch $vaultpass_file_path
+chmod 640 $vaultpass_file_path
+chgrp 29295 $vaultpass_file_path
+
 echo "Make sure the vault pass is in the clipboard, then press enter."
 read
 
 case "${OS}" in
     Darwin*)
         # Populate the password from a password manager with pbpaste:
-        pbpaste > /Volumes/rRAMDisk/secret/vaultpass
+        pbpaste > $vaultpass_file_path
 
         # Clear the vault pass from the clipboard
         pbcopy < /dev/null
         ;;
     Linux*)
         # SELinux setting
-        chcon -Rt svirt_sandbox_file_t $disk/secret/vaultpass
+        chcon -Rt svirt_sandbox_file_t $vaultpass_file_path
 
         # Populate the password from a password manager with xclip:
-        xclip -o > /dev/shm/secret/vaultpass
+        xclip -o > $vaultpass_file_path
 
         # Clear the vault pass from the clipboard
         echo -n "empty" | xclip -selection clipboard
@@ -55,5 +94,9 @@ case "${OS}" in
         echo -n "empty" | xclip -selection secondary
 esac
 
-echo "Wrote the vaultpass onto RAM disk and cleared it from the clipboard."
+echo "Wrote the vaultpass onto RAM disk to"
+echo "   $vaultpass_file_path"
+echo "and cleared it from the clipboard."
+echo
 echo "Happy deployments!"
+echo
