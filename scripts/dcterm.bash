@@ -26,14 +26,21 @@ if [[ -z $env_name ]]; then
 fi
 
 # check if a deployment container is already running
-if docker ps | grep -q $env_name-deployer; then
+if docker ps | grep -q ${env_name}-deployer; then
     echo
-    echo "Launching a new shell in existing container '$env_name-deployer'"
+    echo "Launching a new shell in existing container '${env_name}-deployer'"
     echo
-    docker exec -it $env_name-deployer bash
+    docker exec -it ${env_name}-deployer bash
 else
     echo
-    echo "Launching a new deployment container '$env_name-deployer'"
+    echo "Launching a new deployment container '${env_name}-deployer'"
+    if [[ -e "/dev/shm/secret/vaultpass-${env_name}" ]]; then
+        vaultpass_path="/dev/shm/secret/vaultpass-${env_name}"
+        echo "    using environment specific vaultpass-${env_name}"
+    else
+        vaultpass_path="/dev/shm/secret/vaultpass"
+    fi
     echo
-    $script_dir/run_deployment_container.bash -p /dev/shm/secret/vaultpass -i -e $env_name $*
+
+    ${script_dir}/run_deployment_container.bash -p $vaultpass_path -i -e $env_name $*
 fi
