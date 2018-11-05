@@ -1,5 +1,6 @@
 - name: check if webhook project, secret and mutating config already exist
-  hosts: masters[0]
+  hosts: masters
+  run_once: true
   tasks:
   - name: create project webhooks if it doesn't exist
     oc_project:
