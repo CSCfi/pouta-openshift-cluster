@@ -1,7 +1,8 @@
 ---
 
 - name: Deploy monitoring
-  hosts: masters[0]
+  hosts: masters
+  run_once: true
   roles:
     - role: poc_facts
   tasks:
