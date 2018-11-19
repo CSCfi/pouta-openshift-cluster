@@ -54,10 +54,10 @@ ansible-playbook -v -t loadbalancer ../../openshift-ansible/playbooks/byo/config
 ```
 
 Run site_scaleup_<version>.yml to install node processes on LBs. For example, when
-running OpenShift 3.9 you would run:
+running OpenShift 3.11 you would run:
 
 ```bash
-ansible-playbook -v site_scaleup_3.9.yml
+ansible-playbook -v site_scaleup.yml
 ```
 
 ## Alternative

@@ -83,10 +83,10 @@ ansible-playbook -v -l [vm_to_replace],bastion pre_install.yml
 ## Nodes
 
 A failed node can be configured simply by running site_scaleup_<version>.yml.
-For example for OpenShift 3.9:
+For example for OpenShift 3.11:
 
 ```bash
-ansible-playbook -v site_scaleup_3.9.yml
+ansible-playbook -v site_scaleup.yml
 ```
 
 ## Masters
@@ -103,11 +103,11 @@ scp $latest_backup $HOST_TO_REPLACE:/tmp/etc-origin-backup.latest.tar.gz
 ssh $HOST_TO_REPLACE sudo tar xvf /tmp/etc-origin-backup.latest.tar.gz -C /etc
 ```
 
-Then run scaleup. Here we are running OpenShift 3.9:
+Then run scaleup. Here we are running OpenShift 3.11:
 
 ```bash
 # second and third master
-ansible-playbook -v site_scaleup_3.9.yml
+ansible-playbook -v site_scaleup.yml
 ```
 
 For the first master there is an additional safety in place because running scaleup against
@@ -121,7 +121,7 @@ the backup has been extracted properly before running this.
 ansible $ENV-name-master-1 -a 'ls /etc/origin/master'
 
 # run scaleup
-ansible-playbook -v -e allow_first_master_scaleup=1 site_scaleup_3.9.yml
+ansible-playbook -v -e allow_first_master_scaleup=1 site_scaleup.yml
 ```
 
 Check the node state on the master after running the playbook and set it schedulable
@@ -141,7 +141,7 @@ traffic to the API on masters. First, recover the node part, but leave keepalive
 won't pick up the VIP before all steps have been completed:
 
 ```bash
-ansible-playbook -v site_scaleup_3.9.yml -e keepalived_skip_restart=1
+ansible-playbook -v site_scaleup.yml -e keepalived_skip_restart=1
 ```
 
 After this, application traffic should already work on the lb. However, to forward API traffic too,
@@ -181,7 +181,7 @@ sudo etcdctl -endpoints https://[cluster-name]-etcd-1:2379 \
 Then run site_scaleup_<version>.yml, e.g.:
 
 ```bash
-ansible-playbook -v site_scaleup_3.9.yml
+ansible-playbook -v site_scaleup.yml
 ```
 
 ## Etcd-1
@@ -229,14 +229,14 @@ Then run site_scaleup.yml, pointing the playbook to use etcd-2 as the cluster en
 for certificates:
 
 ```bash
-ansible-playbook -v site_scaleup_3.9.yml -e etcd_ca_host=$ENV_NAME-etcd-2
+ansible-playbook -v site_scaleup.yml -e etcd_ca_host=$ENV_NAME-etcd-2
 ```
 
 ## InfluxDB
 
 Run the scaleup playbook to reconfigure the InfluxDB node:
 ```bash
-ansible-playbook -v site_scaleup_3.9.yml -e influxdb_create_prom_db=0
+ansible-playbook -v site_scaleup.yml -e influxdb_create_prom_db=0
 ```
 
 Here we skip the creation of the Prometheus database as this will come from
@@ -284,7 +284,7 @@ ssh $ENV_NAME-master-1 oc -n glusterfs get dc/heketi-storage -o yaml | grep -A 1
 export HEKETI_ADMIN_KEY="VALUE_FROM_ABOVE_HERE"
 
 # run recovery
-ansible-playbook -v site_scaleup_3.9.yml -e glusterfs_heketi_admin_key="$HEKETI_ADMIN_KEY" -e glusterfs_storage_class=
+ansible-playbook -v site_scaleup.yml -e glusterfs_heketi_admin_key="$HEKETI_ADMIN_KEY" -e glusterfs_storage_class=
 ```
 
 You may need to restart glusterfs after the operation

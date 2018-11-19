@@ -47,6 +47,7 @@ stages:
 
 deploy_ci_openshift_job:
   stage: ci_env_deploy
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.2
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:
@@ -58,6 +59,7 @@ deploy_ci_openshift_job:
 
 run_ci_tests_openshift_job:
   stage: ci_run_tests
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.2
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:
@@ -67,6 +69,7 @@ run_ci_tests_openshift_job:
 
 backup_ci_openshift_job:
   stage: ci_backups
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.2
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:
@@ -76,6 +79,7 @@ backup_ci_openshift_job:
 
 deprovision_ci_openshift_job:
   stage: cleanup
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.2
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:

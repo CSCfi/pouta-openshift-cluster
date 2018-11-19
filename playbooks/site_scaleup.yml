@@ -9,7 +9,7 @@
   import_playbook: pre_install.yml
 
 - name: Scale up installation
-  import_playbook: scaleup_3.9.yml
+  import_playbook: scaleup.yml
 
 - name: Do post installation steps for OpenShift
   import_playbook: post_install.yml

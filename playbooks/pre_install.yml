@@ -1,4 +1,6 @@
 ---
+- import_playbook: get_install_state.yml
+
 - name: Store inventory value of service broker feature flags
   hosts: all
   tasks:
@@ -41,7 +43,7 @@
     - keepalived_priority: "{{ 90 if inventory_hostname.find('lb-1') != -1 else 60 }}"
     - keepalived_app_routes_down_weight: "-40"
     - keepalived_vip: "{{ lb_vip_ip }}"
-    - keepalived_password: "{{ ( cluster_name | password_hash('sha256', common_salt )).split('$')[4]|truncate(8, True, '') }}"
+    - keepalived_password: "{{ ( cluster_name | password_hash('sha256', common_salt )).split('$')[3]|truncate(8, True, '') }}"
   hosts:
     - lb
   roles:

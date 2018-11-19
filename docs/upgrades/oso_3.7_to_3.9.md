@@ -181,9 +181,9 @@ ansible-playbook -v ../../openshift-ansible/playbooks/byo/openshift-cluster/upgr
 14. Stop the ghost volume busting script from running in its loop with Ctrl+C.
 
 
-15. Apply site_3.9.yml to make sure configuration is the way we want it
+15. Apply site.yml to make sure configuration is the way we want it
 
 ```bash
-ansible-playbook -v site_3.9.yml
+ansible-playbook -v site.yml
 ```
 16. Make sure the environment is functioning properly after the upgrade.
