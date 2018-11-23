@@ -85,7 +85,7 @@
           url: https://{{ openshift_public_hostname }}
           method: GET
         register: app_response
-        until: app_response.status == 200
+        until: ('status' in app_response) and (app_response.status == 200)
         retries: 120
 
       when:
