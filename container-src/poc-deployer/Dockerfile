@@ -1,6 +1,6 @@
 FROM centos:7
 
-MAINTAINER CSC Container Team <container-team@postit.csc.fi>
+LABEL maintainer="CSC Rahti Team <rahti-team@postit.csc.fi>"
 
 COPY requirements.txt /root/requirements.txt
 
