@@ -4,6 +4,25 @@ set -e
 
 env_name=$ENV_NAME
 
+clone_repo_if_not_found() {
+    repo_name=$1
+    repo_url=$2
+    repo_branch=$3
+
+    if [[ -e $HOME/$repo_name ]]; then
+        echo
+        echo "Using mounted $repo_name"
+        echo
+    else
+        echo
+        echo "Checking out $repo_name"
+        echo "    Repo: $repo_url"
+        echo "  Branch: $repo_branch"
+        echo
+        git clone --depth=1 -b $repo_branch $repo_url $HOME/$repo_name
+    fi
+}
+
 echo "Initializing environment for $env_name"
 echo
 
@@ -58,18 +77,7 @@ else
     ansible-playbook generate_ssh_config.yml
 fi
 
-if [[ -e $HOME/openshift-ansible ]]; then
-    echo
-    echo "Using mounted openshift-ansible"
-    echo
-else
-    echo
-    echo "Checking out openshift-ansible"
-    echo "    Repo: $OPENSHIFT_ANSIBLE_REPO"
-    echo "  Branch: $OPENSHIFT_ANSIBLE_BRANCH"
-    echo
-    git clone --depth=1 -b $OPENSHIFT_ANSIBLE_BRANCH $OPENSHIFT_ANSIBLE_REPO $HOME/openshift-ansible
-fi
+clone_repo_if_not_found openshift-ansible $OPENSHIFT_ANSIBLE_REPO $OPENSHIFT_ANSIBLE_BRANCH
 
 popd > /dev/null
 

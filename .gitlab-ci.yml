@@ -1,36 +1,26 @@
 ---
-image: docker:18.03.1-ce
+image:
+  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.1
 
 variables:
   DOCKER_DRIVER: overlay
-  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
   GITHUB_MIRROR: git@github.com:CSCfi/pouta-openshift-cluster.git
 
-services:
-  - docker:18.03.1-ce-dind
-
 before_script:
-  - docker version
-  - docker info
-  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-  - apk update
-  - 'which ssh-agent || (apk add openssh-client)'
-  - 'which bash || (apk add bash)'
-  - 'which git || (apk add git)'
-  - 'which ansible || (apk add ansible)'
+  - cp -r $CI_PROJECT_DIR /opt/deployment/poc
+  - cd /opt/deployment
   - mkdir -p ~/.ssh
   - eval "$(ssh-agent -s)"
   - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
   - echo "$CI_RUNNER_SSH_KEY" > ~/.ssh/id_rsa && chmod 0600 ~/.ssh/id_rsa
-  - rm -rf ../openshift-environments
-  - git clone $ENVIRONMENTS_REPO_URL ../openshift-environments
-  - '(cd ../openshift-environments; git rev-parse --verify -q remotes/origin/$CI_COMMIT_REF_NAME) &&
-     (cd ../openshift-environments; git checkout $CI_COMMIT_REF_NAME; git pull)'
-  - '(cd ../openshift-environments; git rev-parse --verify -q remotes/origin/$CI_COMMIT_REF_NAME) ||
-     (cd ../openshift-environments; git checkout master; git pull)'
+  - rm -rf openshift-environments
+  - git clone $ENVIRONMENTS_REPO_URL openshift-environments
+  - '(cd openshift-environments; git rev-parse --verify -q remotes/origin/$CI_COMMIT_REF_NAME) &&
+     (cd openshift-environments; git checkout $CI_COMMIT_REF_NAME; git pull)'
+  - '(cd openshift-environments; git rev-parse --verify -q remotes/origin/$CI_COMMIT_REF_NAME) ||
+     (cd openshift-environments; git checkout master; git pull)'
 
 stages:
-  - docker_build
   - ci_env_deploy
   - ci_run_tests
   - ci_backups
@@ -41,67 +31,53 @@ stages:
   - prod_deploy
   - scheduled_backups
 
-docker_image_build_job:
-  stage: docker_build
-  script:
-    - cd container-src/poc-deployer
-    - docker pull $IMAGE_TAG || true
-    - docker build --pull=true --cache-from $IMAGE_TAG -t $IMAGE_TAG .
-    - docker push $IMAGE_TAG
-
 deploy_ci_openshift_job:
   stage: ci_env_deploy
+  variables:
+    ENV_NAME: oso-ci-singlemaster
   except:
     - schedules
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
+    - ./run_playbook.bash site.yml
   environment:
     name: oso-ci
 
 run_ci_tests_openshift_job:
   stage: ci_run_tests
+  variables:
+    ENV_NAME: oso-ci-singlemaster
   except:
     - schedules
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash ../tests/site.yml
+    - ./run_playbook.bash ../tests/site.yml
 
 backup_ci_openshift_job:
   stage: ci_backups
+  variables:
+    ENV_NAME: oso-ci-singlemaster
   except:
     - schedules
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_backup.bash
+    - ./run_backup.bash
 
 deprovision_ci_openshift_job:
   stage: cleanup
+  variables:
+    ENV_NAME: oso-ci-singlemaster
   except:
     - schedules
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-ci-singlemaster -P /dev/shm/secret/vaultpass ./run_playbook.bash deprovision.yml
+    - ./run_playbook.bash deprovision.yml
   when: always
 
 deploy_qa_openshift_job:
   stage: qa_env_deploy
+  variables:
+    ENV_NAME: oso-qa
   except:
     - schedules
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_backup.bash
-    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
+    - ./run_playbook.bash site.yml
   environment:
     name: oso-qa
   only:
@@ -111,13 +87,12 @@ deploy_qa_openshift_job:
 
 run_qa_tests_openshift_job:
   stage: qa_run_tests
+  variables:
+    ENV_NAME: oso-qa
   except:
     - schedules
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_playbook.bash ../tests/site.yml
+    - ./run_playbook.bash ../tests/site.yml
   only:
     - master
   tags:
@@ -128,21 +103,20 @@ mirror_to_github:
   except:
     - schedules
   script:
-    - rm -rf ../poc-bare
-    - git clone --bare $CI_REPOSITORY_URL ../poc-bare
-    - cd ../poc-bare
+    - rm -rf poc-bare
+    - git clone --bare $CI_REPOSITORY_URL poc-bare
+    - cd poc-bare
     - git push --mirror $GITHUB_MIRROR
 
 deploy_rahti_int_job:
   stage: prod_deploy
+  variables:
+    ENV_NAME: rahti-int
   except:
     - schedules
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_backup.bash
-    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
+    - ./run_backup.bash
+    - ./run_playbook.bash site.yml
   environment:
     name: production/rahti-int
   when: manual
@@ -153,14 +127,13 @@ deploy_rahti_int_job:
 
 deploy_rahti_job:
   stage: prod_deploy
+  variables:
+    ENV_NAME: rahti
   except:
     - schedules
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e rahti -P /dev/shm/secret/vaultpass ./run_backup.bash
-    - ./run_deployment_container.bash -e rahti -P /dev/shm/secret/vaultpass ./run_playbook.bash site.yml
+    - ./run_backup.bash
+    - ./run_playbook.bash site.yml
   environment:
     name: production/rahti
   when: manual
@@ -171,11 +144,10 @@ deploy_rahti_job:
 
 scheduled_backups_oso_qa_job:
   stage: scheduled_backups
+  variables:
+    ENV_NAME: oso-qa
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e oso-qa -P /dev/shm/secret/vaultpass ./run_backup.bash
+    - ./run_backup.bash
   only:
     - schedules
   tags:
@@ -183,11 +155,10 @@ scheduled_backups_oso_qa_job:
 
 scheduled_backups_rahti_int_job:
   stage: scheduled_backups
+  variables:
+    ENV_NAME: rahti-int
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e rahti-int -P /dev/shm/secret/vaultpass ./run_backup.bash
+    - ./run_backup.bash
   only:
     - schedules
   tags:
@@ -195,11 +166,10 @@ scheduled_backups_rahti_int_job:
 
 scheduled_backups_rahti_job:
   stage: scheduled_backups
+  variables:
+    ENV_NAME: rahti-int
   script:
-    - cd scripts
-    - docker pull $IMAGE_TAG
-    - docker tag $IMAGE_TAG cscfi/poc-deployer
-    - ./run_deployment_container.bash -e rahti -P /dev/shm/secret/vaultpass ./run_backup.bash
+    - ./run_backup.bash
   only:
     - schedules
   tags:
