@@ -19,19 +19,24 @@
     enabled: "{{ item.enabled }}"
     gpgcheck: yes
     gpgkey: "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7"
+    state: "{{ item.state }}"
   with_items:
     - name: 'base'
       subpath: 'os'
       enabled: "{{ (lock_os_minor_version|default(false)|bool) | ternary('1', '0') }}"
+      state: "{{ (lock_os_minor_version|default(false)|bool) | ternary('present', 'absent') }}"
     - name: 'updates'
       subpath: 'updates'
       enabled: "{{ (lock_os_minor_version|default(false)|bool) | ternary('1', '0') }}"
+      state: "{{ (lock_os_minor_version|default(false)|bool) | ternary('present', 'absent') }}"
     - name: 'extras'
       subpath: 'extras'
       enabled: "{{ (lock_os_minor_version|default(false)|bool) | ternary('1', '0') }}"
+      state: "{{ (lock_os_minor_version|default(false)|bool) | ternary('present', 'absent') }}"
     - name: 'centosplus'
       subpath: 'centosplus'
       enabled: no
+      state: "{{ (lock_os_minor_version|default(false)|bool) | ternary('present', 'absent') }}"
   register: create_locked_yum_repo_configs
 
 - name: yum clean metadata
