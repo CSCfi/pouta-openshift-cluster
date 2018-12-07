@@ -5,16 +5,24 @@
     name: /etc/cron.daily/automatic_updates
     state: absent
 
-- name: templatize base repo config file
+- name: create base yum repo file if OS minor version is not locked
   template:
     src: base.repo.j2
     dest: /etc/yum.repos.d/CentOS-Base.repo
   register: templatize_base_repo_config_file
+  when: lock_os_minor_version|bool == False
+
+- name: remove base repo config if OS minor version is locked
+  file:
+    path: /etc/yum.repos.d/CentOS-Base.repo
+    state: absent
+  when: lock_os_minor_version
+  register: templatized_base_repo_config_file_removed
 
 - name: optionally lock operating system minor version in repo config
   yum_repository:
     name: "{{ item.name }}"
-    baseurl: "http://vault.centos.org/centos/{{ os_version | default(ansible_distribution_version) }}/{{ item.subpath }}/$basearch/"
+    baseurl: "{{ locked_repo_base }}/{{ os_version | default(ansible_distribution_version) }}/{{ item.subpath }}/$basearch/"
     description: "CentOS-{{ os_version | default(ansible_distribution_version) }} - {{ item.name }}"
     enabled: "{{ item.enabled }}"
     gpgcheck: yes
@@ -24,26 +32,29 @@
     - name: 'base'
       subpath: 'os'
       enabled: "{{ (lock_os_minor_version|default(false)|bool) | ternary('1', '0') }}"
-      state: "{{ (lock_os_minor_version|default(false)|bool) | ternary('present', 'absent') }}"
+      state: "{{ (lock_os_minor_version|bool) | ternary('present', 'absent') }}"
     - name: 'updates'
       subpath: 'updates'
       enabled: "{{ (lock_os_minor_version|default(false)|bool) | ternary('1', '0') }}"
-      state: "{{ (lock_os_minor_version|default(false)|bool) | ternary('present', 'absent') }}"
+      state: "{{ (lock_os_minor_version|bool) | ternary('present', 'absent') }}"
     - name: 'extras'
       subpath: 'extras'
       enabled: "{{ (lock_os_minor_version|default(false)|bool) | ternary('1', '0') }}"
-      state: "{{ (lock_os_minor_version|default(false)|bool) | ternary('present', 'absent') }}"
+      state: "{{ (lock_os_minor_version|bool) | ternary('present', 'absent') }}"
     - name: 'centosplus'
       subpath: 'centosplus'
       enabled: no
-      state: "{{ (lock_os_minor_version|default(false)|bool) | ternary('present', 'absent') }}"
+      state: "{{ (lock_os_minor_version|bool) | ternary('present', 'absent') }}"
   register: create_locked_yum_repo_configs
 
 - name: yum clean metadata
   command: yum clean metadata
   args:
     warn: no
-  when: templatize_base_repo_config_file.changed or create_locked_yum_repo_configs.changed
+  when: >
+    templatize_base_repo_config_file.changed or
+    create_locked_yum_repo_configs.changed or
+    templatized_base_repo_config_file_removed.changed
 
 - name: install basic tools
   yum: pkg={{item}} state=present

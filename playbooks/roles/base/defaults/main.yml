@@ -1,0 +1,2 @@
+locked_repo_base: http://vault.centos.org/centos
+lock_os_minor_version: False
