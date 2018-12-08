@@ -3,7 +3,8 @@
   lineinfile:
     state: present
     dest: /etc/hosts
-    line: "{{ hostvars[item]['ansible_ssh_host'] }} {{ item }}.novalocal {{ item }}"
+    regexp: "^{{ hostvars[item]['ansible_ssh_host'] }} {{ item }}.*"
+    line: "{{ hostvars[item]['ansible_ssh_host'] }} {{ item }}{{ poc_override_domain_suffix }} {{ item }}"
   when: hostvars[item]['ansible_ssh_host'] is defined
   with_items: "{{ groups['all'] }}"
   notify: reload dnsmasq
@@ -67,3 +68,20 @@
     mode: 0644
     owner: root
     group: root
+
+# Fresh installs with OpenShift 3.10 will not accept overriding the node host name,
+# so we optionally override it on the host
+- name: write /etc/hostname with given domain
+  copy:
+    dest: "/etc/hostname"
+    owner: root
+    group: root
+    mode: 0644
+    content: |
+      {{ ansible_hostname }}{{ poc_override_domain_suffix }}
+  register: write_etc_hostname
+
+- name: activate the new hostname
+  shell: >
+    hostname -F /etc/hostname
+  when: write_etc_hostname.changed

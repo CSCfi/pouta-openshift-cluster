@@ -11,18 +11,30 @@
   hosts: masters
   serial: 1
   tasks:
-    - block:
-      - name: register if resolv.conf in origin-master-controllers has cluster.local
-        shell: >
-          docker exec origin-master-controllers
-          grep cluster.local /etc/resolv.conf
-        register: cluster_local_in_resolv_conf
-        failed_when: false
-        changed_when: false
+    - when: install_type == 'multimaster'
+      block:
+        - name: register if resolv.conf in origin-master-controllers has cluster.local
+          shell: >
+            docker exec origin-master-controllers
+            grep cluster.local /etc/resolv.conf
+          register: cluster_local_in_resolv_conf
+          failed_when: false
+          changed_when: false
 
-      - name: restart origin-master-controllers if needed
-        systemd:
-          name: origin-master-controllers
-          state: restarted
-        when: cluster_local_in_resolv_conf.stdout_lines | length == 0
-      when: install_type == 'multimaster' or openshift_release|version_compare('3.7', '>=')
+        - name: restart master controllers if needed
+          systemd:
+            name: origin-master-controllers
+            state: restarted
+          when:
+          - openshift_release|version_compare('3.10', '<')
+          - cluster_local_in_resolv_conf.stdout_lines | length == 0
+
+        - name: restart master controllers if needed
+          command: /usr/local/bin/master-restart controllers
+          retries: 5
+          delay: 5
+          register: result
+          until: result.rc == 0
+          when:
+          - openshift_release|version_compare('3.10', '>=')
+          - cluster_local_in_resolv_conf.stdout_lines | length == 0
