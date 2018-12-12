@@ -167,7 +167,7 @@ scheduled_backups_rahti_int_job:
 scheduled_backups_rahti_job:
   stage: scheduled_backups
   variables:
-    ENV_NAME: rahti-int
+    ENV_NAME: rahti
   script:
     - ./run_backup.bash
   only:
