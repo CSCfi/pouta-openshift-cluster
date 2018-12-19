@@ -2,21 +2,29 @@
 - name: restart iptables
   service: name=iptables state=restarted
 
-- name: restart master
-  systemd: name=origin-master state=restarted
-  when:
-    - install_type == 'singlemaster'
-    - openshift_release|version_compare('3.6', '==')
-  notify: verify API server
-
 - name: restart master api
   systemd: name=origin-master-api state=restarted
-  when: install_type == 'multimaster' or openshift_release|version_compare('3.7', '>=')
+  when:
+    - openshift_release|version_compare('3.10', '<')
   notify: verify API server
 
 - name: restart master controllers
   systemd: name=origin-master-controllers state=restarted
-  when: install_type == 'multimaster' or openshift_release|version_compare('3.7', '>=')
+  when:
+    - openshift_release|version_compare('3.10', '<')
+
+- name: restart master
+  command: /usr/local/bin/master-restart "{{ item }}"
+  with_items:
+  - api
+  - controllers
+  retries: 5
+  delay: 5
+  register: result
+  until: result.rc == 0
+  notify: verify API server
+  when:
+    - openshift_release|version_compare('3.10', '>=')
 
 - name: verify API server
   command: >
