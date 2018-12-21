@@ -7,16 +7,16 @@ metadata:
   name: rocket.chat
 spec:
   tags:
-    - name: "0.58.2"
+    - name: "0.72.3"
       annotations:
         description: >
-          Provides Rocket.Chat 0.58.2 from the official Docker image.
-        openshift.io/display-name: Rocket.Chat 0.58.2
+          Provides Rocket.Chat 0.72.3 from the official Docker image.
+        openshift.io/display-name: Rocket.Chat 0.72.3
         tags: rocket.chat
-        version: "0.58.2"
+        version: "0.72.3"
       from:
         kind: DockerImage
-        name: rocketchat/rocket.chat:0.58.2
+        name: rocketchat/rocket.chat:0.72.3
       importPolicy: {}
       referencePolicy:
         type: Source
@@ -28,7 +28,7 @@ spec:
         tags: rocket.chat
       from:
         kind: ImageStreamTag
-        name: "0.58.2"
+        name: "0.72.3"
       importPolicy: {}
       referencePolicy:
         type: Source
