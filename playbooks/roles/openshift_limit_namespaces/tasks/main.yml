@@ -6,9 +6,9 @@
       apiVersion: v1
       kind: ProjectRequestLimitConfig
       limits:
-      - maxProjects: "{{ default_max_namespaces_per_user }}"
       - selector:
           namespace_quota: unlimited
+      - maxProjects: "{{ default_max_namespaces_per_user }}"
   notify:
     - restart master
     - restart master api
