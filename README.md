@@ -1,7 +1,27 @@
 # OpenShift Origin playbooks
 
-These playbooks can be used to assist deploying an OpenShift Origin cluster in cPouta. The bulk of installation
-is done with the official [installer playbook](https://github.com/openshift/openshift-ansible).
+- [OpenShift Origin playbooks](#openshift-origin-playbooks)
+  - [Prerequisites for using these playbooks](#prerequisites-for-using-these-playbooks)
+    - [Environment specific data](#environment-specific-data)
+  - [Playbooks](#playbooks)
+    - [init_ramdisk.yml](#init_ramdiskyml)
+    - [site.yml](#siteyml)
+    - [deprovision.yml](#deprovisionyml)
+    - [provision.yml](#provisionyml)
+    - [pre_install.yml](#pre_installyml)
+    - [post_install.yml](#post_installyml)
+    - [scaleup_[version].yml and site_scaleup_[version].yml](#scaleup_versionyml-and-site_scaleup_versionyml)
+    - [scaledown_nodes.yml](#scaledown_nodesyml)
+  - [Provisioning](#provisioning)
+    - [Usage in a GitLab pipeline](#usage-in-a-gitlab-pipeline)
+    - [Heat stack updates](#heat-stack-updates)
+  - [Deprovisioning](#deprovisioning)
+  - [Recovery](#recovery)
+  - [Security groups](#security-groups)
+
+These playbooks can be used to assist deploying an OpenShift Origin cluster in
+cPouta. The bulk of installation is done with the official [installer
+playbook](https://github.com/openshift/openshift-ansible).
 
 ## Prerequisites for using these playbooks
 
@@ -54,7 +74,7 @@ chcon -Rt svirt_sandbox_file_t poc openshift-ansible openshift-environments
 Installation data is contained in the openshift-environments repository. The format of the repository/directory
 is as follows:
 
-```
+```bash
 environments
 ├── environment1
 │   ├── groups

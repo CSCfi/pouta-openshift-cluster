@@ -125,6 +125,23 @@ resources:
       rules: { get_param: secgroup_ext_access_rules }
 
   #-----------------------------------
+  # Server groups
+  #-----------------------------------
+
+  # If you change the name of this server group, the next time you update a
+  # compute node stack that uses it, all nodes in that compute node stack will
+  # be destroyed. You have been warned.
+  compute_node_server_group:
+    type: OS::Nova::ServerGroup
+    properties:
+      name:
+        str_replace:
+          template: compute_node-name_suffix
+          params:
+            name_suffix: { get_param: env_name }
+      policies: ['anti-affinity']
+
+  #-----------------------------------
   # Dedicated cluster network
   #-----------------------------------
 
@@ -203,3 +220,4 @@ outputs:
       secgroup_id_ext_access: { get_resource: secgroup_ext_access }
       network_id: { get_resource: openshift_network }
       subnet_id: { get_resource: openshift_subnet }
+      compute_node_server_group_id: { get_resource: compute_node_server_group }
