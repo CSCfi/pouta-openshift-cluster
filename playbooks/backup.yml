@@ -24,7 +24,7 @@
     - r_etcd_common_backup_tag: "{{ cluster_name }}"
     - r_etcd_common_backup_sufix_name: "/{{ backup_time }}"
     - r_etcd_common_embedded_etcd: False
-    - r_etcd_common_etcd_runtime: "{{ 'docker' if containerized else 'static_pod'}}"
+    - r_etcd_common_etcd_runtime: "{{ poc_etcd_runtime|default('docker' if containerized else 'host') }}"
     - etcd_backup_root: "/var/lib/etcd"
   tasks:
     - include_role:
