@@ -15,19 +15,21 @@ print_usage_and_exit()
     echo
     echo "Usage: $me [options] hosts"
     echo "  where options are"
-    echo "  -a [rebuild|update]     action(s) to take on hosts. "
-    echo "                          - 'rebuild' runs 'openstack server rebuild',"
-    echo "                             updates packages in the base image"
-    echo "                             and runs scaleup playbook"
-    echo "                          - 'update' runs 'yum update'"
-    echo "  -s service              stop service before actions"
-    echo "                          can be specified multiple times"
-    echo "  -d                      drain nodes before actions using given control host"
-    echo "  -u                      uncordon nodes after actions using given control host."
-    echo "                          Note: rebuilding automatically activates nodes"
-    echo "  -c control-host         control host to use for draining"
-    echo "  -p                      power cycle after actions"
-    echo "  -v                      scaleup playbook version (optional, default '3.9')"
+    echo "  -a [rebuild|update|pcycle]"
+    echo "                           action(s) to take on hosts. "
+    echo "                           - 'rebuild' runs 'openstack server rebuild',"
+    echo "                              updates packages in the base image"
+    echo "                              and runs scaleup playbook"
+    echo "                           - 'update' runs 'yum update'"
+    echo "                           - 'pcycle' for just a power off/on cycle"
+    echo "  -s service               stop service before actions"
+    echo "                           can be specified multiple times"
+    echo "  -d                       drain nodes before actions using given control host"
+    echo "  -u                       uncordon nodes after actions using given control host."
+    echo "                           Note: rebuilding automatically activates nodes"
+    echo "  -c control-host          control host to use for draining"
+    echo "  -p                       power cycle after actions"
+    echo "  -v                       scaleup playbook version (optional, default '3.9')"
     echo
     echo "Example:"
     echo "  $me -a update -dup -c \$ENV_NAME-master-1 \$ENV_NAME-node-{1..4}"
@@ -184,6 +186,12 @@ for host in $*; do
         [[ -n $opt_drain ]] && drain_server $host
         update_server $host
         [[ -n $opt_power_cycle ]] && power_cycle_server $host
+    fi
+
+    if [[ $opt_actions =~ ' pcycle ' ]]; then
+        log "action: pcycle"
+        [[ -n $opt_drain ]] && drain_server $host
+        power_cycle_server $host
     fi
 
     [[ -n $opt_uncordon ]] && uncordon_server $host
