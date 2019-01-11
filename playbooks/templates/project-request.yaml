@@ -81,7 +81,7 @@ objects:
     name: compute-resources
   spec:
     hard:
-      pods: "20"
+      pods: "{{ default_project_pod_num_quota | default('20') }}"
     scopes:
     - NotTerminating
 
@@ -102,21 +102,21 @@ objects:
     limits:
       - type: "Pod"
         max:
-          cpu: "2"
-          memory: "8Gi"
+          cpu: "{{ default_project_pod_cpu_max_limit | default('2') }}"
+          memory: "{{ default_project_pod_mem_max_limit | default('8Gi') }}"
         min:
-          cpu: "200m"
-          memory: "6Mi"
+          cpu: "{{ default_project_pod_cpu_min_limit | default('200m') }}"
+          memory: "{{ default_project_pod_mem_min_limit | default('6Mi') }}"
       - type: "Container"
         max:
-          cpu: "2"
-          memory: "8Gi"
+          cpu: "{{ default_project_container_cpu_max_limit | default('2') }}"
+          memory: "{{ default_project_container_mem_max_limit | default('8Gi') }}"
         min:
-          cpu: "100m"
-          memory: "4Mi"
+          cpu: "{{ default_project_container_cpu_min_limit | default('100m') }}"
+          memory: "{{ default_project_container_mem_min_limit | default('4Mi') }}"
         defaultRequest:
-          cpu: "200m"
-          memory: "200Mi"
+          cpu: "{{ default_project_default_container_cpu_request | default('200m') }}"
+          memory: "{{ default_project_default_container_mem_request | default('200Mi') }}"
 
 # custom additions end here
 
