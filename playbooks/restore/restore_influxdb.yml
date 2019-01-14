@@ -1,5 +1,6 @@
 - name: Restore InfluxDB from backups
   hosts: masters
+  run_once: true
   gather_facts: yes
   vars:
   - restore_job_number: "{{ ansible_date_time.epoch }}"
