@@ -38,6 +38,17 @@ parameters:
     description: >
       What OpenStack image to use for these compute nodes.
     type: string
+  compute_node_server_group_id:
+    description: >
+      A common server group id to use for nodes created. Not used when
+      use_common_server_group is set to false.
+    type: string
+  use_common_server_group:
+    description: >
+      Whether we should use the common server group for nodes or use one we
+      create ourselves.
+    type: boolean
+    default: false
   network_id:
     description: >
       Id of cluster network
@@ -80,6 +91,12 @@ parameters:
       Id of public IP network
     type: string
 
+conditions:
+  use_common_server_group:
+    equals:
+    - get_param: use_common_server_group
+    - true
+
 resources:
 
   compute_node_servergroup:
@@ -91,6 +108,7 @@ resources:
           params:
             name_suffix: { get_param: name_suffix }
       policies: ['anti-affinity']
+    condition: { not: 'use_common_server_group' }
 
   secgroup_node:
     type: ../common/secgroup.yaml
@@ -135,4 +153,8 @@ resources:
             - { get_resource: secgroup_node }
             - { get_param: secgroup_id_common }
           scheduler_hints:
-            group: { get_resource: compute_node_servergroup }
+            group:
+              if:
+              - 'use_common_server_group' # condition
+              - get_param: compute_node_server_group_id # condition true
+              - get_resource: compute_node_servergroup # condition false
