@@ -15,7 +15,10 @@
         nodes_to_drain: "{{ current_nodes_list | intersect(nodes_to_remove) }}"
 
     - name: drain nodes
-      command: oc adm drain {{ item }} {{ (delete_local_data|d()|bool == True) | ternary('--delete-local-data','') }}
+      command: >
+        oc adm drain {{ item }}
+        --ignore-daemonsets
+        {{ (delete_local_data|d()|bool == True) | ternary('--delete-local-data','') }}
       with_items: "{{ nodes_to_drain }}"
 
     - name: remove nodes that were drained
