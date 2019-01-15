@@ -1,11 +1,30 @@
-# Rolling host update
+# Rolling host updates
 
-Here we have an example procedure for running a rolling OS package update for OSO 3.7.2, installed on CentOS 7.4 to
-latest CentOS 7.5 packages. The updates include packages that cause container restarts, like 'docker', and need
+- [Rolling host updates](#rolling-host-updates)
+  - [Overview](#overview)
+  - [Common](#common)
+    - [Status script](#status-script)
+    - [Update version locked repository reference (optional)](#update-version-locked-repository-reference-optional)
+  - [Update procedure by role](#update-procedure-by-role)
+    - [Compute nodes](#compute-nodes)
+    - [Load balancers](#load-balancers)
+    - [Masters](#masters)
+      - [Method 1: Update packages](#method-1-update-packages)
+      - [Method 2: Rebuild](#method-2-rebuild)
+    - [Etcds](#etcds)
+    - [Glusterfs](#glusterfs)
+  - [Post update actions](#post-update-actions)
+
+## Overview
+
+Here we have an example procedure for running a rolling OS package update for OKD 3.10, installed on CentOS 7.5 to
+latest CentOS 7.6 packages. The updates include packages that cause container restarts, like 'docker', and need
 draining of nodes as well as extra care with infra services. Remember to synchronize your 'docker_version' variable
 in the inventory with the actual docker package that was installed during the update.
 
-## Status script
+## Common
+
+### Status script
 
 To get visibility to how nodes and pods behave during the update, you can run a status script in a separate
 terminal window. The following works at least for smaller clusters.
@@ -15,7 +34,8 @@ ssh $ENV_NAME-master-1
 watch "oc get nodes; oc get pods --all-namespaces | grep -v 'build.*Completed'"
 ```
 
-## Update version locked repository reference (optional)
+### Update version locked repository reference (optional)
+
 If this update includes a CentOS minor release upgrade and you are using OS minor release locking
 ('lock_os_minor_version' is set in the inventory), set the new release and run site.yml first to update the repository
 references:
@@ -24,20 +44,23 @@ Set new release in config:
 
 ```yaml
 lock_os_minor_version: true
-os_version: 7.5.1804
+os_version: 7.6.1810
 ```
 
 Update the repos using the appropriate version of site.yml:
 
 ```bash
 cd ~/poc/playbooks
-ansible-playbook -v site_3.7.yml
+ansible-playbook -v site.yml
 ```
 
 If your inventory does not have 'lock_os_minor_version' set, then latest minor release packages are automatically
 installed and you do not need to do update the repository references.
 
-## Update nodes
+## Update procedure by role
+
+### Compute nodes
+
 ```bash
 cd ~/poc/playbooks
 ../scripts/rolling_host_update.bash -a update -dup -c $ENV_NAME-master-1 $ENV_NAME-ssdnode-{1..4}
@@ -49,7 +72,7 @@ If draining is blocked by pods stuck in 'Terminating' state, ghost busting may h
 ../scripts/umount_ghost_volumes.bash
 ```
 
-## Update load balancers
+### Load balancers
 
 ```bash
 cd ~/poc/playbooks
@@ -60,37 +83,60 @@ Wait for router to be deployed again on lb-1. Check that both router pods are ru
 
 ```bash
 ssh $ENV_NAME-master-1
-oc get pods -l router 
+oc get pods -l router
 ```
 
 Proceed to lb-2.
+
 ```bash
 cd ~/poc/playbooks
 ../scripts/rolling_host_update.bash -a update -dup -c $ENV_NAME-master-1 $ENV_NAME-lb-2
 ```
 
-## Update masters
+### Masters
 
-Update masters
-
-```bash
-cd ~/poc/playbooks
-../scripts/rolling_host_update.bash -a update -s origin-master-api -s origin-master-controllers -dup -c $ENV_NAME-master-1 $ENV_NAME-master-{1..3}
-```
-
-During master updates, on 3.7.2, daemon set pods may get stuck to error state. This is due to
-https://github.com/openshift/origin/issues/19138
-
-Remove hanging containers with
+#### Method 1: Update packages
 
 ```bash
 cd ~/poc/playbooks
-ansible masters -m shell -a 'docker rm $(docker ps -qa --no-trunc --filter "status=exited")'
+../scripts/rolling_host_update.bash -a update -dup -c $ENV_NAME-master-1 $ENV_NAME-master-{1..3}
 ```
 
 Remember to restart your status script after the host it is running on has been restarted.
 
-## Update etcds
+#### Method 2: Rebuild
+
+Repeat the procedure for all masters.
+
+Drain the master in question:
+
+```bash
+# first, export the name to be reused in the following commands
+export HOST_TO_REPLACE=$ENV_NAME-master-X
+
+# then, drain and cordon it
+ansible $ENV_NAME-master-1 -a "oc adm drain --ignore-daemonsets --delete-local-data $HOST_TO_REPLACE"
+```
+
+Rebuild the VM
+
+```bash
+openstack server rebuild $HOST_TO_REPLACE
+```
+
+Optionally update and reboot the host. If you are using repositories locked to a minor OS release version,
+you will have to do updating after running pre_install.yml playbook to install the locked repositories instead
+of this.
+
+```bash
+ssh $HOST_TO_REPLACE
+sudo yum update -y && exit
+openstack server reboot $HOST_TO_REPLACE
+```
+
+Follow recovery instructions in [recover_single_vm_failure.md].
+
+### Etcds
 
 Etcds are best updated one by one, checking cluster health and unreachable members in between.
 We do not need to drain the hosts, they are not acting as nodes.
@@ -116,7 +162,7 @@ ansible etcd[0] -m shell -a "etcdctl -endpoints https://$ENV_NAME-etcd-1:2379 \
   cluster-health"
 ```
 
-## Update glusterfs nodes
+### Glusterfs
 
 Finally update storage nodes.
 
@@ -132,6 +178,7 @@ oc -n glusterfs rsh ds/glusterfs-storage bash -c "gluster volume list | xargs --
 ```
 
 Then stop volumes
+
 ```bash
 ssh $ENV_NAME-master-1
 oc -n glusterfs rsh ds/glusterfs-storage bash -c "gluster volume list | xargs --replace bash -c 'echo; echo \"{}\"; gluster --mode=script volume stop {}'"
@@ -153,6 +200,7 @@ oc -n glusterfs get pods
 ```
 
 Then start volumes again
+
 ```bash
 ssh $ENV_NAME-master-1
 oc -n glusterfs rsh ds/glusterfs-storage bash -c "gluster volume list | xargs --replace bash -c 'echo; echo \"{}\"; gluster --mode=script volume start {}'"
@@ -175,5 +223,5 @@ oc -n glusterfs rsh ds/glusterfs-storage bash -c "gluster volume list | xargs --
 
 ```bash
 cd ~/poc/playbooks
-ansible-playbook site_3.7.yml
+ansible-playbook site.yml
 ```
