@@ -210,6 +210,9 @@ stack updates" and recovery documentation in docs/ for usage instructions.
 
 ### scaledown_nodes.yml
 
+**Note: you can only remove nodes from the end of the compute nodes stack when
+scaling down - not from the middle or from the start.**
+
 This playbook can be used to remove nodes from the cluster. You need to provide
 a list of nodes to remove as a variable called `nodes_to_remove`, e.g.:
 
