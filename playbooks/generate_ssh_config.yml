@@ -25,7 +25,7 @@
           mode: '0600'
           dest: "{{ ssh_config_file }}"
           block: |
-            Host {% for host in groups.all %}{{ host }} {{ hostvars[host].ansible_ssh_host }} {% endfor %}{{ bastion_public_ip }}
+            Host {{ cluster_name }}-* {{ openshift_network_prefix }}.* {{ bastion_public_ip }}
               User cloud-user
               ForwardAgent no
               GSSAPIAuthentication no
