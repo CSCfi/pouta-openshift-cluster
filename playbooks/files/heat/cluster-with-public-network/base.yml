@@ -71,7 +71,7 @@ parameters:
     description: >
       Gateway IP that is set to the internal network
     type: string
-    default: ''
+    default: '0.0.0.0'
 resources:
 
   #-----------------------------------

@@ -32,7 +32,7 @@
       bastion_allow_ports: "{{ bastion_allow_ports }}"
       bastion_public_ip: "{{ bastion_public_ip }}"
       public_ip_network_id: "{{ public_ip_network_id }}"
-      internal_network_gateway_ip: "{{ internal_network_gateway_ip|default('') }}"
+      internal_network_gateway_ip: "{{ internal_network_gateway_ip|default('0.0.0.0') }}"
 
 - name: Put base stack output into a dict
   set_fact:
