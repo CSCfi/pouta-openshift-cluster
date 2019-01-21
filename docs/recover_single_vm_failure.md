@@ -214,6 +214,11 @@ sudo etcdctl -endpoints https://[cluster-name]-etcd-2:2379 \
 
 ```
 
+Add following ansible host variable as part of the etcd-2 host_vars:
+```bash
+etcdctlv2: "/usr/bin/etcdctl -endpoints https://[cluster-name]-etcd-2:2379 --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key"
+```
+
 Then run site_scaleup.yml, pointing the playbook to use etcd-2 as the cluster endpoint and the source
 for certificates:
 
