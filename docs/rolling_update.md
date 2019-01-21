@@ -8,9 +8,11 @@
   - [Update procedure by role](#update-procedure-by-role)
     - [Compute nodes](#compute-nodes)
     - [Load balancers](#load-balancers)
-    - [Masters](#masters)
       - [Method 1: Update packages](#method-1-update-packages)
       - [Method 2: Rebuild](#method-2-rebuild)
+    - [Masters](#masters)
+      - [Method 1: Update packages](#method-1-update-packages-1)
+      - [Method 2: Rebuild](#method-2-rebuild-1)
     - [Etcds](#etcds)
     - [Glusterfs](#glusterfs)
   - [Post update actions](#post-update-actions)
@@ -74,6 +76,8 @@ If draining is blocked by pods stuck in 'Terminating' state, ghost busting may h
 
 ### Load balancers
 
+#### Method 1: Update packages
+
 ```bash
 cd ~/poc/playbooks
 ../scripts/rolling_host_update.bash -a update -dup -c $ENV_NAME-master-1 $ENV_NAME-lb-1
@@ -92,6 +96,34 @@ Proceed to lb-2.
 cd ~/poc/playbooks
 ../scripts/rolling_host_update.bash -a update -dup -c $ENV_NAME-master-1 $ENV_NAME-lb-2
 ```
+
+#### Method 2: Rebuild
+
+Rebuild and update the VMs one by one.
+
+```bash
+# first, export the name to be reused in the following commands
+export HOST_TO_REPLACE=$ENV_NAME-lb-X
+
+# then, drain and cordon it
+ansible $ENV_NAME-master-1 -a "oc adm drain --ignore-daemonsets --delete-local-data $HOST_TO_REPLACE"
+
+# then rebuild
+openstack server rebuild $HOST_TO_REPLACE
+```
+
+Optionally update and reboot the host. If you are using repositories locked to a minor OS release version,
+you will have to do updating after running pre_install.yml playbook to install the locked repositories instead
+of this.
+
+```bash
+ssh $HOST_TO_REPLACE
+sudo yum update -y && exit
+openstack server reboot $HOST_TO_REPLACE
+```
+
+Follow recovery instructions in [recover_single_vm_failure.md]. Remember to clean any data on the persistent volume,
+the load balancers usually run on standard flavors with a Cinder volume for docker storage.
 
 ### Masters
 
