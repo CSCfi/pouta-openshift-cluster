@@ -1,6 +1,9 @@
 ---
+# We use a pre-built deployment container that has necessary tools such as
+# Ansible. If you update the deployment container image, remember to update the
+# version number here.
 image:
-  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.1
+  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.3
 
 variables:
   DOCKER_DRIVER: overlay
@@ -9,16 +12,27 @@ variables:
 before_script:
   - cp -r $CI_PROJECT_DIR /opt/deployment/poc
   - cd /opt/deployment
+  # Configure SSH so we can clone repos
   - mkdir -p ~/.ssh
   - eval "$(ssh-agent -s)"
   - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
   - echo "$CI_RUNNER_SSH_KEY" > ~/.ssh/id_rsa && chmod 0600 ~/.ssh/id_rsa
+  # Remove any cached version of openshift-environments and get a fresh version
   - rm -rf openshift-environments
   - git clone $ENVIRONMENTS_REPO_URL openshift-environments
+  # Either get the master branch of openshift-environments or feature branch
+  # with the same name as the current poc feature branch
   - '(cd openshift-environments; git rev-parse --verify -q remotes/origin/$CI_COMMIT_REF_NAME) &&
      (cd openshift-environments; git checkout $CI_COMMIT_REF_NAME; git pull)'
   - '(cd openshift-environments; git rev-parse --verify -q remotes/origin/$CI_COMMIT_REF_NAME) ||
      (cd openshift-environments; git checkout master; git pull)'
+  # Pass some data about the pipeline over to Ansible so it can be used there
+  # Built-in GitLab variables are documented here:
+  # https://docs.gitlab.com/ee/ci/variables/
+  - 'echo "flowdock_api_token: \"$FLOWDOCK_API_TOKEN\"" >> /tmp/gitlab_pipeline_context.yml'
+  - 'echo "gitlab_ci_commit_ref_name: \"$CI_COMMIT_REF_NAME\"" >> /tmp/gitlab_pipeline_context.yml'
+  - 'echo "gitlab_ci_commit_sha: \"$CI_COMMIT_SHA\"" >> /tmp/gitlab_pipeline_context.yml'
+  - 'echo "gitlab_ci_pipeline_id: \"$CI_PIPELINE_ID\"" >> /tmp/gitlab_pipeline_context.yml'
 
 stages:
   - ci_env_deploy
@@ -38,7 +52,7 @@ deploy_ci_openshift_job:
   except:
     - schedules
   script:
-    - ./run_playbook.bash site.yml
+    - ./run_playbook.bash site.yml -e @/tmp/gitlab_pipeline_context.yml
   environment:
     name: oso-ci
 
@@ -49,7 +63,7 @@ run_ci_tests_openshift_job:
   except:
     - schedules
   script:
-    - ./run_playbook.bash ../tests/site.yml
+    - ./run_playbook.bash ../tests/site.yml -e @/tmp/gitlab_pipeline_context.yml
 
 backup_ci_openshift_job:
   stage: ci_backups
@@ -77,7 +91,7 @@ deploy_qa_openshift_job:
   except:
     - schedules
   script:
-    - ./run_playbook.bash site.yml
+    - ./run_playbook.bash site.yml -e @/tmp/gitlab_pipeline_context.yml
   environment:
     name: oso-qa
   only:
@@ -92,7 +106,7 @@ run_qa_tests_openshift_job:
   except:
     - schedules
   script:
-    - ./run_playbook.bash ../tests/site.yml
+    - ./run_playbook.bash ../tests/site.yml -e @/tmp/gitlab_pipeline_context.yml
   only:
     - master
   tags:
@@ -116,7 +130,7 @@ deploy_rahti_int_job:
     - schedules
   script:
     - ./run_backup.bash
-    - ./run_playbook.bash site.yml
+    - ./run_playbook.bash site.yml -e @/tmp/gitlab_pipeline_context.yml
   environment:
     name: production/rahti-int
   when: manual
@@ -133,7 +147,7 @@ deploy_rahti_job:
     - schedules
   script:
     - ./run_backup.bash
-    - ./run_playbook.bash site.yml
+    - ./run_playbook.bash site.yml -e @/tmp/gitlab_pipeline_context.yml
   environment:
     name: production/rahti
   when: manual

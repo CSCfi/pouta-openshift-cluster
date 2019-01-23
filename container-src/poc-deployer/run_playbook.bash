@@ -9,7 +9,7 @@ pushd /opt/deployment/poc/playbooks  > /dev/null
 echo
 echo "-------------------------------------------------------------------------------"
 echo
-echo " Running $* for $ENV_NAME"
+echo " Running $1 for $ENV_NAME"
 echo
 branch-info
 echo
