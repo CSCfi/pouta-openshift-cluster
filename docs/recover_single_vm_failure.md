@@ -116,6 +116,11 @@ the backup has been extracted properly before running this.
 
 ```bash
 # primary master
+
+# double check that the backup contents were extracted
+ansible $ENV-name-master-1 -a 'ls /etc/origin/master'
+
+# run scaleup
 ansible-playbook -v -e allow_first_master_scaleup=1 site_scaleup_3.9.yml
 ```
 
@@ -146,10 +151,11 @@ we need to apply the 'openshift_load_balancer' -role.
 ansible-playbook -v ../../openshift-ansible/playbooks/openshift-loadbalancer/config.yml
 ```
 
-Then start keepalived:
+Then start keepalived and check the assignment of the virtual IP (change the interface as needed):
 
 ```bash
 ansible lb -m systemd -a "name=keepalived state=started"
+ansible lb -a "ip a s eth0"
 ```
 
 ## Etcd-2 and etcd-3
