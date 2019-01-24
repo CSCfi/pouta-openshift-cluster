@@ -104,6 +104,15 @@
     line: 'manage_etc_hosts: False'
     create: yes
 
+- name: stop cloud-init from managing hostnames
+  lineinfile:
+    dest: /etc/cloud/cloud.cfg
+    regexp: "{{ item }}"
+    state: absent
+  with_items:
+    - '^ - set_hostname$'
+    - '^ - update_hostname$'
+
 - name: fix /etc/hosts after cloud-init
   lineinfile:
     dest: /etc/hosts
