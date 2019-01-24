@@ -78,9 +78,14 @@ If draining is blocked by pods stuck in 'Terminating' state, ghost busting may h
 
 #### Method 1: Update packages
 
+
+Update packages on lb-1 first. We also explicitly stop keepalived on the host to let go of the virtual IP, keepalived
+can still sometimes keep it during package updates even if the load balancer is not running. It will be started after
+reboot again.
+
 ```bash
 cd ~/poc/playbooks
-../scripts/rolling_host_update.bash -a update -dup -c $ENV_NAME-master-1 $ENV_NAME-lb-1
+../scripts/rolling_host_update.bash -a update -s keepalived -dup -c $ENV_NAME-master-1 $ENV_NAME-lb-1
 ```
 
 Wait for router to be deployed again on lb-1. Check that both router pods are running.
@@ -117,9 +122,10 @@ you will have to do updating after running pre_install.yml playbook to install t
 of this.
 
 ```bash
-ssh $HOST_TO_REPLACE
-sudo yum update -y && exit
+ssh $HOST_TO_REPLACE uname -a
+ansible $HOST_TO_REPLACE -a 'yum update -y'
 openstack server reboot $HOST_TO_REPLACE
+ssh $HOST_TO_REPLACE uname -a
 ```
 
 Follow recovery instructions in [recover_single_vm_failure.md]. Remember to clean any data on the persistent volume,
@@ -161,9 +167,10 @@ you will have to do updating after running pre_install.yml playbook to install t
 of this.
 
 ```bash
-ssh $HOST_TO_REPLACE
-sudo yum update -y && exit
+ssh $HOST_TO_REPLACE uname -a
+ansible $HOST_TO_REPLACE -a 'yum update -y'
 openstack server reboot $HOST_TO_REPLACE
+ssh $HOST_TO_REPLACE uname -a
 ```
 
 Follow recovery instructions in [recover_single_vm_failure.md].
