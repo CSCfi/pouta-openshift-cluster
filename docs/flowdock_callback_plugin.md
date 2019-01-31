@@ -45,4 +45,4 @@ These are the variables that need to be set:
   Alerting Callback Plugin in Ansible - Part
   I](https://dev.to/jrop/creating-an-alerting-callback-plugin-in-ansible---part-i-1h0n)
 - [Official Ansible documentation on callback
-  plugins](https://docs.ansible.com/ansible/2.5/dev_guide/developing_plugins.html#callback-plugins)
+  plugins](https://docs.ansible.com/ansible/latest/dev_guide/developing_plugins.html#callback-plugins)
