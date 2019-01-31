@@ -18,7 +18,8 @@ print_usage_and_exit()
     echo "  -a [rebuild|update|pcycle]"
     echo "                           action(s) to take on hosts. "
     echo "                           - 'rebuild' runs 'openstack server rebuild',"
-    echo "                              updates packages in the base image"
+    echo "                              updates packages on the host,"
+    echo "                              power cycles the host"
     echo "                              and runs scaleup playbook"
     echo "                           - 'update' runs 'yum update'"
     echo "                           - 'pcycle' for just a power off/on cycle"
@@ -31,8 +32,9 @@ print_usage_and_exit()
     echo "  -p                       power cycle after actions"
     echo "  -v                       scaleup playbook version (optional, default '3.9')"
     echo
-    echo "Example:"
+    echo "Examples:"
     echo "  $me -a update -dup -c \$ENV_NAME-master-1 \$ENV_NAME-node-{1..4}"
+    echo "  $me -a rebuild -d -c \$ENV_NAME-master-1 \$ENV_NAME-node-{1..4}"
     echo
     exit 1
 }
@@ -175,7 +177,7 @@ for host in $*; do
         [[ -n $opt_drain ]] && drain_server $host
         rebuild_server $host
         update_server $host
-        [[ -n $opt_power_cycle ]] && power_cycle_server $host
+        power_cycle_server $host
         log "apply $scaleup_playbook"
         ansible-playbook -v $scaleup_playbook
         [[ -n $opt_power_cycle ]] && power_cycle_server $host
