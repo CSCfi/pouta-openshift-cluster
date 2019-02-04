@@ -3,6 +3,9 @@
 - [OpenShift Origin playbooks](#openshift-origin-playbooks)
   - [Prerequisites for using these playbooks](#prerequisites-for-using-these-playbooks)
     - [Environment specific data](#environment-specific-data)
+  - [Provisioning](#provisioning)
+    - [Usage in a GitLab pipeline](#usage-in-a-gitlab-pipeline)
+    - [Heat stack updates](#heat-stack-updates)
   - [Playbooks](#playbooks)
     - [init_ramdisk.yml](#init_ramdiskyml)
     - [site.yml](#siteyml)
@@ -12,9 +15,6 @@
     - [post_install.yml](#post_installyml)
     - [scaleup_[version].yml and site_scaleup_[version].yml](#scaleup_versionyml-and-site_scaleup_versionyml)
     - [scaledown_nodes.yml](#scaledown_nodesyml)
-  - [Provisioning](#provisioning)
-    - [Usage in a GitLab pipeline](#usage-in-a-gitlab-pipeline)
-    - [Heat stack updates](#heat-stack-updates)
   - [Deprovisioning](#deprovisioning)
   - [Recovery](#recovery)
   - [Security groups](#security-groups)
@@ -41,9 +41,10 @@ git clone https://gitlab.csc.fi/c14n/openshift-environments
 git clone https://github.com/CSCfi/openshift-ansible
 ```
 
-Check out a revision of openshift-ansible that matches the version of openshift
+Check out a revision of openshift-ansible that matches the version of OpenShift
 you are installing (see [openshift-ansible: Getting the correct
-version](https://github.com/openshift/openshift-ansible#getting-the-correct-version)).
+version](https://github.com/openshift/openshift-ansible#getting-the-correct-version))
+(the current version may be different from the version in the command below):
 
 ```bash
 cd ~/git/openshift-ansible
@@ -139,6 +140,81 @@ can create a vault password file and loopback mount it to the container so that
 initialization playbook does not have to ask it interactively. There is a
 script called `read_vault_pass_from_clipboard.bash` under the scripts directory
 for doing this.
+
+## Provisioning
+
+Store the vault password on RAM disk using the
+`read_vault_pass_from_clipboard.bash` script:
+
+```bash
+sudo scripts/read_vault_pass_from_clipboard.bash
+```
+
+To launch a shell in a temporary container for deploying environment 'oso-devel-singlemaster', run
+
+```bash
+sudo scripts/run_deployment_container.bash \
+  -e oso-devel-singlemaster \
+  -p /dev/shm/secret/vaultpass \
+  -i
+```
+
+Run site.yml to provision infrastructure on OpenStack and install OpenShift on this infrastructure:
+
+```bash
+cd poc/playbooks
+ansible-playbook site.yml
+```
+
+Single step alternative for non-interactive runs:
+
+```bash
+cd ~/git/poc
+sudo scripts/run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm/secret/vaultpass \
+  ./run_playbook.bash site.yml
+```
+
+If you run the above from terminal locally while developing, add '-i' option to attach the terminal
+to the process for the color coding and ctrl+c to work.
+
+### Usage in a GitLab pipeline
+
+The poc-deployer image can be used as the Docker image for a GitLab runner in .gitlab-ci.yml:
+
+```yaml
+image:
+  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.0
+```
+
+Here is an example of a job that makes use of the poc-deployer image:
+
+```yaml
+deploy_ci_openshift_job:
+  stage: ci_env_deploy
+  variables:
+    ENV_NAME: oso-ci-singlemaster
+  except:
+    - schedules
+  script:
+    - ./run_playbook.bash site.yml
+  environment:
+    name: oso-ci
+```
+
+### Heat stack updates
+
+Normally only base stack is updated when running site or provisioning playbooks. In case you need to
+update an existing Heat stack, set the corresponding variable (allow_heat_stack_update_*) to true. See
+the description for provision.yml for a list of variables
+
+Here is how you would update the stack for ssdnodes, e.g. for scale up purposes:
+
+```bash
+ansible-playbook site_scaleup_3.9.yml -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}'
+```
+
+Note that some configuration changes like VM image may result in all VMs in the
+stack to be reprovisioned. Be careful and test with non-critical resources first.
 
 ## Playbooks
 
@@ -266,75 +342,6 @@ ansible-playbook scaledown_nodes.yml \
 -e @/tmp/nodes_to_remove.yaml \
 -e delete_local_data=1
 ```
-
-## Provisioning
-
-Once you have all of this configured, running the actual installation is simple.
-To launch a shell in a temporary container for deploying environment 'oso-devel-singlemaster', run
-
-```bash
-sudo scripts/run_deployment_container.bash \
-  -e oso-devel-singlemaster \
-  -p /dev/shm/secret/vaultpass \
-  -i
-```
-
-Run site.yml to provision infrastructure on OpenStack and install OpenShift on this infrastructure:
-
-```bash
-cd poc/playbooks
-ansible-playbook site.yml
-```
-
-Single step alternative for non-interactive runs:
-
-```bash
-cd ~/git/poc
-sudo scripts/run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm/secret/vaultpass \
-  ./run_playbook.bash site.yml
-```
-
-If you run the above from terminal locally while developing, add '-i' option to attach the terminal
-to the process for the color coding and ctrl+c to work.
-
-### Usage in a GitLab pipeline
-
-The poc-deployer image can be used as the Docker image for a GitLab runner in .gitlab-ci.yml:
-
-```yaml
-image:
-  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.0
-```
-
-Here is an example of a job that makes use of the poc-deployer image:
-
-```yaml
-deploy_ci_openshift_job:
-  stage: ci_env_deploy
-  variables:
-    ENV_NAME: oso-ci-singlemaster
-  except:
-    - schedules
-  script:
-    - ./run_playbook.bash site.yml
-  environment:
-    name: oso-ci
-```
-
-### Heat stack updates
-
-Normally only base stack is updated when running site or provisioning playbooks. In case you need to
-update an existing Heat stack, set the corresponding variable (allow_heat_stack_update_*) to true. See
-the description for provision.yml for a list of variables
-
-Here is how you would update the stack for ssdnodes, e.g. for scale up purposes:
-
-```bash
-ansible-playbook site_scaleup_3.9.yml -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}'
-```
-
-Note that some configuration changes like VM image may result in all VMs in the
-stack to be reprovisioned. Be careful and test with non-critical resources first.
 
 ## Deprovisioning
 
