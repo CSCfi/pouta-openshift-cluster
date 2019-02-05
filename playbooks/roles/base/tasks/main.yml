@@ -106,12 +106,11 @@
 
 - name: stop cloud-init from managing hostnames
   lineinfile:
-    dest: /etc/cloud/cloud.cfg
-    regexp: "{{ item }}"
-    state: absent
-  with_items:
-    - '^ - set_hostname$'
-    - '^ - update_hostname$'
+    dest: /etc/cloud/cloud.cfg.d/99_hostname.cfg
+    state: present
+    regexp: '^preserve_hostname'
+    line: 'preserve_hostname: True'
+    create: yes
 
 - name: fix /etc/hosts after cloud-init
   lineinfile:
