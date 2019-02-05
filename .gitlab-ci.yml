@@ -156,6 +156,23 @@ deploy_rahti_job:
   tags:
     - rahti
 
+deploy_valinor_job:
+  stage: prod_deploy
+  variables:
+    ENV_NAME: varda
+  except:
+    - schedules
+  script:
+    - ./run_backup.bash
+    - ./run_playbook.bash site.yml -e @/tmp/gitlab_pipeline_context.yml
+  environment:
+    name: production/valinor
+  when: manual
+  only:
+    - master
+  tags:
+    - valinor
+
 scheduled_backups_oso_qa_job:
   stage: scheduled_backups
   variables:
@@ -188,3 +205,14 @@ scheduled_backups_rahti_job:
     - schedules
   tags:
     - rahti
+
+scheduled_backups_valinor_job:
+  stage: scheduled_backups
+  variables:
+    ENV_NAME: varda
+  script:
+    - ./run_backup.bash
+  only:
+    - schedules
+  tags:
+    - valinor
