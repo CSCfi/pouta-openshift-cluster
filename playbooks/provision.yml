@@ -244,7 +244,6 @@
     - base
     - ansible-role-nrpe
     - ansible-role-nrpe-plugins
-    - cluster_common
     - bastion
     - ansible-role-mod_gearman
 
@@ -262,6 +261,20 @@
         timeout: 300
       delegate_to: "{{ hostvars[groups['bastion'][0]]['ansible_ssh_host'] }}"
       when: check_for_ssh_after_provisioning|default(false)|bool
+
+- name: Gather facts on all hosts (needed for cluster_common on bastion)
+  hosts: all
+  become: yes
+  gather_facts: no
+  tasks:
+   - setup:
+       filter: 'ansible_*'
+
+- name: Configure cluster common parts on bastion
+  hosts: bastion
+  become: yes
+  roles:
+    - cluster_common
 
 - import_playbook: get_install_state.yml
 
