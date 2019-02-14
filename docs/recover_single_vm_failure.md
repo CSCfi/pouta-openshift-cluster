@@ -264,6 +264,37 @@ cd ~/poc/playbooks
 ansible-playbook restore/restore_influxdb.yml
 ```
 
+## Glusterfs 
+
+Here we cover the case where glusterfs node (or nodes) has to be rebuilt. We assume,
+that the volumes with actual data are intact and attached to the VM as before.
+
+To recover glusterfs nodes, we need to first restore /var/lib/glusterd from backup.
+
+```bash
+cd ~/poc/playbooks
+ansible-playbook pre_install.yml restore/restore_glusterfs.yml 
+```
+
+Then we acquire the current heketi admin key and run restore/scaleup process. We disable 
+re-creation of the storage class.
+
+```bash
+ssh $ENV_NAME-master-1 oc -n glusterfs get dc/heketi-storage -o yaml | grep -A 1 HEKETI_ADMIN_KEY
+export HEKETI_ADMIN_KEY="VALUE_FROM_ABOVE_HERE"
+
+# run recovery
+ansible-playbook -v site_scaleup_3.9.yml -e glusterfs_heketi_admin_key="$HEKETI_ADMIN_KEY" -e glusterfs_storage_class=
+```
+
+You may need to restart glusterfs after the operation
+
+```bash
+ssh $ENV_NAME-master-1
+oc -n glusterfs delete pods -l glusterfs=storage-pod
+oc -n glusterfs get pods
+```
+
 # Notes
 
 ## Automatic updates
