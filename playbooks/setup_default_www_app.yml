@@ -67,18 +67,25 @@
           hostname: "{{ openshift_public_hostname }}"
         - name: www
         - name: admin
+        - name: app-domain
+          hostname: "{{ openshift_app_domain | default('') }}"
+          create: "{{ openshift_app_domain is defined }}"
+        when: item.create | default(True) | bool
 
       - name: add redirect rule to default www app routes
         oc_edit:
           kind: routes
-          name: "default-www-{{ item }}"
+          name: "default-www-{{ item.name }}"
           namespace: default-www
           content:
             spec.tls.insecureEdgeTerminationPolicy: Redirect
         with_items:
-        - default
-        - www
-        - admin
+        - name: default
+        - name: www
+        - name: admin
+        - name: app-domain
+          create: "{{ openshift_app_domain is defined }}"
+        when: item.create | default(True) | bool
 
       - name: wait for app to start responding
         uri:
