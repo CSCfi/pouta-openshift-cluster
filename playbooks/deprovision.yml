@@ -24,10 +24,12 @@
     # We remove PVCs and delete all pods to release the PVCs so that
     # Cinder driver can detach PVs from node hosts
     - name: remove PVCs from projects
-      shell: "{{ item }}"
+      shell: |
+        oc get namespace -o jsonpath='{.items[*].metadata.name}' | xargs -n 1 \
+        oc delete {{ item }} --all -n --force --grace-period 0
       with_items:
-      - oc get namespace -o jsonpath='{.items[*].metadata.name}' | xargs -n 1 oc delete pvc --all -n
-      - oc get namespace -o jsonpath='{.items[*].metadata.name}' | xargs -n 1 oc delete pod --all -n
+      - pvc
+      - pod
       failed_when: false
       when: ssh_result.stdout.find('success') == 0
 

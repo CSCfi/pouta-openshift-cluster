@@ -3,7 +3,10 @@
     dest: /etc/sysconfig/iptables
     insertafter: '^:OUTPUT ACCEPT'
     line: ':OPENSHIFT-FIREWALL-ALLOW - [0:0]'
-  when: "'masters' not in group_names"
+    regexp: '^:OPENSHIFT-FIREWALL-ALLOW '
+  when:
+    - "'masters' not in group_names"
+    - "not poc_installed|default(False) or poc_allow_iptables_update|default(false)"
   notify: restart iptables
 
   # Here we insert our own blocking rule and the rules that would be inserted by OpenShift as well to prevent
@@ -31,7 +34,9 @@
     insertbefore: '^-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT'
     block: "{{ _iptables_input_rules|join('\n') }}"
     marker: '-A INPUT -m comment --comment "{mark} ANSIBLE MANAGED BLOCK INPUT"'
-  when: "'masters' not in group_names"
+  when:
+    - "'masters' not in group_names"
+    - "not poc_installed|default(False) or poc_allow_iptables_update|default(false)"
   notify: restart iptables
 
 - name: add OPENSHIFT-ADMIN-OUTPUT-RULES chain
@@ -39,7 +44,10 @@
     dest: /etc/sysconfig/iptables
     insertafter: '^:OUTPUT ACCEPT'
     line: ':OPENSHIFT-ADMIN-OUTPUT-RULES - [0:0]'
-  when: "'masters' not in group_names"
+    regexp: '^:OPENSHIFT-ADMIN-OUTPUT-RULES '
+  when:
+    - "'masters' not in group_names"
+    - "not poc_installed|default(False) or poc_allow_iptables_update|default(false)"
   notify: restart iptables
 
 - name: block access from SDN to internal network (OPENSHIFT-ADMIN-OUTPUT-RULES)
@@ -55,7 +63,9 @@
       -A OPENSHIFT-ADMIN-OUTPUT-RULES -d 10.128.0.0/14 -j ACCEPT
       -A OPENSHIFT-ADMIN-OUTPUT-RULES -j RETURN
     marker: '-A OPENSHIFT-ADMIN-OUTPUT-RULES -m comment --comment "{mark} ANSIBLE MANAGED BLOCK OPENSHIFT-ADMIN-OUTPUT-RULES"'
-  when: "'masters' not in group_names"
+  when:
+    - "'masters' not in group_names"
+    - "not poc_installed|default(False) or poc_allow_iptables_update|default(false)"
   notify: restart iptables
 
 - name: add a cron entry for restarting rsyslog

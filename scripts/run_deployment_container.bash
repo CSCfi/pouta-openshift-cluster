@@ -20,17 +20,19 @@ print_usage_and_exit()
     echo "                           exposed as environment variable VAULT_PASS"
     echo "  -e environment_name      environment to deploy"
     echo "  -o openshift_ansible_dir mount openshift-ansible from host. Use absolute path"
+    echo "  -c container_image       use custom container image (default cscfi/poc-deployer)"
     echo "  -i                       open interactive session"
     echo "  -s                       skip ssh config generation (useful when debugging broken installations)"
     exit 1
 }
 
 docker_opts=''
+container_image='cscfi/poc-deployer'
 
 # Check the OS
 OS="$(uname -s)"
 
-while getopts "p:P:e:o:ish" opt; do
+while getopts "p:P:e:o:c:ish" opt; do
     case $opt in
         p)
             passfile=$OPTARG
@@ -60,6 +62,9 @@ while getopts "p:P:e:o:ish" opt; do
             env_name=$OPTARG
             docker_opts="$docker_opts -e ENV_NAME=$env_name"
             ;;
+        c)  container_image=$OPTARG
+            echo "  using custom image $container_image"
+            ;;
         i)
             if [[ $OS != "Darwin"* ]]; then
                 docker_opts="$docker_opts -it"
@@ -84,4 +89,4 @@ docker run --rm \
     -v $SCRIPT_DIR/../../poc:/opt/deployment/poc:ro \
     --name ${env_name}-deployer \
     $docker_opts \
-    cscfi/poc-deployer $*
+    $container_image $*

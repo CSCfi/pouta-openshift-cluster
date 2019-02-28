@@ -33,7 +33,7 @@ TODO: create a playbook to automate this
 2. Run a scaleup to add the new GlusterFS nodes to the cluster, e.g.:
 
    ```bash
-   ansible-playbook -e allow_heat_stack_update_glusterfs=1 site_scaleup_3.9.yml
+   ansible-playbook -e allow_heat_stack_update_glusterfs=1 site_scaleup.yml
    ```
 
 3. Login to a master node:

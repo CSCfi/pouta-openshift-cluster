@@ -133,7 +133,7 @@
 
     - name: create and attach a persistent volume for registry
       shell: >
-        oc volume -n default dc/docker-registry --add
+        oc set volume -n default dc/docker-registry --add
         --mount-path=/registry --overwrite
         --name=registry-storage
         --claim-name=registry
@@ -144,7 +144,7 @@
 
     - name: attach the existing persistent volume for registry
       shell: >
-        oc volume -n default dc/docker-registry --add
+        oc set volume -n default dc/docker-registry --add
         --mount-path=/registry --overwrite
         --name=registry-storage --claim-name=registry
       when:

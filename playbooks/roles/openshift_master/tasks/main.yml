@@ -8,6 +8,7 @@
   with_items:
     - "-A INPUT -p udp -m udp --dport 53 -j ACCEPT"
     - "-A INPUT -p tcp -m tcp --dport 53 -j ACCEPT"
+  when: not poc_installed|default(False) or poc_allow_iptables_update|default(false)
 
 - name: add a script for pruning old objects
   copy:

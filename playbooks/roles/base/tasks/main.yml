@@ -81,6 +81,7 @@
     - sysstat
     - logrotate
     - python-pip
+    - python-passlib
 
 - name: install virtualenv for Python
   pip: name=virtualenv state=present
