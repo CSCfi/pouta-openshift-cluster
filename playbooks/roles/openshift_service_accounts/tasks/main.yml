@@ -1,0 +1,21 @@
+- name: verify if the target namespace exists
+  oc_project:
+    state: present
+    name: "{{ namespace }}"
+
+- name: create the service account {{ name }}
+  oc_serviceaccount:
+    state: present
+    name: "{{ name }}"
+    namespace: "{{ namespace }}"
+
+- name: set cluster roles to the service account {{ name }}
+  oc_adm_policy_user:
+    state: present
+    namespace: "{{ namespace }}"
+    resource_kind: cluster-role
+    resource_name: "{{ role }}"
+    user: "system:serviceaccount:{{ namespace }}:{{ name }}"
+  with_items: "{{ roles }}"
+  loop_control:
+    loop_var: role
