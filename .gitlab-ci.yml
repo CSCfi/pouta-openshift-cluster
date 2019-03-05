@@ -90,6 +90,7 @@ deprovision_ci_openshift_job:
 
 deploy_qa_openshift_job:
   stage: qa_env_deploy
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.2
   variables:
     ENV_NAME: oso-qa
   except:
@@ -105,6 +106,7 @@ deploy_qa_openshift_job:
 
 run_qa_tests_openshift_job:
   stage: qa_run_tests
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.2
   variables:
     ENV_NAME: oso-qa
   except:
@@ -179,6 +181,7 @@ deploy_valinor_job:
 
 scheduled_backups_oso_qa_job:
   stage: scheduled_backups
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.2
   variables:
     ENV_NAME: oso-qa
   script:
