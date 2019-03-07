@@ -2,8 +2,6 @@ FROM centos:7
 
 LABEL maintainer="CSC Rahti Team <rahti-team@postit.csc.fi>"
 
-COPY requirements.txt /root/requirements.txt
-
 RUN yum install -y \
         epel-release \
     && \
@@ -16,6 +14,8 @@ RUN yum install -y \
         tmux less git man bash-completion \
     && \
     yum clean all
+
+COPY requirements.txt /root/requirements.txt
 
 RUN pip install --no-cache-dir -U setuptools
 RUN pip install --no-cache-dir -r /root/requirements.txt
