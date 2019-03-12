@@ -16,6 +16,11 @@ else
   source $HOME/check_oso_deploy/bin/activate
 fi
 
+if [[ ! -f /dev/shm/secret/testuser_credentials ]]; then
+  echo "Cannot find test user credentials in /dev/shm/secret/testuser_credentials"
+  exit 1
+fi
+
 IFS='|' read -r api_url username password < /dev/shm/secret/testuser_credentials
 oc login $api_url --username $username --password $password &> /dev/null
 python $SCRIPT_DIR/check_oso_deploy.py $@

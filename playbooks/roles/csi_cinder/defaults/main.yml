@@ -1,0 +1,12 @@
+---
+# Namespace to run components in
+csi_cinder_namespace: "csi-cinder"
+
+# How many replicas of the CSI Cinder controller to run
+csi_cinder_controller_replicas: 2
+
+# Container images
+csi_attacher_image: "registry.access.redhat.com/openshift3/csi-attacher:v3.11"
+csi_provisioner_image: "registry.access.redhat.com/openshift3/csi-provisioner:v3.11"
+csi_cinder_plugin_image: "docker.io/k8scloudprovider/cinder-csi-plugin:v0.3.0"
+csi_driver_registrar_image: "registry.access.redhat.com/openshift3/csi-driver-registrar:v3.11"

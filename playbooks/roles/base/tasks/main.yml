@@ -82,6 +82,7 @@
     - logrotate
     - python-pip
     - python-passlib
+    - python2-openshift
 
 - name: install virtualenv for Python
   pip: name=virtualenv state=present

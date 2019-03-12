@@ -42,7 +42,7 @@ class PollTimeoutException(OsoCheckException):
     msg = 'Timeout while polling the created service.'
 
 
-def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_delay=5):
+def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_delay=5, storage_class=None):
     """
     Create a minimal deployment of nginx. Optionally attach a persistent volume
     and write some data to it.
@@ -141,6 +141,9 @@ def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_d
                 'name': 'nginx-volume'
             }
         }
+
+        if storage_class != None:
+            pvc_data['spec']['storageClassName'] = storage_class
 
         kube_api.create_namespaced_persistent_volume_claim(namespace=namespace, body=pvc_data)
         time.sleep(pvc_delay)
@@ -264,6 +267,10 @@ def main():
                         help='How long to wait for the test to finish.',
                         dest='timeout',
                         default=300)
+    parser.add_argument('--storage_class',
+                        help='What storage class to use if a PVC is created.',
+                        dest='storage_class',
+                        default=None)
 
     args = parser.parse_args()
 
@@ -287,7 +294,7 @@ def main():
         exit_with_stats(NAGIOS_STATE_CRITICAL)
 
     try:
-        route_url = create_nginx(oso_api, kube_api, namespace, args.use_pvc, pvc_delay)
+        route_url = create_nginx(oso_api, kube_api, namespace, args.use_pvc, pvc_delay, args.storage_class)
         poll_nginx(route_url, string_to_grep, timeout)
     except kube_client.rest.ApiException as e:
         print(e)

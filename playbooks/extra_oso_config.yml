@@ -3,18 +3,40 @@
   hosts: masters[0]
   roles:
     - role: poc_facts
+    - role: csi_cinder
   tasks:
-    - name: update storage classes
-      oc_storageclass:
-        name: "{{ item.name }}"
+    - name: update storage classes (1st pass)
+      k8s:
         state: present
-        default_storage_class: "{{ item.default_storage_class|default(omit) }}"
-        provisioner: "{{ item.provisioner }}"
-        parameters: "{{ item.parameters|default([]) }}"
+        force: true
+        definition: "{{ item }}"
+      with_items: "{{ storage_classes|default([]) }}"
+      ignore_errors: true
+      register: sc_updates
+      when:
+        - skip_pvc|default(false) == false
+        - item.metadata.name in active_storage_classes
+
+    - name: delete storage classes that failed to update due to a 422 error (parameter updates are not supported)
+      k8s:
+        state: absent
+        api_version: v1
+        kind: StorageClass
+        name: "{{ item.item.metadata.name }}"
+      with_items: "{{ sc_updates.results }}"
+      when:
+        - item.failed
+        - item.error == 422
+        - skip_pvc|default(false) == false
+
+    - name: update storage classes (2nd pass)
+      k8s:
+        state: present
+        definition: "{{ item }}"
       with_items: "{{ storage_classes|default([]) }}"
       when:
         - skip_pvc|default(false) == false
-        - item.name in active_storage_classes
+        - item.metadata.name in active_storage_classes
 
     - name: copy nfs_pv definitions to first master
       copy:
