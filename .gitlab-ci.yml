@@ -3,7 +3,7 @@
 # Ansible. If you update the deployment container image, remember to update the
 # version number here.
 image:
-  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.4
+  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.2
 
 variables:
   DOCKER_DRIVER: overlay
@@ -47,7 +47,6 @@ stages:
 
 deploy_ci_openshift_job:
   stage: ci_env_deploy
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.2
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:
@@ -59,7 +58,6 @@ deploy_ci_openshift_job:
 
 run_ci_tests_openshift_job:
   stage: ci_run_tests
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.2
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:
@@ -69,7 +67,6 @@ run_ci_tests_openshift_job:
 
 backup_ci_openshift_job:
   stage: ci_backups
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.2
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:
@@ -79,7 +76,6 @@ backup_ci_openshift_job:
 
 deprovision_ci_openshift_job:
   stage: cleanup
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.2
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:
@@ -90,7 +86,6 @@ deprovision_ci_openshift_job:
 
 deploy_qa_openshift_job:
   stage: qa_env_deploy
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.2
   variables:
     ENV_NAME: oso-qa
   except:
@@ -106,7 +101,6 @@ deploy_qa_openshift_job:
 
 run_qa_tests_openshift_job:
   stage: qa_run_tests
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.2
   variables:
     ENV_NAME: oso-qa
   except:
@@ -147,6 +141,7 @@ deploy_rahti_int_job:
 
 deploy_rahti_job:
   stage: prod_deploy
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.4
   variables:
     ENV_NAME: rahti
   except:
@@ -164,6 +159,7 @@ deploy_rahti_job:
 
 deploy_valinor_job:
   stage: prod_deploy
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.4
   variables:
     ENV_NAME: varda
   except:
@@ -181,7 +177,6 @@ deploy_valinor_job:
 
 scheduled_backups_oso_qa_job:
   stage: scheduled_backups
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.2
   variables:
     ENV_NAME: oso-qa
   script:
@@ -204,6 +199,7 @@ scheduled_backups_rahti_int_job:
 
 scheduled_backups_rahti_job:
   stage: scheduled_backups
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.4
   variables:
     ENV_NAME: rahti
   script:
@@ -215,6 +211,7 @@ scheduled_backups_rahti_job:
 
 scheduled_backups_valinor_job:
   stage: scheduled_backups
+  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.4
   variables:
     ENV_NAME: varda
   script:
