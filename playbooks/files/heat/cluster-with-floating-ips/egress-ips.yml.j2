@@ -1,0 +1,32 @@
+---
+heat_template_version: newton
+
+description: >
+  Provision ports for namespace egress IPs.
+
+parameters:
+  network_id:
+    description: >
+      Id of cluster network
+    type: string
+
+resources:
+
+  {% if heat_egress_ips is defined %}
+  {% for egress_ip in heat_egress_ips %}
+
+    ns_port_{{ egress_ip.namespace }}:
+      type: OS::Neutron::Port
+      properties:
+        network_id: { get_param: network_id }
+        fixed_ips:
+          - ip_address: {{ egress_ip.private_ip }}
+
+    ns_floating_ip_association_{{ egress_ip.namespace }}:
+      type: OS::Neutron::FloatingIPAssociation
+      properties:
+        floatingip_id: {{ egress_ip.floating_ip_id }}
+        port_id: { get_resource: ns_port_{{ egress_ip.namespace }} }
+
+  {% endfor %}
+  {% endif %}

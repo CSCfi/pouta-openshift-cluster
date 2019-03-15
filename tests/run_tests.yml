@@ -64,6 +64,17 @@
           when:
             - item not in poc_test_blacklist|default([])
 
+        - name: Run the namespace egress ip test
+          shell: >
+            PROJECT_NAME={{ item.namespace }}
+            PROJECT_IP={{ item.floating_ip }}
+            ./run.bats >> /tmp/poc/tests/test_results.log
+          args:
+            chdir: '/tmp/poc/tests/bats_test_namespace_egress_ip'
+          when:
+            - item.namespace == "poc-egress-ip-test"
+          with_items: "{{ egress_ips|default([]) }}"
+
       always:
         - name: put test results in a var
           command: 'cat /tmp/poc/tests/test_results.log'

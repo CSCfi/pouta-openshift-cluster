@@ -82,6 +82,13 @@ parameters:
       possible, but it is the default to be on the safe side.
     type: string
     default: "RESIZE"
+  compute_allowed_address_pairs_cidr:
+    description: >
+      This is the list of CIDRs which contains the IP ranges allocated for
+      customer egress IPs. Each CIDR from the list needs to be part of the
+      allowed address pairs in each compute node.
+    type: comma_delimited_list
+    default: "192.168.192.0/18"
   ansible_group_name:
     description: >
       What Ansible group these compute nodes should be be placed in.
@@ -131,13 +138,21 @@ resources:
                 name_suffix: { get_param: name_suffix }
           image: { get_param: compute_node_image }
           networks:
-            - network: { get_param: network_id }
+            - subnet: { get_param: subnet_id }
+              network: { get_param: network_id }
               fixed_ip:
                 str_replace:
                   template: network_prefix.compute_node_resource_group_identifier%index%
                   params:
                     network_prefix: { get_param: network_prefix }
                     compute_node_resource_group_identifier: { get_param: compute_node_resource_group_identifier }
+              port_extra_properties:
+                allowed_address_pairs:
+                  repeat:
+                    for_each:
+                      <%cidr%>: { get_param: compute_allowed_address_pairs_cidr }
+                    template:
+                      ip_address: <%cidr%>
           flavor: { get_param: compute_node_flavor }
           flavor_update_policy: { get_param: compute_node_flavor_update_policy }
           metadata:
