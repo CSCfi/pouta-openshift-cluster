@@ -4,6 +4,8 @@
 #  - oc bash-completion
 #  - Openshift admission webhooks API
 #  - Restrict the number of namespaces per user
+#  - Bash completion for oc
+#  - Fixed certificate-authority-data for kubeconfig
 ---
 - name: Additional master configuration
   hosts: masters
@@ -26,3 +28,12 @@
       shell: oc completion bash > /etc/bash_completion.d/oc
       args:
         creates: /etc/bash_completion.d/oc
+
+    - name: fix certificate-authority-data in kubeconfigs (needed to make k8s module work)
+      kubeclient_ca:
+        client_path: "{{ item }}"
+        ca_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
+      when: install_type == 'multimaster'
+      with_items:
+        - '/root/.kube/config'
+        - '/home/cloud-user/.kube/config'
