@@ -11,9 +11,10 @@
           - "{{ deprovision_allowed|default(False) }} == True"
         msg: "Must set deprovision_allowed to True to deprovision"
 
-- name: Remove projects and persistent volumes still in use
+- name: Get info on volumes to delete
   gather_facts: no
-  hosts: masters[0]
+  hosts: masters
+  run_once: yes
   tasks:
     - name: Check if SSH works
       shell: ssh -o ConnectTimeout=10 {{ cluster_name }}-master-1 'echo success'
@@ -21,26 +22,17 @@
       failed_when: false
       delegate_to: localhost
 
-    # We remove PVCs and delete all pods to release the PVCs so that
-    # Cinder driver can detach PVs from node hosts
-    - name: remove PVCs from projects
-      shell: |
-        oc get namespace -o jsonpath='{.items[*].metadata.name}' | xargs -n 1 \
-        oc delete {{ item }} --all -n --force --grace-period 0
-      with_items:
-      - pvc
-      - pod
-      failed_when: false
-      when: ssh_result.stdout.find('success') == 0
+    - name: get names of dynamically provisioned cinder volumes
+      shell: oc get pv -o jsonpath='{.items[?(@.spec.csi.driver)].metadata.name}'
+      register: volume_name_result
 
-    - name: wait for recycler pod to remove the dynamically provisioned PVs
-      shell: oc get pv -o jsonpath='{.items[*].spec.cinder}'
-      register: result
-      until: result.stdout_lines|length == 0
-      retries: 60
-      delay: 5
-      failed_when: false
-      when: ssh_result.stdout.find('success') == 0
+    - name: put volume names in a list
+      set_fact:
+        cinder_volume_names: "{{ volume_name_result.stdout.split() }}"
+
+    - name: show volumes to delete
+      debug:
+        var: cinder_volume_names
 
 - hosts: localhost
   gather_facts: no
@@ -107,6 +99,12 @@
         name: "{{ cluster_name }}-base"
         state: absent
         wait: yes
+
+    - name: Delete dynamically created Cinder volumes
+      os_volume:
+        display_name: "{{ item }}"
+        state: absent
+      with_items: "{{ hostvars[groups['masters'][0]]['cinder_volume_names']|default([]) }}"
 
     - name: Remove inventory cache
       file:
