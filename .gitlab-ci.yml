@@ -141,7 +141,6 @@ deploy_rahti_int_job:
 
 deploy_rahti_job:
   stage: prod_deploy
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.4
   variables:
     ENV_NAME: rahti
   except:
@@ -159,7 +158,6 @@ deploy_rahti_job:
 
 deploy_valinor_job:
   stage: prod_deploy
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.4
   variables:
     ENV_NAME: varda
   except:
@@ -199,7 +197,6 @@ scheduled_backups_rahti_int_job:
 
 scheduled_backups_rahti_job:
   stage: scheduled_backups
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.4
   variables:
     ENV_NAME: rahti
   script:
@@ -211,7 +208,6 @@ scheduled_backups_rahti_job:
 
 scheduled_backups_valinor_job:
   stage: scheduled_backups
-  image: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:v1.0.4
   variables:
     ENV_NAME: varda
   script:
