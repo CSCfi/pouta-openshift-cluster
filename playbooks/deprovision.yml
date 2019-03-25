@@ -16,12 +16,6 @@
   hosts: masters
   run_once: yes
   tasks:
-    - name: Check if SSH works
-      shell: ssh -o ConnectTimeout=10 {{ cluster_name }}-master-1 'echo success'
-      register: ssh_result
-      failed_when: false
-      delegate_to: localhost
-
     - name: get names of dynamically provisioned cinder volumes
       shell: oc get pv -o jsonpath='{.items[?(@.spec.csi.driver)].metadata.name}'
       register: volume_name_result
