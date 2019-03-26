@@ -96,5 +96,15 @@
         content:
           spec.template.spec.nodeSelector.type: master
       when:
-        - openshift_release|version_compare('3.9', '>=')
         - set_glusterblock_storage_provisioner_node_selector|default(true)|bool
+
+    - name: Deploy openshift-metrics-server on infra nodes by adding a node selector
+      oc_edit:
+        namespace: openshift-metrics-server
+        kind: deployment
+        name: metrics-server
+        content:
+          spec.template.spec.nodeSelector:
+            node-role.kubernetes.io/infra: 'true'
+      when:
+        - openshift_metrics_install_metrics|default(true)|bool
