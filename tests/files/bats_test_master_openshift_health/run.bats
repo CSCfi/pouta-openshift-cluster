@@ -117,6 +117,10 @@ check_namespace_pod_health() {
     check_namespace_pod_health webhooks
 }
 
+@test "test csi-cinder namespace pod health" {
+    check_namespace_pod_health csi-cinder
+}
+
 @test "test connectivity to registry URL" {
     run check_route_url default docker-registry-reencrypt
 

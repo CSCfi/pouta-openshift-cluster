@@ -1,0 +1,258 @@
+---
+- name: ensure namespace for Cinder CSI exists
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ csi_cinder_namespace }}"
+        annotations:
+          openshift.io/node-selector: ""
+          openshift.io/description: >
+            A system namespace that runs the CSI Cinder plugin
+            for managing dynamically created OpenStack Cinder
+            volumes.
+
+- name: ensure Cinder CSI ClusterRole exists
+  k8s:
+    state: present
+    definition:
+      kind: ClusterRole
+      apiVersion: rbac.authorization.k8s.io/v1
+      metadata:
+        name: cinder-csi-role
+      rules:
+        - apiGroups: [""]
+          resources: ["persistentvolumes"]
+          verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+        - apiGroups: [""]
+          resources: ["events"]
+          verbs: ["create", "get", "list", "watch", "update", "patch"]
+        - apiGroups: [""]
+          resources: ["persistentvolumeclaims"]
+          verbs: ["get", "list", "watch", "update", "patch"]
+        - apiGroups: [""]
+          resources: ["nodes"]
+          verbs: ["get", "list", "watch", "update", "patch"]
+        - apiGroups: ["storage.k8s.io"]
+          resources: ["storageclasses"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: ["storage.k8s.io"]
+          resources: ["volumeattachments"]
+          verbs: ["get", "list", "watch", "update", "patch"]
+        - apiGroups: [""]
+          resources: ["configmaps"]
+          verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+- name: ensure Cinder CSI ServiceAccount exists
+  k8s:
+    state: present
+    definition:
+      kind: ServiceAccount
+      apiVersion: v1
+      metadata:
+        name: cinder-csi
+        namespace: "{{ csi_cinder_namespace }}"
+
+- name: ensure cinder-csi ServiceAccount has the privileged scc
+  oc_adm_policy_user:
+    user: system:serviceaccount:{{ csi_cinder_namespace }}:cinder-csi
+    resource_kind: scc
+    resource_name: privileged
+    state: present
+
+- name: ensure Cinder CSI ClusterRoleBinding exists
+  k8s:
+    state: present
+    definition:
+      kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1
+      metadata:
+        name: cinder-csi-role
+      subjects:
+        - kind: ServiceAccount
+          name: cinder-csi
+          namespace: "{{ csi_cinder_namespace }}"
+      roleRef:
+        kind: ClusterRole
+        name: cinder-csi-role
+        apiGroup: rbac.authorization.k8s.io
+
+- name: ensure Cinder CSI cloud.conf secret exists
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      data:
+        cloud.conf: "{{ lookup('template', 'cloud.conf.j2') | b64encode }}"
+      kind: Secret
+      metadata:
+        creationTimestamp: null
+        name: cloudconfig
+        namespace: "{{ csi_cinder_namespace }}"
+
+- name: ensure Cinder CSI controller Deployment exists
+  k8s:
+    state: present
+    definition:
+      kind: Deployment
+      apiVersion: apps/v1
+      metadata:
+        name: cinder-csi-controller
+        namespace: "{{ csi_cinder_namespace }}"
+      spec:
+        replicas: "{{ csi_cinder_controller_replicas }}"
+        selector:
+          matchLabels:
+            app: cinder-csi-controllers
+        template:
+          metadata:
+            labels:
+              app: cinder-csi-controllers
+          spec:
+            nodeSelector:
+              node-role.kubernetes.io/infra: 'true'
+            serviceAccount: cinder-csi
+            containers:
+              - name: csi-attacher
+                image: "{{ csi_attacher_image }}"
+                args:
+                  - "--v=5"
+                  - "--csi-address=$(ADDRESS)"
+                  - "--leader-election"
+                  - "--leader-election-namespace=$(MY_NAMESPACE)"
+                  - "--leader-election-identity=$(MY_NAME)"
+                env:
+                  - name: MY_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: MY_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  - name: ADDRESS
+                    value: /csi/csi.sock
+                volumeMounts:
+                  - name: socket-dir
+                    mountPath: /csi
+              - name: csi-provisioner
+                image: "{{ csi_provisioner_image }}"
+                args:
+                  - "--v=5"
+                  - "--provisioner=csi-cinderplugin"
+                  - "--csi-address=$(ADDRESS)"
+                env:
+                  - name: ADDRESS
+                    value: /csi/csi.sock
+                volumeMounts:
+                  - name: socket-dir
+                    mountPath: /csi
+              - name: cinder-driver
+                image: "{{ csi_cinder_plugin_image }}"
+                command: [ "/bin/cinder-csi-plugin" ]
+                args:
+                  - "--nodeid=$(NODEID)"
+                  - "--endpoint=unix://$(ADDRESS)"
+                  - "--cloud-config=/etc/cloudconfig/cloud.conf"
+                env:
+                  - name: NODEID
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: spec.nodeName
+                  - name: ADDRESS
+                    value: /csi/csi.sock
+                volumeMounts:
+                  - name: socket-dir
+                    mountPath: /csi
+                  - name: cloudconfig
+                    mountPath: /etc/cloudconfig
+            volumes:
+              - name: socket-dir
+                emptyDir:
+              - name: cloudconfig
+                secret:
+                  secretName: cloudconfig
+
+- name: ensure Cinder CSI plugin DaemonSet exists
+  k8s:
+    state: present
+    definition:
+      kind: DaemonSet
+      apiVersion: apps/v1
+      metadata:
+        name: cinder-csi-ds
+        namespace: "{{ csi_cinder_namespace }}"
+      spec:
+        selector:
+          matchLabels:
+            app: cinder-csi-driver
+        template:
+          metadata:
+            labels:
+              app: cinder-csi-driver
+          spec:
+            serviceAccount: cinder-csi
+            containers:
+              - name: csi-driver-registrar
+                image: "{{ csi_driver_registrar_image }}"
+                securityContext:
+                  privileged: true
+                args:
+                  - "--v=5"
+                  - "--csi-address=$(ADDRESS)"
+                env:
+                  - name: ADDRESS
+                    value: /csi/csi.sock
+                  - name: KUBE_NODE_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: spec.nodeName
+                volumeMounts:
+                  - name: socket-dir
+                    mountPath: /csi
+              - name: cinder-driver
+                securityContext:
+                  privileged: true
+                  capabilities:
+                    add: ["SYS_ADMIN"]
+                  allowPrivilegeEscalation: true
+                image: "{{ csi_cinder_plugin_image }}"
+                command: [ "/bin/cinder-csi-plugin" ]
+                args:
+                  - "--nodeid=$(NODEID)"
+                  - "--endpoint=unix://$(ADDRESS)"
+                  - "--cloud-config=/etc/cloudconfig/cloud.conf"
+                env:
+                  - name: NODEID
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: spec.nodeName
+                  - name: ADDRESS
+                    value: /csi/csi.sock
+                volumeMounts:
+                  - name: socket-dir
+                    mountPath: /csi
+                  - name: mountpoint-dir
+                    mountPath: /var/lib/origin/openshift.local.volumes/pods/
+                    mountPropagation: "Bidirectional"
+                  - name: cloud-metadata
+                    mountPath: /var/lib/cloud/data/
+                  - name: dev
+                    mountPath: /dev
+            volumes:
+              - name: cloud-metadata
+                hostPath:
+                  path: /var/lib/cloud/data/
+              - name: socket-dir
+                hostPath:
+                  path: /var/lib/kubelet/plugins/csi-cinderplugin
+                  type: DirectoryOrCreate
+              - name: mountpoint-dir
+                hostPath:
+                  path: /var/lib/origin/openshift.local.volumes/pods/
+                  type: Directory
+              - name: dev
+                hostPath:
+                  path: /dev

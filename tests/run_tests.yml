@@ -8,7 +8,9 @@
           register: test_directories
 
         - name: run bats tests
-          shell: './generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log'
+          shell: >
+            ACTIVE_STORAGE_CLASSES={{ active_storage_classes | join(",") }}
+            ./generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log
           args:
             chdir: '/tmp/poc/tests'
           with_items: "{{ test_directories.stdout_lines }}"
