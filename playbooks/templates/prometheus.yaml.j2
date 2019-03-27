@@ -334,4 +334,4 @@ items:
         - record: cpu_consumed_per_node_type
           expr: sort_desc(sum by (type) (rate(container_cpu_usage_seconds_total{id="/"}[5m])))
         - record: cpu_reservations_per_node
-          expr: sum(container_spec_cpu_shares{id=~'^/kubepods.slice/kubepods-.*$',pod_name=~'.+',container_name!="POD"}) by (kubernetes_io_hostname,type) / 1024
+          expr: sum(container_spec_cpu_shares{id=~'^/kubepods.slice/kubepods-.*$',pod_name=~'.+',container_name!~".+"}) by (kubernetes_io_hostname,type) / 1024
