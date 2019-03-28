@@ -19,14 +19,17 @@
     - name: get names of dynamically provisioned cinder volumes
       shell: oc get pv -o jsonpath='{.items[?(@.spec.csi.driver)].metadata.name}'
       register: volume_name_result
+      failed_when: false
 
     - name: put volume names in a list
       set_fact:
         cinder_volume_names: "{{ volume_name_result.stdout.split() }}"
+      when: volume_name_result.rc == 0
 
     - name: show volumes to delete
       debug:
         var: cinder_volume_names
+      when: volume_name_result.rc == 0
 
 - hosts: localhost
   gather_facts: no
@@ -99,6 +102,17 @@
         display_name: "{{ item }}"
         state: absent
       with_items: "{{ hostvars[groups['masters'][0]]['cinder_volume_names']|default([]) }}"
+      when: groups['masters']|length > 0
+
+    - name: Assert the potential of having leftover cinder volumes
+      assert:
+        that:
+          - hostvars[groups['masters'][0]]['volume_name_result'].rc == 0
+        msg: >
+          There might be some leftover Cinder volumes which need to be deleted manually.
+          Please check the list of volumes by running: "openstack volume list", and
+          manually deleting them with: "openstack volume delete <VOLUME_NAME>"
+      when: groups['masters']|length > 0
 
     - name: Remove inventory cache
       file:
