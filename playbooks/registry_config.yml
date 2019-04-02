@@ -158,3 +158,37 @@
         name: registry-console
         content:
           spec.template.spec.nodeSelector.type: master
+
+    - name: Update the registry-viewer cluster role
+      oc_edit:
+        kind: ClusterRole
+        name: registry-viewer
+        content:
+          metadata:
+            annotations:
+              authorization.openshift.io/system-only: "true"
+              openshift.io/reconcile-protect: "true"
+            name: registry-viewer
+          rules:
+            - apiGroups:
+                - ""
+                - image.openshift.io
+              attributeRestrictions: null
+              resources:
+                - imagestreamimages
+                - imagestreammappings
+                - imagestreams
+                - imagestreamtags
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+                - image.openshift.io
+              attributeRestrictions: null
+              resources:
+                - imagestreams/layers
+              verbs:
+                - get
+      when: poc_fix_registry_viewer_clusterole|default(true)|bool
