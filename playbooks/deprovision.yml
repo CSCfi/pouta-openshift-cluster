@@ -16,20 +16,28 @@
   hosts: masters
   run_once: yes
   tasks:
-    - name: get names of dynamically provisioned cinder volumes
-      shell: oc get pv -o jsonpath='{.items[?(@.spec.csi.driver)].metadata.name}'
-      register: volume_name_result
+    - name: Check if SSH works
+      shell: ssh -o ConnectTimeout=10 {{ cluster_name }}-master-1 'echo success'
+      register: ssh_result
       failed_when: false
+      delegate_to: localhost
 
-    - name: put volume names in a list
-      set_fact:
-        cinder_volume_names: "{{ volume_name_result.stdout.split() }}"
-      when: volume_name_result.rc == 0
+    - when: ssh_result.stdout.find('success') == 0
+      block:
+      - name: get names of dynamically provisioned cinder volumes
+        shell: oc get pv -o jsonpath='{.items[?(@.spec.csi.driver)].metadata.name}'
+        register: volume_name_result
+        failed_when: false
 
-    - name: show volumes to delete
-      debug:
-        var: cinder_volume_names
-      when: volume_name_result.rc == 0
+      - name: put volume names in a list
+        set_fact:
+          cinder_volume_names: "{{ volume_name_result.stdout.split() }}"
+        when: volume_name_result.rc == 0
+
+      - name: show volumes to delete
+        debug:
+          var: cinder_volume_names
+        when: volume_name_result.rc == 0
 
 - hosts: localhost
   gather_facts: no
@@ -102,19 +110,34 @@
         display_name: "{{ item }}"
         state: absent
       with_items: "{{ hostvars[groups['masters'][0]]['cinder_volume_names']|default([]) }}"
-      when: groups['masters']|length > 0
+      when:
+      - groups['masters']|length > 0
+      - hostvars[groups['masters'][0]]['ssh_result'].stdout.find('success') == 0
 
-    - name: Assert the potential of having leftover cinder volumes
-      assert:
-        that:
-          - hostvars[groups['masters'][0]]['volume_name_result'].rc == 0
-        msg: >
-          There might be some leftover Cinder volumes which need to be deleted manually.
-          Please check the list of volumes by running: "openstack volume list", and
-          manually deleting them with: "openstack volume delete <VOLUME_NAME>"
-      when: groups['masters']|length > 0
+    - when:
+      - groups['masters']|length > 0
+      block:
+      - name: Assert that SSH connections to masters worked
+        assert:
+          that:
+            - hostvars[groups['masters'][0]]['ssh_result'].stdout.find('success') == 0
+          msg: >
+            SSH connection to master nodes failed during deprovisioning.
+            There might be some leftover Cinder volumes which need to be deleted manually.
+            Please check the list of volumes by running: "openstack volume list", and
+            manually deleting them with: "openstack volume delete <VOLUME_NAME>"
 
-    - name: Remove inventory cache
-      file:
-        path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
-        state: absent
+      - name: Assert the potential of having leftover cinder volumes
+        assert:
+          that:
+            - hostvars[groups['masters'][0]]['volume_name_result'].rc == 0
+          msg: >
+            API query on master nodes did not work during deprovisioning.
+            There might be some leftover Cinder volumes which need to be deleted manually.
+            Please check the list of volumes by running: "openstack volume list", and
+            manually deleting them with: "openstack volume delete <VOLUME_NAME>"
+      always:
+      - name: Remove inventory cache
+        file:
+          path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
+          state: absent
