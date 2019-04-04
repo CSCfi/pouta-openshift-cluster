@@ -117,6 +117,13 @@
             containers:
               - name: csi-attacher
                 image: "{{ csi_attacher_image }}"
+                resources:
+                  requests:
+                    cpu: "100m"
+                    memory: "100Mi"
+                  limits:
+                    cpu: "500m"
+                    memory: "512Mi"
                 args:
                   - "--v=5"
                   - "--csi-address=$(ADDRESS)"
@@ -139,6 +146,13 @@
                     mountPath: /csi
               - name: csi-provisioner
                 image: "{{ csi_provisioner_image }}"
+                resources:
+                  requests:
+                    cpu: "100m"
+                    memory: "100Mi"
+                  limits:
+                    cpu: "500m"
+                    memory: "512Mi"
                 args:
                   - "--v=5"
                   - "--provisioner=csi-cinderplugin"
@@ -152,6 +166,13 @@
               - name: cinder-driver
                 image: "{{ csi_cinder_plugin_image }}"
                 command: [ "/bin/cinder-csi-plugin" ]
+                resources:
+                  requests:
+                    cpu: "100m"
+                    memory: "100Mi"
+                  limits:
+                    cpu: "500m"
+                    memory: "512Mi"
                 args:
                   - "--nodeid=$(NODEID)"
                   - "--endpoint=unix://$(ADDRESS)"
@@ -197,6 +218,13 @@
             containers:
               - name: csi-driver-registrar
                 image: "{{ csi_driver_registrar_image }}"
+                resources:
+                  requests:
+                    cpu: "100m"
+                    memory: "100Mi"
+                  limits:
+                    cpu: "500m"
+                    memory: "512Mi"
                 securityContext:
                   privileged: true
                 args:
@@ -220,6 +248,13 @@
                   allowPrivilegeEscalation: true
                 image: "{{ csi_cinder_plugin_image }}"
                 command: [ "/bin/cinder-csi-plugin" ]
+                resources:
+                  requests:
+                    cpu: "100m"
+                    memory: "100Mi"
+                  limits:
+                    cpu: "500m"
+                    memory: "512Mi"
                 args:
                   - "--nodeid=$(NODEID)"
                   - "--endpoint=unix://$(ADDRESS)"
