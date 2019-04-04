@@ -25,7 +25,7 @@
         name: "{{ item.item.metadata.name }}"
       with_items: "{{ sc_updates.results }}"
       when:
-        - item.failed
+        - item.failed|default(false)
         - item.error == 422
         - skip_pvc|default(false) == false
 
