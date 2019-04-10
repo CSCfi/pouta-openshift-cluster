@@ -30,7 +30,6 @@ print_usage_and_exit()
     echo "                           Note: rebuilding automatically activates nodes"
     echo "  -c control-host          control host to use for draining"
     echo "  -p                       power cycle after actions"
-    echo "  -v                       scaleup playbook version (optional, default '3.9')"
     echo
     echo "Examples:"
     echo "  $me -a update -dup -c \$ENV_NAME-master-1 \$ENV_NAME-node-{1..4}"
@@ -111,7 +110,6 @@ opt_drain=
 opt_uncordon=
 opt_control_host=
 opt_power_cycle=
-opt_scaleup_version="3.9"
 
 # Process options
 while getopts "a:s:c:i:v:duph" opt; do
@@ -134,9 +132,6 @@ while getopts "a:s:c:i:v:duph" opt; do
         c)
             opt_control_host="${OPTARG}"
             ;;
-        v)
-            opt_scaleup_version="${OPTARG}"
-            ;;
         *)
             print_usage_and_exit
             ;;
@@ -152,12 +147,6 @@ fi
 
 if [[ (! -z $opt_drain || $opt_uncordon) && -z $opt_control_host ]]; then
     echo "ERROR: need to define control host with drain and uncordon option"
-    print_usage_and_exit
-fi
-
-scaleup_playbook="site_scaleup_${opt_scaleup_version}.yml"
-if [[ ! -e $scaleup_playbook ]]; then
-    echo "ERROR: scaleup playbook $scaleup_playbook does not exist"
     print_usage_and_exit
 fi
 
@@ -178,8 +167,8 @@ for host in $*; do
         rebuild_server $host
         update_server $host
         power_cycle_server $host
-        log "apply $scaleup_playbook"
-        ansible-playbook -v $scaleup_playbook
+        log "apply site_scaleup.yml"
+        ansible-playbook -v site_scaleup.yml
         [[ -n $opt_power_cycle ]] && power_cycle_server $host
     fi
 
