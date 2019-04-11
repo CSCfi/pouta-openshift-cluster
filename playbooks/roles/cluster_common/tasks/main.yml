@@ -91,3 +91,15 @@
   shell: >
     hostname -F /etc/hostname
   when: write_etc_hostname.changed
+
+# Create a udev rule to set readahead and io-scheduler for dynamically attached volumes (csi-cinder)
+# Note that 'deadline' scheduler works for selecting the new 'mq-deadline' as well
+- name: set constant readahead and scheduler for virtio block devices
+  copy:
+    dest: /etc/udev/rules.d/99-block-readahead-scheduler.rules
+    owner: root
+    group: root
+    mode: 0644
+    content: |
+      SUBSYSTEM=="block", ACTION=="add|change", KERNEL=="vd[a-z]", ATTR{bdi/read_ahead_kb}="4096", ATTR{queue/scheduler}="deadline"
+      SUBSYSTEM=="block", ACTION=="add|change", KERNEL=="vd[a-z][a-z]", ATTR{bdi/read_ahead_kb}="4096", ATTR{queue/scheduler}="deadline"
