@@ -99,6 +99,12 @@
         state: absent
         wait: yes
 
+    - name: Delete stack {{ cluster_name }}-egress-ips
+      os_stack:
+        name: "{{ cluster_name }}-egress-ips"
+        state: absent
+        wait: yes
+
     - name: Delete stack {{ cluster_name }}-base
       os_stack:
         name: "{{ cluster_name }}-base"

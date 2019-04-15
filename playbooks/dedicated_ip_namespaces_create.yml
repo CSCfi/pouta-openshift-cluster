@@ -1,0 +1,35 @@
+- name: Create the namespaces with dedicated IPs
+  hosts: masters
+  run_once: true
+  tasks:
+    - name: make sure that all the dedicated namespace IPs are present
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Project
+          metadata:
+            annotations:
+              openshift.io/description: >
+                Project with dedicated public IP: {{ item.floating_ip }}
+              openshift.io/requester: "{{ item.admin_user }}"
+            name: "{{ item.namespace }}"
+      with_items: "{{ egress_ips|default([]) }}"
+
+    - name: make sure that the admin_user has the correct priveleges
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: RoleBinding
+          metadata:
+            name: admin
+            namespace: "{{ item.namespace }}"
+          roleRef:
+            name: admin
+          subjects:
+            - kind: User
+              name: "{{ item.admin_user }}"
+          userNames:
+            - "{{ item.admin_user }}"
+      with_items: "{{ egress_ips|default([]) }}"

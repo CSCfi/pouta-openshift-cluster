@@ -36,10 +36,12 @@ before_script:
 
 stages:
   - ci_env_deploy
+  - ci_setup_dedicated_egress_ips
   - ci_run_tests
   - ci_backups
   - cleanup
   - qa_env_deploy
+  - qa_setup_dedicated_egress_ips
   - qa_run_tests
   - mirroring
   - prod_deploy
@@ -55,6 +57,16 @@ deploy_ci_openshift_job:
     - ./run_playbook.bash site.yml -e @/tmp/gitlab_pipeline_context.yml
   environment:
     name: oso-ci
+
+run_ci_dedicated_egress_ips_job:
+  stage: ci_setup_dedicated_egress_ips
+  variables:
+    ENV_NAME: oso-ci-singlemaster
+  except:
+    - schedules
+  script:
+    - ./run_playbook.bash dedicated_ip_namespaces_create.yml -e @/tmp/gitlab_pipeline_context.yml
+    - ./run_playbook.bash dedicated_ip_namespaces_setup.yml -e @/tmp/gitlab_pipeline_context.yml
 
 run_ci_tests_openshift_job:
   stage: ci_run_tests
@@ -92,6 +104,22 @@ deploy_qa_openshift_job:
     - schedules
   script:
     - ./run_playbook.bash site.yml -e @/tmp/gitlab_pipeline_context.yml
+  environment:
+    name: oso-qa
+  only:
+    - master
+  tags:
+    - oso-qa
+
+run_qa_dedicated_egress_ips_job:
+  stage: qa_setup_dedicated_egress_ips
+  variables:
+    ENV_NAME: oso-qa
+  except:
+    - schedules
+  script:
+    - ./run_playbook.bash dedicated_ip_namespaces_create.yml -e @/tmp/gitlab_pipeline_context.yml
+    - ./run_playbook.bash dedicated_ip_namespaces_setup.yml -e @/tmp/gitlab_pipeline_context.yml
   environment:
     name: oso-qa
   only:

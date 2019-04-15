@@ -1,0 +1,11 @@
+- name: make sure that the compute nodes are able to host customer IPs
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: HostSubnet
+      egressCIDRs: "{{ namespace_egress_ips_cidrs }}"
+      host: "{{ item }}"
+      metadata:
+        name: "{{ item }}"
+  with_items: "{{ groups['ssd'] }}"

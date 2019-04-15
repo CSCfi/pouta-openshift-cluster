@@ -1,0 +1,4 @@
+namespace_egress_ips_cidrs:
+  - "192.168.192.0/18"
+
+role_egress_ips: []

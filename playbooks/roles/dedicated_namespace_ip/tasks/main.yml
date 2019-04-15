@@ -1,0 +1,9 @@
+---
+- include_tasks: configure_compute_nodes.yml
+
+- include_tasks: setup_namespaces.yml
+  vars:
+    namespace: "{{ item.namespace }}"
+    admin_user: "{{ item.admin_user }}"
+    private_ip: "{{ item.private_ip }}"
+  with_items: "{{ role_egress_ips }}"
