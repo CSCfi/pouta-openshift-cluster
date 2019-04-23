@@ -118,7 +118,7 @@ the backup has been extracted properly before running this.
 # primary master
 
 # double check that the backup contents were extracted
-ansible $ENV-name-master-1 -a 'ls /etc/origin/master'
+ansible $ENV_NAME-master-1 -a 'ls /etc/origin/master'
 
 # run scaleup
 ansible-playbook -v -e allow_first_master_scaleup=1 site_scaleup.yml
