@@ -118,7 +118,6 @@ run_qa_dedicated_egress_ips_job:
   except:
     - schedules
   script:
-    - ./run_playbook.bash dedicated_ip_namespaces_create.yml -e @/tmp/gitlab_pipeline_context.yml
     - ./run_playbook.bash dedicated_ip_namespaces_setup.yml -e @/tmp/gitlab_pipeline_context.yml
   environment:
     name: oso-qa
