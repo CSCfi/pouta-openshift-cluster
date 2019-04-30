@@ -30,6 +30,8 @@ print_usage_and_exit()
     echo "                           Note: rebuilding automatically activates nodes"
     echo "  -c control-host          control host to use for draining"
     echo "  -p                       power cycle after actions"
+    echo "  -w N                     wait N seconds between hosts"
+    echo "  -r                       wait for node readiness after actions"
     echo
     echo "Examples:"
     echo "  $me -a update -dup -c \$ENV_NAME-master-1 \$ENV_NAME-node-{1..4}"
@@ -103,6 +105,15 @@ wait_for_ssh() {
     done
 }
 
+wait_for_node_readiness() {
+    host=$1
+    log "waiting for node to become ready"
+    while ! ansible $opt_control_host -m shell -a "oc get node $host | grep ' Ready '" 2>&1 > /dev/null ; do
+        log "waiting for node to become ready"
+        sleep 5
+    done
+}
+
 # Option flags
 opt_actions=" "
 opt_stop_services=" "
@@ -110,9 +121,11 @@ opt_drain=
 opt_uncordon=
 opt_control_host=
 opt_power_cycle=
+opt_wait_seconds=0
+opt_wait_for_node_readiness=
 
 # Process options
-while getopts "a:s:c:i:v:duph" opt; do
+while getopts "a:s:c:w:duphr" opt; do
     case $opt in
         a)
             opt_actions="${opt_actions}${OPTARG} "
@@ -131,6 +144,12 @@ while getopts "a:s:c:i:v:duph" opt; do
             ;;
         c)
             opt_control_host="${OPTARG}"
+            ;;
+        w)
+            opt_wait_seconds="${OPTARG}"
+            ;;
+        r)
+            opt_wait_for_node_readiness=1
             ;;
         *)
             print_usage_and_exit
@@ -186,4 +205,11 @@ for host in $*; do
     fi
 
     [[ -n $opt_uncordon ]] && uncordon_server $host
+
+    if [[ $opt_wait_seconds -ne 0 ]]; then
+        echo "waiting $opt_wait_seconds seconds"
+        sleep $opt_wait_seconds
+    fi
+
+    [[ -n $opt_wait_for_node_readiness ]] && wait_for_node_readiness $host
 done
