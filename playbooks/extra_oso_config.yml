@@ -4,6 +4,8 @@
   roles:
     - role: poc_facts
     - role: csi_cinder
+    - role: openshift_webconsole_logo
+      when: webconsole_logo_encoded is defined
   tasks:
     - name: update storage classes (1st pass)
       k8s:

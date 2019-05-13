@@ -1,0 +1,150 @@
+---
+- name: ensure that the webconsole-extensions configMap exists
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: webconsole-extensions
+        namespace: "{{ webconsole_namespace }}"
+      binaryData:
+        logo.png: "{{ webconsole_logo_encoded }}"
+      data:
+        logo-extension.css: "{{ lookup('template', 'logo-extension.css.j2') }}"
+
+- name: ensure that the extensions deployment exists
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: DeploymentConfig
+      metadata:
+        labels:
+          app: webconsole-extensions
+        name: webconsole-extensions
+        namespace: "{{ webconsole_namespace }}"
+      spec:
+        replicas: 1
+        selector:
+          app: webconsole-extensions
+        template:
+          metadata:
+            labels:
+              app: webconsole-extensions
+          spec:
+            containers:
+              - image: centos/httpd-24-centos7
+                name: webconsole-extensions
+                ports:
+                  - containerPort: 8080
+                    protocol: TCP
+                  - containerPort: 8443
+                    protocol: TCP
+                volumeMounts:
+                  - mountPath: /var/www/html
+                    name: webconsole-extensions
+            volumes:
+              - configMap:
+                  name: webconsole-extensions
+                name: webconsole-extensions
+
+- name: ensure that the extensions service exists
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: webconsole-extensions
+        namespace: "{{ webconsole_namespace }}"
+      spec:
+        ports:
+          - name: 8080-tcp
+            port: 8080
+            protocol: TCP
+            targetPort: 8080
+        selector:
+          app: webconsole-extensions
+
+- name: ensure that the extensions route exists
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Route
+      metadata:
+        name: webconsole-extensions
+        namespace: "{{ webconsole_namespace }}"
+      spec:
+        host: "{{ extensions_public_url }}"
+        tls:
+          termination: edge
+          insecureEdgeTerminationPolicy: Redirect
+        to:
+          name: webconsole-extensions
+
+- name: ensure that the webconsole-config configMap is patched
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: webconsole-config
+        namespace: "{{ webconsole_namespace }}"
+      data:
+        webconsole-config.yaml: |
+          apiVersion: webconsole.config.openshift.io/v1
+          kind: WebConsoleConfiguration
+          clusterInfo:
+            consolePublicURL: https://{{ openshift_public_hostname }}:8443/console/
+            loggingPublicURL: ''
+            logoutPublicURL: ''
+            masterPublicURL: https://{{ openshift_public_hostname }}:8443
+            metricsPublicURL: https://hawkular-metrics.{{ openshift_public_hostname }}/hawkular/metrics
+            adminConsolePublicURL: https://console.{{ openshift_public_hostname }}/
+          extensions:
+            scriptURLs: []
+            stylesheetURLs:
+              - https://{{ extensions_public_url }}/logo-extension.css
+            properties: {}
+          features:
+            inactivityTimeoutMinutes: 0
+            clusterResourceOverridesEnabled: false
+          servingInfo:
+            bindAddress: 0.0.0.0:8443
+            bindNetwork: tcp4
+            certFile: /var/serving-cert/tls.crt
+            clientCA: ''
+            keyFile: /var/serving-cert/tls.key
+            maxRequestsInFlight: 0
+            namedCertificates:
+            requestTimeoutSeconds: 0
+  register: webconsole_config
+
+- name: scale down the webconsole pods to 0
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Deployment
+      metadata:
+        name: webconsole
+        namespace: openshift-web-console
+      spec:
+        replicas: 0
+  when: webconsole_config.changed
+
+- name: scale up the webconsole pods back to 1
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Deployment
+      metadata:
+        name: webconsole
+        namespace: "{{ webconsole_namespace }}"
+      spec:
+        replicas: 1
+  when: webconsole_config.changed

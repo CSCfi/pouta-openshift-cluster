@@ -23,6 +23,9 @@
 
     - role: openshift_limit_namespaces
       when: enable_openshift_limit_namespaces|default(true)|bool
+
+    - role: openshift_login_page_logo
+      when: login_page_logo_encoded is defined
   tasks:
     - name: generate bash completion with oc
       shell: oc completion bash > /etc/bash_completion.d/oc

@@ -1,0 +1,2 @@
+webconsole_namespace: "openshift-web-console"
+extensions_public_url: "webconsole-extensions.{{ openshift_public_hostname }}"
