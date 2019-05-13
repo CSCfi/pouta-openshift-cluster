@@ -38,6 +38,7 @@
       disk_format: qcow2
       state: present
       filename: "{{ image_dl_temp_dir.stdout }}/public_image.img"
+      properties: "{{ image_properties | default({}) }}"
 
   when: not openstack_image
   always:
