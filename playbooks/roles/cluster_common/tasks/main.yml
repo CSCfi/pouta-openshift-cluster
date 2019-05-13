@@ -101,5 +101,7 @@
     group: root
     mode: 0644
     content: |
+      SUBSYSTEM=="block", ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{bdi/read_ahead_kb}="4096", ATTR{queue/scheduler}="deadline"
+      SUBSYSTEM=="block", ACTION=="add|change", KERNEL=="sd[a-z][a-z]", ATTR{bdi/read_ahead_kb}="4096", ATTR{queue/scheduler}="deadline"
       SUBSYSTEM=="block", ACTION=="add|change", KERNEL=="vd[a-z]", ATTR{bdi/read_ahead_kb}="4096", ATTR{queue/scheduler}="deadline"
       SUBSYSTEM=="block", ACTION=="add|change", KERNEL=="vd[a-z][a-z]", ATTR{bdi/read_ahead_kb}="4096", ATTR{queue/scheduler}="deadline"
