@@ -6,8 +6,16 @@
   roles:
     - poc_facts
   tasks:
-    - name: fork image if needed
+    - name: fork default base image image if needed
       include: tasks/fork_public_image.yml
       vars:
         forked_image_name: "{{ default_base_image }}"
         public_image_name: "{{ default_public_image }}"
+
+    - name: fork compute node stack images if needed
+      include: tasks/fork_public_image.yml
+      vars:
+        forked_image_name: "{{ item.heat_parameters.compute_node_image }}"
+        public_image_name: "{{ default_public_image }}"
+        image_properties: "{{ item.compute_node_image_properties }}"
+      with_items: "{{ compute_node_groups }}"
