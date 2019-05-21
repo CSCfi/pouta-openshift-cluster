@@ -2,6 +2,8 @@
 - name: Setup tests
   hosts: [masters, bastion]
   become: yes
+  tags:
+    - always
   tasks:
     - name: install bats
       yum:

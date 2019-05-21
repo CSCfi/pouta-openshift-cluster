@@ -6,33 +6,24 @@
         - name: collect remote test names
           shell: (cd /tmp/poc/tests && ls -d bats_test_bastion*)
           register: test_directories
+          tags:
+            - bats_tests_bastion
 
         - name: run bats tests
           shell: >
             ACTIVE_STORAGE_CLASSES={{ active_storage_classes | join(",") }}
-            CSC_PROJECT_CODE={{ testuser_project }}
+            CSC_PROJECT_CODE={{ testuser_project|default(omit) }}
             ./generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log
           args:
             chdir: '/tmp/poc/tests'
           with_items: "{{ test_directories.stdout_lines }}"
           when:
             - item not in poc_test_blacklist|default([])
+          tags:
+            - bats_tests_bastion
 
       always:
-        - name: put test results in a var
-          command: 'cat /tmp/poc/tests/test_results.log'
-          register: test_results
-
-        - name: print test output in human readable form
-          debug:
-            var: "{{ test_results.stdout.split('\n') | quote }}"
-
-        - name: cleanup test files
-          file:
-            path: /tmp/poc
-            state: absent
-          when:
-            - test_cleanup|default(true)|bool == true
+        - import_tasks: post_testing.yml
 
 - name: Run tests on masters
   hosts: masters
@@ -41,6 +32,8 @@
         - name: collect remote test names
           shell: (cd /tmp/poc/tests && ls -d bats_test_master*)
           register: test_directories
+          tags:
+            - bats_tests_masters
 
         - name: run bats tests
           shell: >
@@ -52,18 +45,25 @@
           with_items: "{{ test_directories.stdout_lines }}"
           when:
             - item not in poc_test_blacklist|default([])
+          tags:
+            - bats_tests_masters
 
         - name: collect remote test names
           shell: (cd /tmp/poc/tests && ls -d bats_test_openshift*)
           register: test_directories
+          tags:
+            - bats_tests_openshift_project
 
         - name: run bats tests from OpenShift project context
           shell: './openshift_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log'
           args:
             chdir: '/tmp/poc/tests'
           with_items: "{{ test_directories.stdout_lines }}"
+          run_once: true
           when:
             - item not in poc_test_blacklist|default([])
+          tags:
+            - bats_tests_openshift_project
 
         - name: Run the namespace egress ip test
           shell: >
@@ -75,19 +75,9 @@
           when:
             - item.namespace == "poc-egress-ip-test"
           with_items: "{{ egress_ips|default([]) }}"
+          run_once: true
+          tags:
+            - bats_test_egress_ip
 
       always:
-        - name: put test results in a var
-          command: 'cat /tmp/poc/tests/test_results.log'
-          register: test_results
-
-        - name: print test output in human readable form
-          debug:
-            var: "{{ test_results.stdout.split('\n') | quote }}"
-
-        - name: cleanup test files
-          file:
-            path: /tmp/poc
-            state: absent
-          when:
-            - test_cleanup|default(true)|bool == true
+        - import_tasks: post_testing.yml
