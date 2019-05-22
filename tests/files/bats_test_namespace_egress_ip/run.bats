@@ -19,6 +19,9 @@
 
 @test "check the namespace egress ip" {
 
+    # Delete existing job if it is there so that a new job is always created
+    oc -n $PROJECT_NAME delete job/egress-ip-checker || true
+
     ipcheck=$(mktemp)
     echo $ipcheck
     sed -e "s|__PROJECT_NAME__|$PROJECT_NAME|g" check_egress_ip_job.yml > $ipcheck
