@@ -3,7 +3,7 @@
 csi_cinder_namespace: "csi-cinder"
 
 # How many replicas of the CSI Cinder controller to run
-csi_cinder_controller_replicas: 2
+csi_cinder_controller_replicas: 1
 
 # Container images
 csi_attacher_image: "registry.access.redhat.com/openshift3/csi-attacher:v3.11"
