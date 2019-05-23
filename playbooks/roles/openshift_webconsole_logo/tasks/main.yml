@@ -102,8 +102,8 @@
             loggingPublicURL: ''
             logoutPublicURL: ''
             masterPublicURL: https://{{ openshift_public_hostname }}:8443
-            metricsPublicURL: https://hawkular-metrics.{{ openshift_public_hostname }}/hawkular/metrics
-            adminConsolePublicURL: https://console.{{ openshift_public_hostname }}/
+            metricsPublicURL: https://hawkular-metrics.{{ openshift_app_domain|default(openshift_public_hostname) }}/hawkular/metrics
+            adminConsolePublicURL: https://console.{{ openshift_app_domain|default(openshift_public_hostname) }}/
           extensions:
             scriptURLs: []
             stylesheetURLs:
