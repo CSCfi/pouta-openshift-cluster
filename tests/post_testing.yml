@@ -1,0 +1,23 @@
+---
+- name: put test results in a var
+  command: 'cat /tmp/poc/tests/test_results.log'
+  register: test_results
+  failed_when: false
+  tags:
+    - always
+
+- name: print test output in human readable form
+  debug:
+    var: test_results.stdout_lines
+  failed_when: false
+  tags:
+    - always
+
+- name: cleanup test files
+  file:
+    path: /tmp/poc
+    state: absent
+  when:
+    - test_cleanup|default(true)|bool == true
+  tags:
+    - always
