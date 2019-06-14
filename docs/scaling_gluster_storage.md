@@ -42,13 +42,6 @@ TODO: create a playbook to automate this
    ssh $ENV_NAME-master-1
    ```
 
-4. Label the new GlusterFS node(s):
-
-   ```bash
-   # On a master node:
-   oc label node -l type=glusterfs glusterfs=storage-host
-   ```
-
 5. Open a shell in a Heketi storage pod where heketi-cli is available:
 
    ```bash
@@ -64,34 +57,14 @@ TODO: create a playbook to automate this
    export HEKETI_CLI_KEY=$HEKETI_ADMIN_KEY
    ```
 
-   **Note: for the next step, be absolutely sure about the node name and IP
-   address, as an incorrectly added node will mean that you can no longer provision
-   storage from GlusterFS until the node with incorrect IP information has been
-   removed!**
-
-7. Add a new node to GlusterFS via Heketi. Take note of the node id as you will
-   need it in the next step:
+7. Verify that the new node has been added to Heketi:
 
    ```bash
    # Inside the pod:
-   heketi-cli cluster list # Get the cluster id first
-   heketi-cli node add \
-     --zone=1 \
-     --cluster=<cluster id> \
-     --management-host-name=<hostname of new node> \
-     --storage-host-name=<ip address of new node>
+   heketi-cli node list
+   # For each node:
+   heketi-cli node info <node id>
    ```
-
-   Repeat step 7 for all nodes that are to be added.
-
-8. Add a block device on the new node as a device to GlusterFS:
-
-   ```bash
-   # Inside the pod:
-   heketi-cli device add --name=<dev name> --node=<new node id>
-   ```
-
-   Repeat step 8 for all devices that are to be added.
 
 ## Adding more disks to existing storage nodes
 
