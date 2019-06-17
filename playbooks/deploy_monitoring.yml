@@ -67,7 +67,8 @@
         template_base_name: pvc.yaml.j2
         name: prometheus-data
         labels: {}
-        size: "10Gi"
+        size: "{{ prometheus_pvc_size|default('10Gi') }}"
+        storage_class: "{{ prometheus_pvc_storage_class|default('') }}"
         upsert_replace: false
       when: skip_pvc|default(false) == False
 
