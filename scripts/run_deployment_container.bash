@@ -21,18 +21,14 @@ print_usage_and_exit()
     echo "  -e environment_name      environment to deploy"
     echo "  -o openshift_ansible_dir mount openshift-ansible from host. Use absolute path"
     echo "  -c container_image       use custom container image (default cscfi/poc-deployer)"
-    echo "  -i                       open interactive session"
     echo "  -s                       skip ssh config generation (useful when debugging broken installations)"
     exit 1
 }
 
-docker_opts=''
+docker_opts='-it'
 container_image='cscfi/poc-deployer'
 
-# Check the OS
-OS="$(uname -s)"
-
-while getopts "p:P:e:o:c:ish" opt; do
+while getopts "p:P:e:o:c:sh" opt; do
     case $opt in
         p)
             passfile=$OPTARG
@@ -65,11 +61,6 @@ while getopts "p:P:e:o:c:ish" opt; do
         c)  container_image=$OPTARG
             echo "  using custom image $container_image"
             ;;
-        i)
-            if [[ $OS != "Darwin"* ]]; then
-                docker_opts="$docker_opts -it"
-            fi
-            ;;
         s)
             docker_opts="$docker_opts -e SKIP_SSH_CONFIG=1"
             ;;
@@ -79,10 +70,6 @@ while getopts "p:P:e:o:c:ish" opt; do
     esac
 done
 shift "$((OPTIND-1))"
-
-if [[ $OS = "Darwin"* ]]; then
-    docker_opts="$docker_opts -it"
-fi
 
 docker run --rm \
     -v $SCRIPT_DIR/../../openshift-environments:/opt/deployment/openshift-environments:ro \
