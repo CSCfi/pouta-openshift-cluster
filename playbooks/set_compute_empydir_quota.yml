@@ -1,0 +1,22 @@
+# This playbook sets up quota for emptyDir volumes in all compute nodes.
+# This quota is enforced through the XFS quota subsystem per FSGroup.
+# Note: This quota is local to each compute node; and does not limit the
+# usage at a cluster-wide level.
+#
+# Usage per FSGroup on the compute nodes can be checked by running:
+#    sudo xfs_quota -xc 'report -h' /var/lib/origin/openshift.local.volumes
+
+- name: Set emptyDir volumes quota on compute nodes
+  hosts: ssd
+  tasks:
+    - name: copy volume-config.yaml to /etc/origin/node
+      template:
+        src: node-volume-config.yaml.j2
+        dest: /etc/origin/node/volume-config.yaml
+      register: volume_config
+
+    - name: restart origin-node to apply the changes
+      service:
+        name: origin-node
+        state: restarted
+      when: volume_config.changed
