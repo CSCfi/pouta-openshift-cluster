@@ -1,6 +1,10 @@
 - name: Additional master configuration
   import_playbook: extra_master_config.yml
 
+- name: Set quota for emptyDir volumes
+  import_playbook: set_compute_empydir_quota.yml
+  when: poc_set_compute_empydir_quota|default(False)
+
 - name: Additional OpenShift config via the API
   import_playbook: extra_oso_config.yml
 
