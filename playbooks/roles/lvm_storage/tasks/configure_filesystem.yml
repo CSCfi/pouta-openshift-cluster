@@ -14,6 +14,7 @@
     vg: "{{ vg_name }}"
     lv: "{{ lv_name }}"
     size: "{{ filesystem_spec.size|default('99%VG') }}"
+    shrink: false
   when: stat_lv_path.stat.exists == False
 
 - name: make sure {{ filesystem_spec.name }} mount path exists
