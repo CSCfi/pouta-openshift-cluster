@@ -9,11 +9,17 @@
         state: directory
         owner: "{{ ansible_ssh_user }}"
         group: "{{ ansible_ssh_user }}"
-        mode: 0750
+        mode: 0755
       with_items:
         - "{{ groups['masters'] }}"
         - "{{ groups['etcd'] }}"
         - "{{ groups['glusterfs'] }}"
+
+    - name: ensure the parent backup directory is accessible by the nrpe user
+      file:
+        path: "{{ backup_bastion_base_dir }}/.."
+        state: directory
+        mode: 0701
 
 - name: Backup etcd
   hosts: etcd
