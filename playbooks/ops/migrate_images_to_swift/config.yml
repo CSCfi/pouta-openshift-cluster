@@ -1,0 +1,80 @@
+- name: Migrate the docker images to Object Storage
+  hosts: masters
+  run_once: true
+  tasks:
+    - name: create the data migration job
+      k8s:
+        state: present
+        definition:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: migrate-registry-images
+            namespace: default
+          spec:
+            parallelism: 1
+            completions: 1
+            template:
+              metadata:
+                name: migrate-registry-images
+              spec:
+                containers:
+                  - name: migrate-registry-images
+                    image: "djixyacine/swift-data-migrate:v0.2"
+                    imagePullPolicy: Always
+                    env:
+                    - name: OS_AUTH_URL
+                      value: "{{ openshift_hosted_registry_storage_swift_authurl }}"
+                    - name: OS_USERNAME
+                      value: "{{ openshift_hosted_registry_storage_swift_username }}"
+                    - name: OS_PASSWORD
+                      value: "{{ openshift_hosted_registry_storage_swift_password }}"
+                    - name: OS_TENANT_NAME
+                      value: "{{ openshift_hosted_registry_storage_swift_tenant }}"
+                    - name: OS_DOMAIN_NAME
+                      value: "{{ openshift_hosted_registry_storage_swift_domain }}"
+                    - name: SRC_DATA_PATH
+                      value: /registry
+                    - name: DST_DATA_PATH
+                      value: files
+                    - name: SWIFT_CONTAINER_NAME
+                      value: "{{ openshift_hosted_registry_storage_swift_container }}"
+                    volumeMounts:
+                      - mountPath: /registry
+                        name: registry-storage
+                restartPolicy: OnFailure
+                volumes:
+                  - name: registry-storage
+                    persistentVolumeClaim:
+                      claimName: registry
+
+    - name: wait for the migration job to finish
+      k8s:
+        state: present
+        definition:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: migrate-registry-images
+            namespace: default
+      register: migration_status
+      until:
+        - migration_status.result.status.succeeded is defined
+      retries: 90
+      delay: 20
+
+    - name: make sure that the job has succeeded
+      assert:
+        that:
+          - migration_status.result.status.succeeded == 1
+        msg: "The job did not finish correctly!"
+
+    - name: delete the existing docker-registry deployment
+      k8s:
+        state: absent
+        definition:
+          apiVersion: apps.openshift.io/v1
+          kind: DeploymentConfig
+          metadata:
+            name: docker-registry
+            namespace: default

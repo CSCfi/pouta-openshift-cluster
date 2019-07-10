@@ -90,16 +90,6 @@
       command: oc rollout latest registry-console -n default
       when: replace_registry_console_cert|default(False)|bool == True
 
-    # workaround to: https://github.com/kubernetes/kubernetes/issues/56348
-    # temporary fix: https://github.com/kubernetes/kubernetes/issues/56348#issuecomment-382633909
-    - name: check if registry console has an orphan finalizer
-      shell: oc get route registry-console -n default -o=jsonpath='{.metadata.finalizers[0]}'
-      register: registry_console_route_finalizer
-
-    - name: remove orphan finalizer from registry console
-      shell: oc patch route registry-console -n default --type=json -p='[{"op":"remove", "path":"/metadata/finalizers/0"}]'
-      when: registry_console_route_finalizer.stdout == "orphan"
-
     - name: modify route to registry console to be in the API domain
       oc_route:
         state: present
@@ -125,31 +115,33 @@
         "https://registry-console.{{ openshift_public_hostname }}"' |
         oc replace -f -
 
-    - name: check if registry PVC exists
-      shell: oc get pvc -n default registry
-      register: existing_registry_pv
-      changed_when: false
-      failed_when: false
+    - when: openshift_hosted_registry_storage_kind == none
+      block:
+      - name: check if registry PVC exists
+        shell: oc get pvc -n default registry
+        register: existing_registry_pv
+        changed_when: false
+        failed_when: false
 
-    - name: create and attach a persistent volume for registry
-      shell: >
-        oc set volume -n default dc/docker-registry --add
-        --mount-path=/registry --overwrite
-        --name=registry-storage
-        --claim-name=registry
-        -t pvc --claim-size={{ registry_claim_size|default('200Gi') }}
-      when:
-        - existing_registry_pv.stdout_lines | length == 0
-        - skip_pvc|default(false) == false
+      - name: create and attach a persistent volume for registry
+        shell: >
+          oc set volume -n default dc/docker-registry --add
+          --mount-path=/registry --overwrite
+          --name=registry-storage
+          --claim-name=registry
+          -t pvc --claim-size={{ registry_claim_size|default('200Gi') }}
+        when:
+          - existing_registry_pv.stdout_lines | length == 0
+          - skip_pvc|default(false) == false
 
-    - name: attach the existing persistent volume for registry
-      shell: >
-        oc set volume -n default dc/docker-registry --add
-        --mount-path=/registry --overwrite
-        --name=registry-storage --claim-name=registry
-      when:
-        - existing_registry_pv.stdout_lines | length > 0
-        - skip_pvc|default(false) == false
+      - name: attach the existing persistent volume for registry
+        shell: >
+          oc set volume -n default dc/docker-registry --add
+          --mount-path=/registry --overwrite
+          --name=registry-storage --claim-name=registry
+        when:
+          - existing_registry_pv.stdout_lines | length > 0
+          - skip_pvc|default(false) == false
 
     - name: Deploy registry-console on infra nodes by adding a node selector
       oc_edit:
