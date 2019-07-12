@@ -93,6 +93,14 @@ objects:
     hard:
       requests.storage: "{{ storage_default_quota|default('50Gi') }}"
 
+- apiVersion: v1
+  kind: ResourceQuota
+  metadata:
+    name: openshift-object-counts
+  spec:
+    hard:
+      openshift.io/imagestreams: "{{ default_project_images_number_max_limit | default('10') }}"
+
 # Limit range
 - apiVersion: "v1"
   kind: "LimitRange"
@@ -117,6 +125,9 @@ objects:
         defaultRequest:
           cpu: "{{ default_project_default_container_cpu_request | default('200m') }}"
           memory: "{{ default_project_default_container_mem_request | default('200Mi') }}"
+      - type: "openshift.io/Image"
+        max:
+          storage: "{{ default_project_image_size_max_limit | default('5Gi') }}"
 
 # custom additions end here
 
