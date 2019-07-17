@@ -7,7 +7,7 @@
 #    sudo xfs_quota -xc 'report -h' /var/lib/origin/openshift.local.volumes
 
 - name: Set emptyDir volumes quota on compute nodes
-  hosts: ssd
+  hosts: ssd,gpu
   tasks:
     - name: copy volume-config.yaml to /etc/origin/node
       template:

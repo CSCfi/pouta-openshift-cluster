@@ -67,6 +67,17 @@
       tags:
         - skip_ansible_lint
 
+    - name: Register stack creation status (gpu nodes)
+      shell: openstack stack environment show -f json {{ cluster_name }}-{{ item.stack_name }}
+      register: stack_output_gpu_nodes
+      failed_when: false
+      changed_when: false
+      no_log: True
+      with_items: "{{ gpu_node_groups }}"
+      tags:
+        - skip_ansible_lint
+      when: gpu_node_groups is defined
+
     - block:
       - name: Format output from GlusterFS Heat stack environment as JSON
         set_fact:

@@ -2,7 +2,7 @@
 heat_template_version: newton
 
 description: >
-  Provision compute node resource groups for OpenShift.
+  Provision GPU nodes for OpenShift with Cinder volumes
 
 parameters:
   env_name:
@@ -30,24 +30,18 @@ parameters:
     description: >
       Id of external access security group
     type: string
-  compute_node_group_size:
+  gpu_node_group_size:
     description: >
-      How many compute nodes to start.
+      How many virtual machines to put in the GPU cluster.
     type: number
-  compute_node_image:
+  gpu_node_image:
     description: >
-      What OpenStack image to use for these compute nodes.
-    type: string
-  compute_node_server_group_id:
-    description: >
-      A common server group id to use for nodes created. Not used when
-      use_common_server_group is set to false.
+      What OpenStack image to use for the GPU hosts.
     type: string
   gpu_node_server_group_id:
     description: >
-      A common server group id to use for the gpu nodes created. Currently
-      needs to be included in the params even if not used because it is a base
-      stack output.
+      A common server group id to use for nodes created. Not used when
+      use_common_server_group is set to false.
     type: string
   use_common_server_group:
     description: >
@@ -64,40 +58,36 @@ parameters:
       Id of cluster subnet. Currently needs to be included in the params even if
       not used because it is a base stack output.
     type: string
+  compute_node_server_group_id:
+    description: >
+      A common server group id to use for the compute nodes created. Currently
+      needs to be included in the params even if not used because it is a base
+      stack output.
+    type: string
   network_prefix:
     description: >
       The first two (/16) or three (/24) octets of a private network CIDR.
     type: string
     default: "192.168"
-  compute_node_resource_group_identifier:
+  gpu_node_resource_group_identifier:
     description: >
-      The part of the cluster IP address that differentiates this compute node
+      The part of the cluster IP address that differentiates this gpu node
       resource group. Comes after network prefix but before index (1-9). Ends
       with a dot (when cluster network is /16) or not (when cluster network is
       /24).
     type: string
-    default: "6."
-  compute_node_flavor:
+    default: "9."
+  gpu_node_vol_size:
     description: >
-      What OpenStack flavor to use for compute nodes.
+      The size of the Cinder volume to attach to the GPU VMs.
+    type: number
+  gpu_node_flavor:
+    description: >
+      What OpenStack flavor to use for gpu nodes.
     type: string
-  compute_node_flavor_update_policy:
-    description: >
-      What to do when the flavor of compute nodes is changed.
-      Possible values are RESIZE and REPLACE. Sometimes RESIZE is not
-      possible, but it is the default to be on the safe side.
-    type: string
-    default: "RESIZE"
-  compute_allowed_address_pairs_cidr:
-    description: >
-      This is the list of CIDRs which contains the IP ranges allocated for
-      customer egress IPs. Each CIDR from the list needs to be part of the
-      allowed address pairs in each compute node.
-    type: comma_delimited_list
-    default: "192.168.192.0/18"
   ansible_group_name:
     description: >
-      What Ansible group these compute nodes should be be placed in.
+      What Ansible group these gpu nodes should be be placed in.
     type: string
 
 conditions:
@@ -108,15 +98,14 @@ conditions:
 
 resources:
 
-  compute_node_servergroup:
+  gpu_node_servergroup:
     type: OS::Nova::ServerGroup
     properties:
       name:
         str_replace:
-          template: compute_node-name_suffix
+          template: gpu_node-name_suffix
           params:
             name_suffix: { get_param: name_suffix }
-      policies: ['anti-affinity']
     condition: { not: 'use_common_server_group' }
 
   secgroup_node:
@@ -128,49 +117,43 @@ resources:
         - remote_mode: remote_group_id
           remote_group_id: { get_param: secgroup_id_infra }
 
-  compute_node_group:
+  gpu_node_group:
     type: OS::Heat::ResourceGroup
     properties:
-      count: { get_param: compute_node_group_size }
+      count: { get_param: gpu_node_group_size }
       removal_policies: [{'resource_list': ['0']}]
       resource_def:
-        type: OS::Nova::Server
+        type: ../common/vm_with_volume.yaml
         properties:
-          name:
+          vm_name:
             str_replace:
               template: env_name-name_suffix-%index%
               params:
                 env_name: { get_param: env_name }
                 name_suffix: { get_param: name_suffix }
-          image: { get_param: compute_node_image }
+          image: { get_param: gpu_node_image }
           networks:
-            - subnet: { get_param: subnet_id }
-              network: { get_param: network_id }
+            - network: { get_param: network_id }
               fixed_ip:
                 str_replace:
-                  template: network_prefix.compute_node_resource_group_identifier%index%
+                  template: network_prefix.gpu_node_resource_group_identifier%index%
                   params:
                     network_prefix: { get_param: network_prefix }
-                    compute_node_resource_group_identifier: { get_param: compute_node_resource_group_identifier }
-              port_extra_properties:
-                allowed_address_pairs:
-                  repeat:
-                    for_each:
-                      <%cidr%>: { get_param: compute_allowed_address_pairs_cidr }
-                    template:
-                      ip_address: <%cidr%>
-          flavor: { get_param: compute_node_flavor }
-          flavor_update_policy: { get_param: compute_node_flavor_update_policy }
+                    gpu_node_resource_group_identifier: { get_param: gpu_node_resource_group_identifier }
+          flavor: { get_param: gpu_node_flavor }
           metadata:
-            group: { get_param: ansible_group_name }
+            groups: gpu
             stack: { get_param: env_name }
           key_name: { get_param: key_name }
           security_groups:
             - { get_resource: secgroup_node }
             - { get_param: secgroup_id_common }
+            - { get_param: secgroup_id_infra }
           scheduler_hints:
             group:
               if:
-              - 'use_common_server_group' # condition
-              - get_param: compute_node_server_group_id # condition true
-              - get_resource: compute_node_servergroup # condition false
+                - 'use_common_server_group' # condition
+                - get_param: gpu_node_server_group_id # condition true
+                - get_resource: gpu_node_servergroup # condition false
+          vol_name_suffix: "vol"
+          vol_size: { get_param: gpu_node_vol_size }
