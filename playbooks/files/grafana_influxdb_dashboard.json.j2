@@ -552,9 +552,6 @@
           },
           {
             "alias": "Used memory",
-            "dsType": "influxdb",
-            "expr": "",
-            "format": "time_series",
             "groupBy": [
               {
                 "params": [
@@ -571,12 +568,10 @@
             ],
             "hide": false,
             "intervalFactor": 2,
-            "measurement": "container_memory_rss",
+            "measurement": "mem_consumed_by_pods_per_node",
             "orderByTime": "ASC",
             "policy": "$data_interval",
-            "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-            "rawQuery": false,
-            "refId": "A",
+            "refId": "B",
             "resultFormat": "time_series",
             "select": [
               [
@@ -609,12 +604,6 @@
                 "key": "type",
                 "operator": "=",
                 "value": "ssd"
-              },
-              {
-                "condition": "AND",
-                "key": "id",
-                "operator": "=",
-                "value": "/"
               }
             ]
           }
@@ -2386,9 +2375,6 @@
               },
               {
                 "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
                 "groupBy": [
                   {
                     "params": [
@@ -2405,11 +2391,9 @@
                 ],
                 "hide": false,
                 "intervalFactor": 2,
-                "measurement": "container_memory_rss",
+                "measurement": "mem_consumed_by_pods_per_node",
                 "orderByTime": "ASC",
                 "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
                 "refId": "A",
                 "resultFormat": "time_series",
                 "select": [
@@ -2443,12 +2427,6 @@
                     "key": "type",
                     "operator": "=~",
                     "value": "/^$nodetype$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
                   }
                 ]
               }
@@ -2606,9 +2584,6 @@
               },
               {
                 "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
                 "groupBy": [
                   {
                     "params": [
@@ -2625,11 +2600,9 @@
                 ],
                 "hide": false,
                 "intervalFactor": 2,
-                "measurement": "container_memory_rss",
+                "measurement": "mem_consumed_by_pods_per_node",
                 "orderByTime": "ASC",
                 "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
                 "refId": "A",
                 "resultFormat": "time_series",
                 "select": [
@@ -2663,12 +2636,6 @@
                     "key": "type",
                     "operator": "=~",
                     "value": "/^$nodetype$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
                   }
                 ]
               }
@@ -2826,9 +2793,6 @@
               },
               {
                 "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
                 "groupBy": [
                   {
                     "params": [
@@ -2845,11 +2809,9 @@
                 ],
                 "hide": false,
                 "intervalFactor": 2,
-                "measurement": "container_memory_rss",
+                "measurement": "mem_consumed_by_pods_per_node",
                 "orderByTime": "ASC",
                 "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
                 "refId": "A",
                 "resultFormat": "time_series",
                 "select": [
@@ -2883,12 +2845,6 @@
                     "key": "type",
                     "operator": "=~",
                     "value": "/^$nodetype$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
                   }
                 ]
               }
@@ -2947,10 +2903,10 @@
             "gridPos": {
               "h": 7,
               "w": 12,
-              "x": 12,
-              "y": 32
+              "x": 0,
+              "y": 39
             },
-            "id": 283,
+            "id": 284,
             "interval": "",
             "legend": {
               "avg": false,
@@ -2973,7 +2929,7 @@
             "renderer": "flot",
             "repeat": null,
             "repeatDirection": "h",
-            "repeatIteration": 1539346222635,
+            "repeatIteration": 1554381247156,
             "repeatPanelId": 2,
             "scopedVars": {
               "nodetype": {
@@ -3046,9 +3002,6 @@
               },
               {
                 "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
                 "groupBy": [
                   {
                     "params": [
@@ -3065,11 +3018,9 @@
                 ],
                 "hide": false,
                 "intervalFactor": 2,
-                "measurement": "container_memory_rss",
+                "measurement": "mem_consumed_by_pods_per_node",
                 "orderByTime": "ASC",
                 "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
                 "refId": "A",
                 "resultFormat": "time_series",
                 "select": [
@@ -3103,12 +3054,6 @@
                     "key": "type",
                     "operator": "=~",
                     "value": "/^$nodetype$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
                   }
                 ]
               }
@@ -3508,9 +3453,6 @@
               },
               {
                 "alias": "Used memory",
-                "dsType": "influxdb",
-                "expr": "",
-                "format": "time_series",
                 "groupBy": [
                   {
                     "params": [
@@ -3527,11 +3469,9 @@
                 ],
                 "hide": false,
                 "intervalFactor": 2,
-                "measurement": "container_memory_rss",
+                "measurement": "mem_consumed_by_pods_per_node",
                 "orderByTime": "ASC",
                 "policy": "$data_interval",
-                "query": "SELECT sum(\"value\") FROM \"default_prom_rp\".\"container_memory_working_set_bytes\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-                "rawQuery": false,
                 "refId": "A",
                 "resultFormat": "time_series",
                 "select": [
@@ -3565,12 +3505,6 @@
                     "key": "kubernetes_io_hostname",
                     "operator": "=~",
                     "value": "/^$node$/"
-                  },
-                  {
-                    "condition": "AND",
-                    "key": "id",
-                    "operator": "=",
-                    "value": "/"
                   }
                 ]
               }
