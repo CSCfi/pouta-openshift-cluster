@@ -1,0 +1,192 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+labels:
+  template: Minio
+message: |-
+  Minio has been scheduled for creation in your project, and should be soon available at: https://${CLUSTER_NAME}.${DOMAINSUFFIX}
+
+metadata:
+  annotations:
+    template.alpha.openshift.io/wait-for-ready: "true"
+    description: This template deploys an S3 compatible private Object Storage based on Minio.
+
+
+      The backend storage can be either a new or an existing persistent volume claim (PVC).
+
+
+      In case you want to use existing PVC for Minio Storage, please update PVC name with the PVC you want to use.
+      In this case, Rahti will issue an error that no new PVC is created but proceeds with creating the rest of the
+      application nevertheless.
+
+    tags: S3, Object Store
+    openshift.io/display-name: Minio Object Store
+    iconClass: fa fa-archive
+    openshift.io/provider-display-name: CSC-IT Center for Science Ltd.
+    openshift.io/documentation-url: https://github.com/CSCfi/Minio-OpenShift/blob/master/README.md
+    openshift.io/support-url: https://www.csc.fi/contact-info
+  name: minio
+
+objects:
+# Minio part
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: ${CLUSTER_NAME}
+    name: ${CLUSTER_NAME}
+  spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: ${CLUSTER_NAME}
+      spec:
+        containers:
+        - image: minio/minio
+          name: ${CLUSTER_NAME}
+          ports:
+          - containerPort: 9000
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: 9000
+              scheme: HTTP
+          livelinessProbe:
+            httpGet:
+              path: /health/live
+              port: 9000
+              scheme: HTTP
+          volumeMounts:
+          - mountPath: /data/files
+            name: minio-vol
+          command:
+          - minio
+          - server
+          - /data/files
+          env:
+          - name: MINIO_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: ${CLUSTER_NAME}-secret
+                key: accessKey
+          - name: MINIO_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: ${CLUSTER_NAME}-secret
+                key: secretKey
+        volumes:
+        - name: minio-vol
+          persistentVolumeClaim:
+            claimName: ${PVCNAME}
+
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: ${CLUSTER_NAME}-secret
+    labels:
+      app: ${CLUSTER_NAME}
+  type: Opaque                     # Unstructured secret
+  stringData:
+    accessKey: ${ACCESSKEY}
+    secretKey: ${SECRETKEY}
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: ${CLUSTER_NAME}
+    name: ${CLUSTER_NAME}
+  spec:
+    ports:
+    - name: 9000-tcp
+      port: 9000
+      protocol: TCP
+      targetPort: 9000
+    selector:
+      app: ${CLUSTER_NAME}
+
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    labels:
+      app: ${CLUSTER_NAME}
+    name: ${CLUSTER_NAME}
+    annotations:
+      haproxy.router.openshift.io/ip_whitelist: ${WHITELIST}
+  spec:
+    host: ${CLUSTER_NAME}.${DOMAINSUFFIX}
+    port:
+      targetPort: 9000
+    to:
+      kind: Service
+      name: ${CLUSTER_NAME}
+      weight: 100
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+
+- apiVersion: "v1"
+  kind: "PersistentVolumeClaim"
+  metadata:
+    name: ${PVCNAME}
+    labels:
+      app: ${CLUSTER_NAME}
+  spec:
+    storageClassName: glusterfs-storage
+    accessModes:
+      - "ReadWriteMany"
+    resources:
+      requests:
+        storage: ${STORAGE_SIZE}
+
+parameters:
+  - name: ACCESSKEY
+    required: true
+    description: Access key, its length should be between minimum 3 characters.
+    displayName: Access key
+    from: '[a-zA-Z0-9]{32}'
+    generate: expression
+
+  - name: SECRETKEY
+    description: Secret key, its length should be between 8 & 40 characters.
+    displayName: Secret key
+    required: true
+    from: '[a-zA-Z0-9]{32}'
+    generate: expression
+
+  - name: CLUSTER_NAME
+    description: "Name of the minio cluster instance. Must be DNS label compatible: alphanumeric, `-` and `.` characters are only allowed. The application can be reached at CLUSTER_NAME.DOMAINSUFFIX."
+    displayName: Cluster name
+    required: true
+
+  - name: DOMAINSUFFIX
+    required: true
+    description: Hostname suffix of the application.
+    displayname: Hostname suffix of the application.
+    value: rahtiapp.fi
+
+  - name: PVCNAME
+    required: true
+    description: PVC name to mount for minio buckets
+    displayName: PVC Volume name
+    value: minio-default-volume
+
+  - name: STORAGE_SIZE
+    required: true
+    description: Object storage backend volume size
+    displayname: Storage size
+    value: 1Gi
+
+  - name: WHITELIST
+    required: false
+    description: IP whitelist for the application. Must not contain errors, otherwise Rahti will allow all traffic.
+    displayname: Route whitelist
+    value: 0.0.0.0/0
