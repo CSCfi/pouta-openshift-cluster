@@ -20,7 +20,7 @@ print_usage_and_exit()
     echo "                           - 'rebuild' runs 'openstack server rebuild',"
     echo "                              updates packages on the host,"
     echo "                              power cycles the host"
-    echo "                              and runs scaleup playbook"
+    echo "                              and runs site playbook"
     echo "                           - 'update' runs 'yum update'"
     echo "                           - 'pcycle' for just a power off/on cycle"
     echo "  -s service               stop service before actions"
@@ -186,8 +186,8 @@ for host in $*; do
         rebuild_server $host
         update_server $host
         power_cycle_server $host
-        log "apply site_scaleup.yml"
-        ansible-playbook -v site_scaleup.yml
+        log "apply site.yml"
+        ansible-playbook -v site.yml
         [[ -n $opt_power_cycle ]] && power_cycle_server $host
     fi
 

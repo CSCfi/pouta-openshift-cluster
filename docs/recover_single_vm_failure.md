@@ -8,10 +8,6 @@ and to bring it back to the cluster. The cases are listed per VM role, from easi
 All operations are intended to be run in poc deployment container in directory
 '/opt/deployment/poc/playbooks'.
 
-The scaleup playbook location in openshift-ansible differs between OpenShift versions,
-so there are several versions of the site_scaleup playbook. Use the most recent one if
-a playbook isn't available for your specific version.
-
 ## Replacing VMs from multiple groups
 
 If VMs from multiple groups need to be replaced, you will need to prepare them all at the same time and
@@ -82,11 +78,11 @@ ansible-playbook -v -l [vm_to_replace],bastion pre_install.yml
 
 ## Nodes
 
-A failed node can be configured simply by running site_scaleup_<version>.yml.
+A failed node can be configured simply by running site.yml.
 For example for OpenShift 3.11:
 
 ```bash
-ansible-playbook -v site_scaleup.yml
+ansible-playbook -v site.yml
 ```
 
 ## Masters
@@ -103,14 +99,14 @@ scp $latest_backup $HOST_TO_REPLACE:/tmp/etc-origin-backup.latest.tar.gz
 ssh $HOST_TO_REPLACE sudo tar xvf /tmp/etc-origin-backup.latest.tar.gz -C /etc
 ```
 
-Then run scaleup. Here we are running OpenShift 3.11:
+Then run site. Here we are running OpenShift 3.11:
 
 ```bash
 # second and third master
-ansible-playbook -v site_scaleup.yml
+ansible-playbook -v site.yml
 ```
 
-For the first master there is an additional safety in place because running scaleup against
+For the first master there is an additional safety in place because running site against
 an empty master-1 will create a new CA and result in a conflict between new and old CAs. Make sure
 the backup has been extracted properly before running this.
 
@@ -120,8 +116,8 @@ the backup has been extracted properly before running this.
 # double check that the backup contents were extracted
 ansible $ENV_NAME-master-1 -a 'ls /etc/origin/master'
 
-# run scaleup
-ansible-playbook -v -e allow_first_master_scaleup=1 site_scaleup.yml
+# run site
+ansible-playbook -v -e allow_first_master_scaleup=1 site.yml
 ```
 
 Check the node state on the master after running the playbook and set it schedulable
@@ -141,7 +137,7 @@ traffic to the API on masters. First, recover the node part, but leave keepalive
 won't pick up the VIP before all steps have been completed:
 
 ```bash
-ansible-playbook -v site_scaleup.yml -e keepalived_skip_restart=1
+ansible-playbook -v site.yml -e keepalived_skip_restart=1
 ```
 
 After this, application traffic should already work on the lb. However, to forward API traffic too,
@@ -181,14 +177,14 @@ sudo etcdctl -endpoints https://[cluster-name]-etcd-1:2379 \
 Then run site_scaleup_<version>.yml, e.g.:
 
 ```bash
-ansible-playbook -v site_scaleup.yml
+ansible-playbook -v site.yml
 ```
 
 ## Etcd-1
 
 Openshift-ansible uses etcd-1 as 'etcd_ca_host' by default, creating certificates for all hosts
 and clients (=masters) there. In that case, you will need to restore the certificates from backups, place them
-on a surviving host and pass that host to the scaleup playbook.
+on a surviving host and pass that host to the site playbook.
 
 First restore /etc/etcd from backup to etcd-1 and etcd-2, that will work as a temporary certificate host
 
@@ -225,18 +221,18 @@ Add following ansible host variable as part of the etcd-2 host_vars:
 etcdctlv2: "/usr/bin/etcdctl -endpoints https://[cluster-name]-etcd-2:2379 --ca-file=/etc/etcd/ca.crt --cert-file /etc/etcd/peer.crt --key-file /etc/etcd/peer.key"
 ```
 
-Then run site_scaleup.yml, pointing the playbook to use etcd-2 as the cluster endpoint and the source
+Then run site.yml, pointing the playbook to use etcd-2 as the cluster endpoint and the source
 for certificates:
 
 ```bash
-ansible-playbook -v site_scaleup.yml -e etcd_ca_host=$ENV_NAME-etcd-2
+ansible-playbook -v site.yml -e etcd_ca_host=$ENV_NAME-etcd-2
 ```
 
 ## InfluxDB
 
-Run the scaleup playbook to reconfigure the InfluxDB node:
+Run the site playbook to reconfigure the InfluxDB node:
 ```bash
-ansible-playbook -v site_scaleup.yml -e influxdb_create_prom_db=0
+ansible-playbook -v site.yml -e influxdb_create_prom_db=0
 ```
 
 Here we skip the creation of the Prometheus database as this will come from
@@ -276,7 +272,7 @@ cd ~/poc/playbooks
 ansible-playbook pre_install.yml restore/restore_glusterfs.yml 
 ```
 
-Then we acquire the current heketi admin key and run restore/scaleup process. We disable 
+Then we acquire the current heketi admin key and run restore/site process. We disable 
 re-creation of the storage class.
 
 ```bash
@@ -284,7 +280,7 @@ ssh $ENV_NAME-master-1 oc -n glusterfs get dc/heketi-storage -o yaml | grep -A 1
 export HEKETI_ADMIN_KEY="VALUE_FROM_ABOVE_HERE"
 
 # run recovery
-ansible-playbook -v site_scaleup.yml -e glusterfs_heketi_admin_key="$HEKETI_ADMIN_KEY" -e glusterfs_storage_class=
+ansible-playbook -v site.yml -e glusterfs_heketi_admin_key="$HEKETI_ADMIN_KEY" -e glusterfs_storage_class=
 ```
 
 You may need to restart glusterfs after the operation
@@ -299,7 +295,7 @@ oc -n glusterfs get pods
 
 ## Automatic updates
 
-Rebuild servers right before running site_scaleup, otherwise they may be autoupdated before our
+Rebuild servers right before running site, otherwise they may be autoupdated before our
 repository locking code is run.
 
 ## Etcd recovery

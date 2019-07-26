@@ -1,7 +1,5 @@
 ---
 
-- import_playbook: get_install_state.yml
-
 - import_playbook: "{{ os_ansible_path|default('../../openshift-ansible') }}/playbooks/openshift-etcd/scaleup.yml"
   when:
     - groups['new_etcd']|default([])|length > 0
@@ -15,5 +13,3 @@
   when:
     - groups['new_nodes']|default([])|length > 0
     - groups['new_masters']|default([])|length == 0
-
-- import_playbook: set_install_state.yml
