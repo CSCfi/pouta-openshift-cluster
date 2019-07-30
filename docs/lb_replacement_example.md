@@ -53,11 +53,11 @@ Apply loadbalancer role to enable API access
 ansible-playbook -v -t loadbalancer ../../openshift-ansible/playbooks/byo/config.yml
 ```
 
-Run site_scaleup_<version>.yml to install node processes on LBs. For example, when
+Run site.yml to install node processes on LBs. For example, when
 running OpenShift 3.11 you would run:
 
 ```bash
-ansible-playbook -v site_scaleup.yml
+ansible-playbook -v site.yml
 ```
 
 ## Alternative

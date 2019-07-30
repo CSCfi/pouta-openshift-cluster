@@ -210,7 +210,7 @@ the description for provision.yml for a list of variables
 Here is how you would update the stack for ssdnodes, e.g. for scale up purposes:
 
 ```bash
-ansible-playbook site_scaleup.yml -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}'
+ansible-playbook site.yml -e '{allow_heat_stack_update_node_groups: ["ssdnode"]}'
 ```
 
 Note that some configuration changes like VM image may result in all VMs in the
@@ -224,7 +224,7 @@ stack to be reprovisioned. Be careful and test with non-critical resources first
 
 ### site.yml
 
-- aggregates all installation steps into a single playbook
+- aggregates all installation and scaleup steps into a single playbook
 
 ### deprovision.yml
 
@@ -263,12 +263,10 @@ stack to be reprovisioned. Be careful and test with non-critical resources first
 - customizes the default project template
 - optionally deploys default www page and Prometheus based monitoring
 
-### scaleup_[version].yml and site_scaleup_[version].yml
+### scaleup.yml
 
-*scaleup_[version].yml* runs OpenShift Ansible scaleup playbooks for any host that does not
-have /var/lib/POC_INSTALLED flag on them. Select the version number that matches
-your OpenShift version. If you can't find a corresponding version for your OpenShift version, use
-the most recent playbook. In 3.7 and older, the playbooks in openshift-ansible are
+*scaleup.yml* runs OpenShift Ansible scaleup playbooks. In 3.7 and older, 
+the playbooks in openshift-ansible are
 
 - playbooks/byo/openshift-master/scaleup.yml
 - playbooks/byo/openshift-node/scaleup.yml
@@ -279,10 +277,6 @@ In 3.9 and newer, the playbooks are
 - playbooks/openshift-master/scaleup.yml
 - playbooks/openshift-node/scaleup.yml
 - playbooks/openshift-etcd/scaleup.yml
-
-*site_scaleup_[version].yml* is a wrapper around scaleup.yml that calls
-provision.yml, pre_install.yml, scaleup.yml and post_install.yml. See "Heat
-stack updates" and recovery documentation in docs/ for usage instructions.
 
 ### scaledown_nodes.yml
 

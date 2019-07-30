@@ -12,7 +12,7 @@
 # Finally, update the node stack and scale up playbook by playbook
 #
 #   ansible-playbook -v -e @/tmp/${ENV_NAME}-base-stack-output.json update_node_stack_manual.yml
-#   ansible-playbook -v pre_install.yml scaleup.yml post_install.yml
+#   ansible-playbook -v pre_install.yml get_install_state.yml scaleup.yml set_install_state.yml post_install.yml
 ---
 - hosts: localhost
   gather_facts: no

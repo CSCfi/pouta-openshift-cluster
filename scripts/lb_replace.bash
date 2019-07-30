@@ -43,5 +43,5 @@ else
   ansible-playbook -v -t loadbalancer $OSA_PLAYBOOK_DIR/byo/config.yml
 fi
 
-# Finally run site_scaleup.yml
-ansible-playbook -v $POC_PLAYBOOK_DIR/site_scaleup.yml
+# Finally run site.yml
+ansible-playbook -v $POC_PLAYBOOK_DIR/site.yml

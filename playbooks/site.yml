@@ -25,8 +25,19 @@
 - name: Prepare hosts for OpenShift installation
   import_playbook: pre_install.yml
 
-- name: Install OpenShift
+- import_playbook: get_install_state.yml
+
+- name: Install a new OpenShift cluster
   import_playbook: install.yml
+  when:
+    - groups['new_masters']|default([])|length == groups['masters']|default([])|length
+
+- name: Scale up an existing installation
+  import_playbook: scaleup.yml
+  when:
+    - groups['new_masters']|default([])|length != groups['masters']|default([])|length
+
+- import_playbook: set_install_state.yml
 
 - name: Do post installation steps for OpenShift
   import_playbook: post_install.yml
