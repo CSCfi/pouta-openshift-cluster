@@ -12,7 +12,7 @@
         - name: run bats tests
           shell: >
             ACTIVE_STORAGE_CLASSES={{ active_storage_classes | join(",") }}
-            CSC_PROJECT_CODE={{ testuser_project }}
+            CSC_PROJECT_CODE={{ testuser_project | default(omit) }}
             ./generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log
           args:
             chdir: '/tmp/poc/tests'
