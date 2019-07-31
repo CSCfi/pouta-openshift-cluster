@@ -161,6 +161,10 @@ check_namespace_pod_health() {
     [ $status -eq 0 ]
 }
 
+@test "test connectivity to Hawkular metrics URL" {
+    run check_route_url openshift-infra hawkular-metrics "Hawkular Metrics"
+}
+
 @test "test that InfluxDB responds" {
     if [[ $POC_DEPLOY_MONITORING == 'False' ]]; then
         skip "Monitoring deployment is not enabled, skipping check"
