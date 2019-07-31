@@ -18,6 +18,22 @@
         ansible_service_broker_install: False
         template_service_broker_install: False
 
+# The k8s Ansible module needs python2-openshift to work. When python2-openshift
+# is installed using the mitogen_linear strategy, its presence does not get
+# picked up in the same run by k8s for some reason. As a workaround, install it
+# here separately using the regular linear strategy.
+# For more context, see:
+# https://github.com/dw/mitogen/issues/569#issuecomment-493386838
+- name: k8s module + mitogen workaround - install python2-openshift
+  strategy: linear
+  hosts:
+    - masters
+  tasks:
+    - name: install python2-openshift
+      yum:
+        pkg: "python2-openshift"
+        state: present
+
 - name: Configure cluster common parts
   hosts:
     - masters
