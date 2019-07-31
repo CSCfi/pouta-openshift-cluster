@@ -20,6 +20,15 @@ print_usage_and_exit()
     exit 1
 }
 
+# Ensure we are running as root and thus can set file access rights correctly:
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run this script as root so it can set file access rights"
+  echo "correctly."
+  echo
+  echo "The vault pass has NOT been written to RAM disk."
+  exit 1
+fi
+
 vaultpass_file_name='vaultpass'
 
 # Process options
