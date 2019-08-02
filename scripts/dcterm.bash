@@ -42,5 +42,5 @@ else
     fi
     echo
 
-    ${script_dir}/run_deployment_container.bash -p $vaultpass_path -i -e $env_name $*
+    ${script_dir}/run_deployment_container.bash -p $vaultpass_path -e $env_name $*
 fi
