@@ -53,7 +53,7 @@ def main():
     try:
         metrics = requests.get(args.metrics_url)
         node_name = socket.gethostname()
-        metric_pattern = args.metric_name + '{condition="Ready",node="' + node_name + '",status="(.*)"} 1'
+        metric_pattern = args.metric_name + '{node="' + node_name + '",condition="Ready",status="(.*)"} 1'
         status = re.findall(metric_pattern, metrics.text)
 
         if status:
