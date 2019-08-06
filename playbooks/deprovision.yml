@@ -111,6 +111,12 @@
         state: absent
         wait: yes
 
+    - name: Delete the integrated registry object storage container
+      shell: openstack container delete {{ openshift_hosted_registry_storage_swift_container }} --recursive
+      register: swift_output
+      changed_when: swift_output.rc == 0
+      ignore_errors: yes
+
     - name: Delete dynamically created Cinder volumes
       os_volume:
         display_name: "{{ item }}"

@@ -1,0 +1,8 @@
+- name: Create and wait for the data migration job
+  import_playbook: ops/migrate_images_to_swift/config.yml
+
+- name: Redeploy the integrated registry with the object storage backend
+  import_playbook: "{{ os_ansible_path|default('../../openshift-ansible') }}/playbooks/openshift-hosted/deploy_registry.yml"
+
+- name: Additional Docker registry configuration
+  import_playbook: registry_config.yml
