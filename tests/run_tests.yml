@@ -81,3 +81,28 @@
 
       always:
         - import_tasks: post_testing.yml
+
+- name: Run tests on openshift nodes
+  hosts: nodes:!masters
+  tasks:
+    - block:
+        - name: collect remote test names
+          shell: (cd /tmp/poc/tests && ls -d bats_test_openshift_node*)
+          register: test_directories
+          tags:
+            - bats_tests_nodes
+
+        - name: run bats tests
+          shell: >
+            POC_DEPLOY_MONITORING={{ deploy_monitoring|bool }}
+            ./generic_bats_wrapper.bash {{ item }} >> /tmp/poc/tests/test_results.log
+          args:
+            chdir: '/tmp/poc/tests'
+          with_items: "{{ test_directories.stdout_lines }}"
+          when:
+            - item not in poc_test_blacklist|default([])
+          tags:
+            - bats_tests_nodes
+
+      always:
+        - import_tasks: post_testing.yml

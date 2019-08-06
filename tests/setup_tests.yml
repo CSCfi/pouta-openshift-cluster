@@ -1,6 +1,6 @@
 ---
 - name: Setup tests
-  hosts: [masters, bastion]
+  hosts: [nodes, bastion]
   become: yes
   tags:
     - always
