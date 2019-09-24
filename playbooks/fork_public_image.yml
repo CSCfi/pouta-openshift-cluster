@@ -19,3 +19,11 @@
         public_image_name: "{{ default_public_image }}"
         image_properties: "{{ item.compute_node_image_properties }}"
       with_items: "{{ compute_node_groups }}"
+
+    - name: fork infra node stack images if needed
+      include: tasks/fork_public_image.yml
+      vars:
+        forked_image_name: "{{ item.heat_parameters.compute_node_image }}"
+        public_image_name: "{{ default_public_image }}"
+        image_properties: "{{ item.compute_node_image_properties }}"
+      with_items: "{{ infra_node_groups|default([]) }}"

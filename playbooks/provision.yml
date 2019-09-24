@@ -46,7 +46,17 @@
       no_log: True
       tags:
         - skip_ansible_lint
-
+        -
+    - name: Register stack creation status (infra nodes)
+      shell: openstack stack environment show -f json {{ cluster_name }}-{{ item.stack_name }}
+      register: stack_output_infra_nodes
+      failed_when: false
+      changed_when: false
+      no_log: True
+      with_items: "{{ infra_node_groups|default([]) }}"
+      tags:
+        - skip_ansible_lint
+        -
     - name: Register stack creation status (compute nodes)
       shell: openstack stack environment show -f json {{ cluster_name }}-{{ item.stack_name }}
       register: stack_output_compute_nodes
@@ -92,6 +102,16 @@
         when: assert_no_gluster_vol_scaledown|default(True)|bool
       # end block
       when: stack_output_glusterfs.stderr.find('Stack not found') == -1
+
+    - name: Register stack creation status (infra nodes)
+      shell: openstack stack environment show -f json {{ cluster_name }}-{{ item.stack_name }}
+      register: stack_output_infra_nodes
+      failed_when: false
+      changed_when: false
+      no_log: True
+      with_items: "{{ infra_node_groups|default([]) }}"
+      tags:
+        - skip_ansible_lint
 
     - name: Register stack creation status (compute nodes)
       shell: openstack stack environment show -f json {{ cluster_name }}-{{ item.stack_name }}
