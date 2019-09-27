@@ -137,6 +137,18 @@
     - stack_output_glusterfs.stderr.find('Stack not found') != -1 or
       allow_heat_stack_update_glusterfs|default(false)|bool
 
+- name: Build/update infra node stack(s)
+  os_stack:
+    name: "{{ cluster_name }}-{{ item.item.stack_name }}"
+    state: present
+    template: "files/heat/cluster-with-floating-ips/compute-nodes.yml"
+    wait: yes
+    parameters: "{{ item.item.heat_parameters | combine(base_stack_outputs) }}"
+  with_items: "{{ stack_output_infra_nodes.results }}"
+  when:
+    - item.stderr.find('Stack not found') != -1 or
+      item.item.stack_name in allow_heat_stack_update_node_groups|default([])
+
 - name: Build/update compute node stack(s)
   os_stack:
     name: "{{ cluster_name }}-{{ item.item.stack_name }}"
