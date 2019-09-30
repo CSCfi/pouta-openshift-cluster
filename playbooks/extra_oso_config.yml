@@ -7,6 +7,11 @@
     - role: openshift_webconsole_logo
       when: webconsole_logo_extension_url is defined
   tasks:
+    - name: remove infra label from master nodes if there are infra nodes
+      shell: oc label node "{{ item }}" node-role.kubernetes.io/infra-
+      with_items: "{{ groups['masters'] }}"
+      when: groups['infra'] | default([]) | length > 0
+
     - name: update storage classes (1st pass)
       k8s:
         state: present
