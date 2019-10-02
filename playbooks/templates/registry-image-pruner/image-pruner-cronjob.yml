@@ -13,7 +13,7 @@ spec:
         spec:
           serviceAccountName: image-pruner
           nodeSelector:
-            type: master
+            node-role.kubernetes.io/infra: 'true'
           containers:
           - name: registry-image-pruner
             image: "{{ registry_pruner_image }}"

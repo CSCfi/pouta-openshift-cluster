@@ -15,7 +15,7 @@ spec:
     spec:
       serviceAccountName: kube-state-metrics
       nodeSelector:
-        type: master
+        node-role.kubernetes.io/infra: 'true'
       containers:
       - name: kube-state-metrics
         image: quay.io/coreos/kube-state-metrics:v1.7.1
