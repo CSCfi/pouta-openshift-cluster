@@ -64,7 +64,7 @@ items:
           role: monitoring
       spec:
         nodeSelector:
-          type: {{ poc_heketi_node_selector_type|default('master') }}
+          node-role.kubernetes.io/infra: 'true'
         containers:
         - name: basic-auth-proxy
           image: {{ monitoring_basic_auth_proxy_image }}

@@ -83,7 +83,7 @@ items:
         name: prometheus
       spec:
         nodeSelector:
-          type: master
+          node-role.kubernetes.io/infra: 'true'
         serviceAccountName: prometheus
         containers:
         - name: basic-auth-proxy

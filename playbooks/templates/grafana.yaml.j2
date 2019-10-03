@@ -62,7 +62,7 @@ items:
         name: grafana
       spec:
         nodeSelector:
-          type: master
+          node-role.kubernetes.io/infra: 'true'
         containers:
         - name: grafana
           image: {{ monitoring_grafana_image }}

@@ -2,13 +2,15 @@
 - name: Do additional Docker registry configuration
   hosts: masters[0]
   tasks:
-    - name: update Docker image used for the registry
+    - name: update Docker image used for the registry and nodeSelector
       oc_edit:
         name: docker-registry
         namespace: default
         kind: dc
         content:
           spec.template.spec.containers[0].image: "{{ registry_docker_image }}"
+          spec.template.spec.nodeSelector:
+            node-role.kubernetes.io/infra: 'true'
 
     - name: get certificate for registry
       slurp:
@@ -149,7 +151,8 @@
         kind: deploymentconfig
         name: registry-console
         content:
-          spec.template.spec.nodeSelector.type: master
+          spec.template.spec.nodeSelector:
+            node-role.kubernetes.io/infra: 'true'
 
     - name: Update the registry-viewer cluster role
       oc_edit:
