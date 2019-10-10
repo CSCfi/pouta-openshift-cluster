@@ -187,7 +187,7 @@
         tar cfz /tmp/glusterfs-{{ inventory_hostname }}.tar.gz
         /etc/glusterfs
         /var/lib/glusterd
-        /var/lib/heketi
+        /var/lib/heketi/fstab
       tags:
         - skip_ansible_lint
 
