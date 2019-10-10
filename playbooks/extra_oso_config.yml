@@ -90,7 +90,7 @@
         name: heketi-storage
         content:
           spec.template.spec.nodeSelector:
-            node-role.kubernetes.io/infra: 'true'
+            type: master
           spec.template.spec.containers[0].resources.limits.memory: "{{ poc_heketi_memory_limit|default('1Gi') }}"
           spec.template.spec.containers[0].resources.requests.memory: "{{ poc_heketi_memory_request|default('1Gi') }}"
           spec.template.spec.containers[0].image: "{{ poc_heketi_image|default('heketi/heketi:6') }}"
@@ -106,6 +106,7 @@
             node-role.kubernetes.io/infra: 'true'
       when:
         - set_glusterblock_storage_provisioner_node_selector|default(true)|bool
+        - openshift_storage_glusterfs_block_deploy|default(true)|bool
 
     - name: Deploy openshift-metrics-server on infra nodes by adding a node selector
       oc_edit:
