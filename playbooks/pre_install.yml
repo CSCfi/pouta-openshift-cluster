@@ -87,6 +87,15 @@
   roles:
     - openshift_master
 
+- name: Configure external glusterfs VMs
+  hosts:
+    - glusterfs
+  become: yes
+  roles:
+    - role: external_glusterfs_node
+      when:
+      - not openshift_storage_glusterfs_is_native|default(true)
+
 - name: Configure openshift nodes
   hosts:
     - nodes
