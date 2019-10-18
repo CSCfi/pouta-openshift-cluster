@@ -75,6 +75,25 @@
       shell: oc replace -n default -f /home/cloud-user/project-request.yaml
       when: existing_template.stdout_lines | length > 0
 
+    - name: get heketi deployment config
+      oc_obj:
+        state: list
+        kind: deploymentconfig
+        namespace: "glusterfs"
+        name: "heketi-storage"
+      register: glusterfs_heketi_deployment_config
+
+    - name: create heketi secret
+      oc_secret:
+        namespace: "glusterfs"
+        state: present
+        name: "heketi-storage-admin-secret"
+        type: "kubernetes.io/glusterfs"
+        force: True
+        contents:
+          - path: key
+            data: "{{ (glusterfs_heketi_deployment_config.results.results[0].spec.template.spec.containers[0].env | selectattr('name', 'match', '^HEKETI_ADMIN_KEY$') | first).value }}"
+
     - name: replace default route for Heketi with a more secure one (TLS+whitelist)
       include: tasks/upsert_k8s_object.yml
       vars:
