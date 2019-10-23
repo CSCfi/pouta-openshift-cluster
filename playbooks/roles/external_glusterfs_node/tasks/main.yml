@@ -2,17 +2,20 @@
   yum:
     pkg: centos-release-gluster41
     state: present
+  when: "not poc_installed|default(False)"
 
 - name: install glusterfs
   yum:
     pkg: glusterfs-server
     state: present
+  when: "not poc_installed|default(False)"
 
 - name: start and enable glusterd on boot
   systemd:
     name: glusterd
     state: started
     enabled: yes
+  when: "not poc_installed|default(False)"
 
 - name: allow connections to glusterd in the cluster
   lineinfile:
@@ -25,7 +28,9 @@
 
 - name: restart iptables
   service: name=iptables state=restarted
-  when: iptables_config.changed|default(false)
+  when:
+    - iptables_config.changed|default(false)
+    - not poc_installed|default(False)
 
 - name: probe glusterfs nodes
   run_once: true
