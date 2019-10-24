@@ -12,8 +12,7 @@ check_objects_for_attribute() {
     label=$3
     attribute=$4
     value=$5
-    for res in $(oc get $type -n $namespace -l $label -o json \
-        | jq -r ".items[].$attribute")
+    for res in $(oc get $type -n $namespace -l $label --o=jsonpath='{.items[].$attribute}')
     do
         echo "result was '$res', expected '$value'"
         [ $res == "$value" ]
@@ -21,11 +20,11 @@ check_objects_for_attribute() {
 }
 
 @test "test_registry_console_node_selector" {
-    # check that all registry console replicas have nodeSelector set to 'master'
-    check_objects_for_attribute default pod app=registry-console spec.nodeSelector.type master
+    # check that all registry console replicas have infra node nodeSelector
+    check_objects_for_attribute default pod app=registry-console spec.nodeSelector.node-role\.kubernetes\.io/infra true
 }
 
 @test "test_docker_registry_node_selector" {
-    # check that all docker registry replicas have nodeSelector set to 'master'
-    check_objects_for_attribute default pod app=docker-registry spec.nodeSelector.type master
+    # check that all docker registry replicas have infra node nodeSelector
+    check_objects_for_attribute default pod app=docker-registry spec.nodeSelector.node-role\.kubernetes\.io/infra true
 }
