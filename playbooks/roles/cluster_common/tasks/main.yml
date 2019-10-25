@@ -39,6 +39,7 @@
 # rpcbind is installed and enabled by default, turn it off for security
 - name: disable rpcbind
   service: name=rpcbind state=stopped enabled=false
+  when: inventory_hostname not in groups.glusterfs or openshift_storage_glusterfs_is_native|default(True)
 
 - name: allow connections to the NRPE daemons in the cluster
   lineinfile:
