@@ -32,6 +32,18 @@
     - iptables_config.changed|default(false)
     - not poc_installed|default(False)
 
+- name: list all the volume groupsvgs | grep "vg_" | awk '{ print $1 }'
+  shell: vgs | grep "vg_" | awk '{ print $1 }'
+  register: vg_list
+
+- name: activate all the volume groups
+  shell: vgchange -ay {{ item }}
+  with_items: "{{ vg_list.stdout_lines }}"
+
+- name: mount all the bricks (External GlusterFS)
+  shell: "mount -a --fstab /etc/fstab"
+  when: not poc_installed|default(False)
+
 - name: probe glusterfs nodes
   run_once: true
   shell: "gluster peer probe {{ item }}"

@@ -4,6 +4,19 @@
   become: yes
   gather_facts: no
   tasks:
+    - name: download public keys from bastion
+      fetch:
+        dest: /tmp/ansible/public_keys/bastion/
+        src: .ssh/id_rsa.pub
+        flat: yes
+      run_once: true
+      delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
+
+    - name: authorize ssh with the downloaded key
+      authorized_key:
+        user: cloud-user
+        key: "{{ lookup('file', '/tmp/ansible/public_keys/bastion/id_rsa.pub') }}"
+
     - name: list the backup contents (glusterfs)
       find:
         paths: "{{ bastion_backup_base_dir }}/{{ inventory_hostname }}"
@@ -29,3 +42,15 @@
         dest: /
         remote_src: yes
         creates: /var/lib/glusterd
+
+    - name: get the list of heketi mounts (External GlusterFS)
+      shell: "cat /etc/fstab | grep '/var/lib/heketi/mounts' | awk '{print $2}'"
+      register: heketi_mount_directories
+      when: not openshift_storage_glusterfs_is_native|default(True)
+
+    - name: re-create /var/lib/heketi/mounts (External GlusterFS)
+      file:
+        state: directory
+        path: "{{ item }}"
+      with_items: "{{ heketi_mount_directories.stdout_lines }}"
+      when: not openshift_storage_glusterfs_is_native|default(True)

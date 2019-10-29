@@ -187,9 +187,20 @@
         tar cfz /tmp/glusterfs-{{ inventory_hostname }}.tar.gz
         /etc/glusterfs
         /var/lib/glusterd
-        /var/lib/heketi/fstab
+        /var/lib/heketi
       tags:
         - skip_ansible_lint
+      when: openshift_storage_glusterfs_is_native|default(true)
+
+    - name: archive glusterfs and heketi config
+      shell: >
+        tar cfz /tmp/glusterfs-{{ inventory_hostname }}.tar.gz
+        /etc/glusterfs
+        /var/lib/glusterd
+        /etc/fstab
+      tags:
+        - skip_ansible_lint
+      when: not openshift_storage_glusterfs_is_native|default(true)
 
     - name: sync glusterfs archive to bastion
       synchronize:

@@ -269,7 +269,7 @@ To recover glusterfs nodes, we need to first restore /var/lib/glusterd from back
 
 ```bash
 cd ~/poc/playbooks
-ansible-playbook pre_install.yml restore/restore_glusterfs.yml 
+ansible-playbook restore/restore_glusterfs.yml
 ```
 
 Then we acquire the current heketi admin key and run restore/site process. We disable 
