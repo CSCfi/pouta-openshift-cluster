@@ -4,6 +4,7 @@
     src: "{{ openshift_master_config_file }}"
     key: oauthConfig.identityProviders
     value: |
+      {% if poc_disable_htpasswd_authentication | d() | bool == false -%}
       - name: Local account
         login: true
         mappingMethod: "{{ local_auth_mapping_method }}"
@@ -12,6 +13,7 @@
           apiVersion: v1
           file: /etc/origin/master/htpasswd
           kind: HTPasswdPasswordIdentityProvider
+      {% endif %}
       {% if deploy_github_auth | d() | bool == true -%}
       - name: GitHub
         challenge: false
