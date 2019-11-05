@@ -88,6 +88,13 @@
         wait: yes
       with_items: "{{ infra_node_groups|default([]) }}"
 
+    - name: Delete gpu nodes stacks
+      os_stack:
+        name: "{{ cluster_name }}-{{ item.stack_name }}"
+        state: absent
+        wait: yes
+      with_items: "{{ gpu_node_groups|default([]) }}"
+
     - name: Delete stack {{ cluster_name }}-etcd (multimaster)
       os_stack:
         name: "{{ cluster_name }}-etcd"

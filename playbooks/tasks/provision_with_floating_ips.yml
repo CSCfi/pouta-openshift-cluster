@@ -160,3 +160,16 @@
   when:
     - item.stderr.find('Stack not found') != -1 or
       item.item.stack_name in allow_heat_stack_update_node_groups|default([])
+
+- name: Build/update gpu node stack(s)
+  os_stack:
+    name: "{{ cluster_name }}-{{ item.item.stack_name }}"
+    state: present
+    template: "files/heat/cluster-with-floating-ips/gpu-nodes.yml"
+    wait: yes
+    parameters: "{{ item.item.heat_parameters | combine(base_stack_outputs) }}"
+  with_items: "{{ stack_output_gpu_nodes.results }}"
+  when:
+    - gpu_node_groups is defined
+    - item.stderr.find('Stack not found') != -1 or
+      item.item.stack_name in allow_heat_stack_update_node_groups|default([])

@@ -138,6 +138,15 @@ resources:
             name_suffix: { get_param: env_name }
       policies: ['anti-affinity']
 
+  gpu_node_server_group:
+    type: OS::Nova::ServerGroup
+    properties:
+      name:
+        str_replace:
+          template: gpu_node-name_suffix
+          params:
+            name_suffix: { get_param: env_name }
+
   #-----------------------------------
   # Dedicated cluster network
   #-----------------------------------
@@ -212,3 +221,4 @@ outputs:
       network_id: { get_resource: openshift_network }
       subnet_id: { get_resource: openshift_subnet }
       compute_node_server_group_id: { get_resource: compute_node_server_group }
+      gpu_node_server_group_id: { get_resource: gpu_node_server_group }

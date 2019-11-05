@@ -1,0 +1,61 @@
+---
+- name: add the required Nvidia yum repos
+  yum_repository:
+    state: present
+    name: "{{ item.name }}"
+    baseurl: "{{ item.baseurl }}"
+    description: "{{ item.description }}"
+    repo_gpgcheck: 1
+    enabled: 1
+    gpgcheck: 0
+    gpgkey: "{{ item.gpgkey }}"
+  with_items:
+    - name: "libnvidia-container"
+      baseurl: "https://nvidia.github.io/libnvidia-container/centos7/$basearch"
+      gpgkey: "https://nvidia.github.io/libnvidia-container/gpgkey"
+      description: "libnvidia-container repo"
+    - name: "nvidia-container-runtime"
+      baseurl: "https://nvidia.github.io/nvidia-container-runtime/centos7/$basearch"
+      gpgkey: "https://nvidia.github.io/nvidia-container-runtime/gpgkey"
+      description: "nvidia-container-runtime repo"
+
+- name: install the nvidia-container-runtime package
+  yum:
+    name: nvidia-container-runtime-hook
+    state: present
+
+- name: ensure that selinux-policy-devel is available
+  package:
+    name: selinux-policy-devel
+    state: present
+
+- name: create local policy directory
+  file:
+    state: directory
+    dest: /etc/selinux/targeted/local
+    mode: 0755
+    owner: root
+    group: root
+
+- name: copy the selinux policy
+  template:
+    src: 'files/gpu-container.te'
+    dest: '/etc/selinux/targeted/local'
+    mode: 0644
+    owner: root
+    group: root
+
+- name: compile the selinux policy
+  shell: |
+    cd /etc/selinux/targeted/local/
+    make -f /usr/share/selinux/devel/Makefile gpu-container.pp
+
+- name: load the selinux policy
+  shell: semodule -i /etc/selinux/targeted/local/gpu-container.pp
+
+- name: restore relevant SELinux security contexts
+  shell: |
+    # Nvidia kernel modules
+    nvidia-container-cli -k list | restorecon -v -f -
+    restorecon -Rv /dev
+    restorecon -Rv /var/lib/kubelet

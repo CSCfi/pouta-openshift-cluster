@@ -1,10 +1,6 @@
 - name: Additional master configuration
   import_playbook: extra_master_config.yml
 
-- name: Set quota for emptyDir volumes
-  import_playbook: set_compute_empydir_quota.yml
-  when: poc_set_compute_empydir_quota|default(False)
-
 - name: Additional OpenShift config via the API
   import_playbook: extra_oso_config.yml
 
@@ -13,6 +9,13 @@
 
 - name: Setup default www app
   import_playbook: setup_default_www_app.yml
+
+- name: Set quota for emptyDir volumes
+  import_playbook: set_compute_empydir_quota.yml
+  when: poc_set_compute_empydir_quota|default(False)
+
+- name: Setup GPU nodes
+  import_playbook: setup_gpu_nodes.yml
 
 - name: Setup InfluxDB nodes
   import_playbook: setup_influxdb_nodes.yml

@@ -85,6 +85,7 @@ environments
 │   │   │   ├── vars.yml
 │   │   │   ├── vault.yml
 │   │   │   └── volumes.yml
+│   │   ├── gpu.yml
 │   │   ├── masters.yml
 │   │   ├── nfsservers.yml
 │   │   ├── node_lbs.yml

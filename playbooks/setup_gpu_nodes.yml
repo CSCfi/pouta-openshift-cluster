@@ -1,0 +1,86 @@
+---
+- name: Setup the GPU nodes
+  hosts: nodes
+  roles:
+    - openshift_gpu_node
+
+- name: Create the nvidia-device-plugin daemonset
+  hosts: masters
+  run_once: true
+  tasks:
+    - name: create the nvidia-device-plugin daemonset
+      k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: DaemonSet
+          metadata:
+            name: nvidia-device-plugin
+            namespace: kube-system
+          spec:
+            selector:
+              matchLabels:
+                app: nvidia-device-plugin
+            updateStrategy:
+              type: RollingUpdate
+            template:
+              metadata:
+                labels:
+                  app: nvidia-device-plugin
+              spec:
+                tolerations:
+                  # Allow this pod to be rescheduled while the node is in "critical add-ons only" mode.
+                  # This, along with the annotation above marks this pod as a critical add-on.
+                  - key: CriticalAddonsOnly
+                    operator: Exists
+                  - key: nvidia.com/gpu
+                    operator: Exists
+                    effect: NoSchedule
+                nodeSelector:
+                  type: gpu
+                containers:
+                  - image: nvidia/k8s-device-plugin:1.11
+                    name: nvidia-device-plugin-ctr
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop: ["ALL"]
+                      seLinuxOptions:
+                        type: gpu_container_t
+                    volumeMounts:
+                      - name: device-plugin
+                        mountPath: /var/lib/kubelet/device-plugins
+                volumes:
+                  - name: device-plugin
+                    hostPath:
+                      path: /var/lib/kubelet/device-plugins
+
+    - name: taint the GPU nodes so that they are not used for normal workloads
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Node
+          metadata:
+            name: "{{ item }}"
+          spec:
+            taints:
+            - effect: PreferNoSchedule
+              key: special
+              value: "true"
+      with_items: "{{ groups['gpu']|default([]) }}"
+
+    - name: update the restricted and priveleged SCC to allow GPU usage
+      k8s:
+        state: present
+        definition:
+          apiVersion: security.openshift.io/v1
+          kind: SecurityContextConstraints
+          metadata:
+            name: "{{ item }}"
+          seLinuxContext:
+            seLinuxOptions:
+              type: gpu_container_t
+      with_items:
+        - restricted
+        - privileged

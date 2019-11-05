@@ -33,6 +33,16 @@
         parameters: "{{ item.heat_parameters | combine(base_stack_outputs) }}"
       with_items: "{{ compute_node_groups }}"
 
+    - name: Build/update gpu node stack(s)
+      os_stack:
+        name: "{{ cluster_name }}-{{ item.stack_name }}"
+        state: present
+        template: "files/openshift-heat-stack-gpu-nodes.yml"
+        wait: yes
+        parameters: "{{ item.heat_parameters | combine(base_stack_outputs) }}"
+      with_items: "{{ gpu_node_groups }}"
+      when: gpu_node_groups is defined
+
     - name: Remove inventory cache
       file:
         path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"

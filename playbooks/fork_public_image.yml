@@ -27,3 +27,11 @@
         public_image_name: "{{ default_public_image }}"
         image_properties: "{{ item.compute_node_image_properties|default({}) }}"
       with_items: "{{ infra_node_groups|default([]) }}"
+
+    - name: fork gpu node stack images if needed
+      include: tasks/fork_public_image.yml
+      vars:
+        forked_image_name: "{{ item.heat_parameters.gpu_node_image }}"
+        public_image_name: "{{ default_public_gpu_image }}"
+        image_properties: "{{ item.gpu_node_image_properties|default({}) }}"
+      with_items: "{{ gpu_node_groups|default([]) }}"
