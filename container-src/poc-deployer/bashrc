@@ -25,7 +25,7 @@ branch-info() {
     done
 }
 
-export PS1='${YELLOW}${ENV_NAME}${RESET} $(short_cwd) ${GREEN}($(parse_git_branch))${RESET} > '
+export PS1='\[${YELLOW}${ENV_NAME}${RESET} $(short_cwd) ${GREEN}($(parse_git_branch))${RESET} > '
 
 source init_env.bash
 
