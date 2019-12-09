@@ -17,7 +17,7 @@ RUN yum install -y \
 
 COPY requirements.txt /root/requirements.txt
 
-RUN pip install --no-cache-dir -U setuptools
+RUN pip install --no-cache-dir -U setuptools wheel
 RUN pip install --no-cache-dir -r /root/requirements.txt
 
 # Choose an arbitrary GID so that vault password can be made group readable when mounted as a volume
