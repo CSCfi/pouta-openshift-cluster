@@ -1,0 +1,229 @@
+---
+
+- name: Clean the GlusterFS volumes and get the list of bricks to delete
+  hosts: masters
+  run_once: true
+  tasks:
+
+    - name: scale down the heketi pods to 0
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: DeploymentConfig
+          metadata:
+            name: heketi-storage
+            namespace: glusterfs
+          spec:
+            replicas: 0
+      when: not noop|default(True)
+
+    - name: get the GlusterFS PVs
+      oc_obj:
+        state: list
+        kind: PersistentVolume
+      register: pv_list
+
+    - name: gather the pv gluster volume IDs
+      set_fact:
+        pv_gluster_volume_ids: "{{ pv_gluster_volume_ids|default([]) + [ item.spec.glusterfs.path ] }}"
+      with_items:
+        - "{{ pv_list.results.results[0]['items'] }}"
+      when:
+        - item.spec.storageClassName == 'glusterfs-storage'
+        - item.status.phase == 'Bound'
+
+    - name: Add the heketidbstorage volume to the list
+      set_fact:
+        pv_gluster_volume_ids: "{{ pv_gluster_volume_ids + [ 'heketidbstorage' ] }}"
+
+    - name: show gluster volumes which need to be kept
+      debug:
+        var: pv_gluster_volume_ids
+
+    - name: assert that pv_gluster_volume_ids is not empty
+      assert:
+        that:
+          - pv_gluster_volume_ids | length > 0
+
+    - name: set_facts on target hosts
+      set_fact:
+        pv_gluster_volume_ids: "{{ pv_gluster_volume_ids }}"
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      with_items: "{{ groups.glusterfs }}"
+
+- name: Clean the logical volumes fron GlusterFS nodes
+  hosts: glusterfs
+  gather_facts: true
+  tasks:
+    - name: get the glusterfs container ID (native)
+      shell: docker ps --filter name=k8s_glusterfs_glusterfs-storage --format \{\{.ID\}\}
+      register: gluster_container_id
+      when: openshift_storage_glusterfs_is_native
+
+    - name: set the gluster CLI command (native)
+      set_fact:
+        gluster_shell: "docker exec {{ gluster_container_id.stdout }}"
+      when: openshift_storage_glusterfs_is_native
+
+    - name: set the gluster CLI command (non-native)
+      set_fact:
+        gluster_shell: ""
+      when: not openshift_storage_glusterfs_is_native
+
+    - name: get all the existing gluster volumes
+      shell: "{{ gluster_shell }} gluster volume list"
+      register: gluster_volume_ids
+
+    - name: assert that gluster_volume_ids is not empty
+      assert:
+        that:
+          - gluster_volume_ids.stdout_lines | length > 0
+
+    - name: show the list of gluster volumes to clean
+      debug:
+        var: item
+      with_items:
+        - "{{ gluster_volume_ids.stdout_lines }}"
+      when:
+        - item not in pv_gluster_volume_ids
+      run_once: true
+
+    - name: stop and delete the oprhaned gluster volumes
+      shell: |
+        {{ gluster_shell }} gluster volume stop {{ item }} --mode=script
+        {{ gluster_shell }} gluster volume delete {{ item }} --mode=script
+      with_items:
+        - "{{ gluster_volume_ids.stdout_lines }}"
+      when:
+        - item not in pv_gluster_volume_ids
+        - not noop|default(True)
+      register: gluster_volume_delete
+      run_once: true
+
+    - name: pause for glusterfs to finish the cleanup
+      pause:
+        seconds: 120
+      when: gluster_volume_delete.changed
+
+    - name: get the list of bricks in use
+      shell: |
+        {{ gluster_shell }} gluster volume info | grep Brick[1-9] | awk '{print $2}'
+      register: bricks_list
+
+    - name: gather the list of bricks to keep
+      set_fact:
+        bricks_to_keep: "{{ bricks_to_keep|default([]) + [ item.split(':')[0] + ' ' + item.split(':')[1].split('/')[6] + ' ' + item.split(':')[1].split('/')[5] ] }}"
+      with_items: "{{ bricks_list.stdout_lines }}"
+
+    - name: assert that bricks_to_keep is not empty
+      assert:
+        that:
+          - bricks_to_keep | length > 0
+
+    - name: gather a list of existing lvs
+      shell: lvs --noheadings -o lv_name,vg_name,pool_lv | grep brick | awk '{$1=$1};1'
+      register: host_lvs_list
+
+    - name: filter own lvs
+      set_fact:
+        host_lvs_to_keep: "{{ host_lvs_to_keep|default([]) + [ item.split(' ')[1] ] }}"
+      when: item.split(' ')[0] == hostvars[inventory_hostname]['ansible_default_ipv4']['address']
+      with_items:
+        - "{{ bricks_to_keep }}"
+
+    - name: gather the extra lvs
+      set_fact:
+        host_extra_lvs: "{{ host_extra_lvs|default([]) + [ item ] }}"
+      when: item.split(' ')[0] is not in host_lvs_to_keep
+      with_items:
+        - "{{ host_lvs_list.stdout_lines }}"
+
+    - name: show extra lvs
+      debug:
+        var: host_extra_lvs|default("NONE")
+
+    - name: unmout the extra lvs
+      shell: "{{ gluster_shell }} umount /dev/mapper/{{ item.split(' ')[1] }}-{{ item.split(' ')[0] }}"
+      with_items:
+        - "{{ host_extra_lvs|default([]) }}"
+      register: unmount_command
+      failed_when: unmount_command.rc == 1
+      when: not noop|default(True)
+
+    - name: de-activate the extra lvs
+      lvol:
+        vg: "{{ item.split(' ')[1] }}"
+        lv: "{{ item.split(' ')[0] }}"
+        active: false
+      with_items:
+        - "{{ host_extra_lvs|default([]) }}"
+      when: not noop|default(True)
+
+    - name: remove the extra lvs
+      lvol:
+        vg: "{{ item.split(' ')[1] }}"
+        lv: "{{ item.split(' ')[0] }}"
+        state: absent
+        force: yes
+      with_items:
+        - "{{ host_extra_lvs|default([]) }}"
+      when: not noop|default(True)
+
+    - name: remove the extra thin pools
+      lvol:
+        vg: "{{ item.split(' ')[1] }}"
+        thinpool: "{{ item.split(' ')[2] }}"
+        state: absent
+        force: yes
+      with_items:
+        - "{{ host_extra_lvs|default([]) }}"
+      when: not noop|default(True)
+
+    - name: remove the extra brick mount directories
+      file:
+        path: "/var/lib/heketi/mounts/{{ item.split(' ')[1] }}/{{ item.split(' ')[0] }}"
+        state: absent
+      with_items:
+        - "{{ host_extra_lvs|default([]) }}"
+      when: not noop|default(True)
+
+    - name: remove outdated lines in /var/lib/heketi/fstab (native)
+      lineinfile:
+        state: absent
+        dest: /var/lib/heketi/fstab
+        regexp: "^/*{{ item.split(' ')[0] }}/*"
+      with_items: "{{ host_extra_lvs|default([]) }}"
+      when:
+        - openshift_storage_glusterfs_is_native
+        - not noop|default(True)
+
+    - name: remove outdated lines in /etc/fstab (non-native)
+      lineinfile:
+        state: absent
+        dest: /etc/fstab
+        regexp: "^/*{{ item.split(' ')[0] }}/*"
+      with_items: "{{ host_extra_lvs|default([]) }}"
+      when:
+        - not openshift_storage_glusterfs_is_native
+        - not noop|default(True)
+
+
+- name: Scale heketi back up
+  hosts: masters
+  run_once: true
+  tasks:
+
+    - name: scale down the heketi pod to 1
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: DeploymentConfig
+          metadata:
+            name: heketi-storage
+            namespace: glusterfs
+          spec:
+            replicas: 1
+      when: not noop|default(True)
