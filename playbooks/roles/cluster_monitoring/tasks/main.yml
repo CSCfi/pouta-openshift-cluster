@@ -1,0 +1,41 @@
+---
+- name: create temp directory
+  command: mktemp -d
+  register: mktemp
+  changed_when: False
+
+- name: ensure that the monitoring namespace exists
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        annotations:
+          openshift.io/node-selector: ""
+        name: "{{ monitoring_namespace }}"
+
+- name: ensure that the montoring netnamespace is patched
+  k8s:
+    state: present
+    definition:
+      apiVersion: network.openshift.io/v1
+      kind: NetNamespace
+      metadata:
+        name: "{{ monitoring_namespace }}"
+      netid: 0
+      netname: "{{ monitoring_namespace }}"
+
+- include_tasks: deploy_node_exporter.yml
+- include_tasks: deploy_kube_state_metrics.yml
+- include_tasks: deploy_prometheus_operator.yml
+- include_tasks: deploy_prometheus.yml
+- include_tasks: deploy_thanos.yml
+- include_tasks: deploy_grafana.yml
+
+- name: delete temp directory
+  file:
+    path: "{{ mktemp.stdout }}"
+    state: absent
+  changed_when: False
+  check_mode: no

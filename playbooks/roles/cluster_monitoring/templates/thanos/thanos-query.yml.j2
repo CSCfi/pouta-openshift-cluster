@@ -1,0 +1,95 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-query
+  namespace: {{ monitoring_namespace }}
+  labels:
+    app: thanos
+    component: thanos-query
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: thanos
+  template:
+    metadata:
+      labels:
+        app: thanos
+        component: thanos-query
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "10902"
+    spec:
+      serviceAccountName: {{ thanos_service_account }}
+      containers:
+      - name: thanos-query
+        image: {{ thanos_image }}:{{ thanos_image_version }}
+        imagePullPolicy: {{ default_image_pull_policy }}
+        args:
+        - 'query'
+        - '--query.replica-label=prometheus_replica'
+        - '--grpc-address=0.0.0.0:10901'
+        - '--http-address=0.0.0.0:9090'
+        - '--store=dnssrv+_grpc._tcp.thanos-store.{{ monitoring_namespace }}.svc.cluster.local'
+        - '--store=dnssrv+_grpc._tcp.thanos-sidecar.{{ monitoring_namespace }}.svc.cluster.local'
+        ports:
+        - name: http
+          containerPort: 9090
+        - name: grpc
+          containerPort: 10901
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: http
+      - name: oauth-proxy
+        args:
+          - '-https-address='
+          - '-http-address=:9000'
+          - '-email-domain=*'
+          - '-client-id=system:serviceaccount:{{ monitoring_namespace }}:{{ thanos_service_account }}'
+          - '-upstream=http://localhost:9090'
+          - '-htpasswd-file=/etc/proxy/htpasswd/auth'
+          - '-provider=openshift'
+          - '-openshift-sar={"namespace": "{{ monitoring_namespace }}", "verb": "list", "resource": "services"}'
+          - '-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token'
+          - '-cookie-secret-file=/etc/proxy/secrets/session_secret'
+          - '-openshift-service-account={{ thanos_service_account }}'
+          - '-openshift-ca=/etc/pki/tls/cert.pem'
+          - '-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+        image: "openshift/oauth-proxy"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+{% if prometheus_oauth_proxy_memory_requests is defined and prometheus_oauth_proxy_memory_requests is not none %}
+            memory: "{{ prometheus_oauth_proxy_memory_requests }}"
+{% endif %}
+{% if prometheus_oauth_proxy_cpu_requests is defined and prometheus_oauth_proxy_cpu_requests is not none %}
+            cpu: "{{ prometheus_oauth_proxy_cpu_requests }}"
+{% endif %}
+          limits:
+{% if prometheus_oauth_proxy_memory_limit is defined and prometheus_oauth_proxy_memory_limit is not none %}
+            memory: "{{ prometheus_oauth_proxy_memory_limit }}"
+{% endif %}
+{% if prometheus_oauth_proxy_cpu_limit is defined and prometheus_oauth_proxy_cpu_limit is not none %}
+            cpu: "{{ prometheus_oauth_proxy_cpu_limit }}"
+{% endif %}
+        ports:
+        - containerPort: 9000
+          name: proxy-http
+        volumeMounts:
+        - mountPath: /etc/proxy/secrets
+          name: thanos-proxy-secrets
+        - mountPath: /etc/proxy/htpasswd
+          name: secret-monitoring-token
+{% if prometheus_nodeselector is not none %}
+      nodeSelector:
+        {{ prometheus_nodeselector }}
+{% endif %}
+      volumes:
+      - name: thanos-proxy-secrets
+        secret:
+          secretName: thanos-proxy
+      - name: secret-monitoring-token
+        secret:
+          secretName: monitoring-token

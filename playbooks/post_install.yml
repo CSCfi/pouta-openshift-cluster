@@ -18,9 +18,6 @@
   import_playbook: setup_gpu_nodes.yml
   when: groups['gpu']|default([])|length > 0
 
-- name: Setup InfluxDB nodes
-  import_playbook: setup_influxdb_nodes.yml
-
 - name: Deploy monitoring
   import_playbook: deploy_monitoring.yml
   when: deploy_monitoring|default(false)|bool

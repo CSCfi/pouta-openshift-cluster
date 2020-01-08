@@ -1,0 +1,69 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: {{ prometheus_service_account }}
+  namespace: {{ monitoring_namespace }}
+  labels:
+    app-monitor: {{ prometheus_custom_label }}
+labels:
+  app-prometheus: prometheus
+spec:
+  retention: {{ prometheus_retention_time }}
+  nodeSelector:
+    {{ prometheus_nodeselector }}
+  replicas: 1
+  serviceAccountName: {{ prometheus_service_account }}
+  serviceMonitorSelector:
+    matchLabels:
+      {{ prometheus_default_labelselector }}
+  additionalScrapeConfigs:
+    name: additional-scrape-configs
+    key: prometheus-additional.yaml
+  secrets:
+    - prometheus-proxy
+    - monitoring-token
+    - bucket-config
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: {{ prometheus_storage_class }}
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ prometheus_pvc_size }}
+  listenLocal: true
+  containers:
+    - name: prometheus-proxy
+      args:
+        - '-provider=openshift'
+        - '-https-address='
+        - '-http-address=:8080'
+        - '-email-domain=*'
+        - '-upstream=http://localhost:9090'
+        - '-htpasswd-file=/etc/proxy/htpasswd/auth'
+        - '-client-id=system:serviceaccount:{{ monitoring_namespace }}:{{ prometheus_service_account }}'
+        - '-openshift-service-account={{ prometheus_service_account }}'
+        - '-openshift-sar={"namespace": "{{ monitoring_namespace }}", "verb": "list", "resource": "services"}'
+        - '-openshift-service-account={{ prometheus_service_account }}'
+        - '-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token'
+        - '-cookie-secret-file=/etc/proxy/secrets/session_secret'
+        - '-openshift-ca=/etc/pki/tls/cert.pem'
+        - '-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+        - '-skip-auth-regex=^/metrics'
+      image: 'openshift/oauth-proxy:v1.1.0'
+      ports:
+        - containerPort: 8080
+          name: http
+      resources: {}
+      volumeMounts:
+        - mountPath: /etc/proxy/secrets
+          name: secret-prometheus-proxy
+        - mountPath: /etc/proxy/htpasswd
+          name: secret-monitoring-token
+  thanos:
+    baseImage: {{ thanos_image }}
+    version: {{ thanos_image_version }}
+    objectStorageConfig:
+      key: thanos.yml
+      name: bucket-config

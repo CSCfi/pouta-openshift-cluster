@@ -1,0 +1,156 @@
+---
+- name: create thanos service account
+  k8s:
+    state: present
+    api_version: v1
+    name: "{{ thanos_service_account }}"
+    kind: ServiceAccount
+    namespace: "{{ monitoring_namespace }}"
+    definition:
+      metadata:
+        annotations:
+           serviceaccounts.openshift.io/oauth-redirectreference.primary: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"thanos-query"}}'
+
+- name: set clusterrolebinding for thanos service account
+  k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      kind: ClusterRoleBinding
+      metadata:
+        name: "{{ thanos_service_account }}"
+        labels:
+          app-monitor: "{{ prometheus_custom_label }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: thanos
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ thanos_service_account }}"
+          namespace: "{{ monitoring_namespace }}"
+
+- name: create thanos-store service
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: thanos-store
+        namespace: "{{ monitoring_namespace }}"
+      spec:
+        clusterIP: None
+        ports:
+        - name: grpc
+          port: 10901
+          targetPort: 10901
+        - name: http
+          port: 10902
+          targetPort: 10902
+        selector:
+          component: thanos-store
+
+- name: create thanos-query headless service
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: thanos-query
+        namespace: "{{ monitoring_namespace }}"
+        labels:
+          component: thanos-query
+      spec:
+        ports:
+        - name: grpc
+          port: 10901
+          targetPort: grpc
+        - name: http
+          port: 9090
+          targetPort: http
+        selector:
+          component: thanos-query
+
+- name: create thanos-query external service
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: thanos-query-oauth
+        namespace: "{{ monitoring_namespace }}"
+        labels:
+          component: thanos-query
+      spec:
+        ports:
+        - name: proxy-http
+          port: 9000
+          targetPort: proxy-http
+        selector:
+          component: thanos-query
+
+- name: create thanos-query route
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Route
+      metadata:
+        name: thanos-query
+        namespace: "{{ monitoring_namespace }}"
+        annotations:
+          haproxy.router.openshift.io/ip_whitelist: "{{ ip_whitelist_monitoring|join(' ') }}"
+      spec:
+        host: "thanos.{{ openshift_public_hostname }}"
+        to:
+          kind: Service
+          name: thanos-query-oauth
+        tls:
+          termination: Edge
+          insecureEdgeTerminationPolicy: Redirect
+          caCertificate: |
+            {{ api_domain_cert.tls_ca_certificate }}
+          certificate: |
+            {{ api_domain_cert.tls_certificate }}
+          key: |
+            {{ api_domain_cert.tls_secret_key }}
+
+- name: create thanos session_secret
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: thanos-proxy
+        namespace: "{{ monitoring_namespace }}"
+      stringData:
+        session_secret: "{{ monitoring_access_token }}"
+
+- name: create yml files from templates
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ mktemp.stdout }}/{{ item | basename }}"
+  loop:
+    - "thanos/thanos-query.yml"
+    - "thanos/thanos-store.yml"
+    - "thanos/thanos-compactor.yml"
+
+
+- name: deploy thanos-store statefulset
+  k8s:
+    state: present
+    src: "{{ mktemp.stdout }}/thanos-store.yml"
+
+- name: deploy thanos-compactor statefulset
+  k8s:
+    state: present
+    src: "{{ mktemp.stdout }}/thanos-compactor.yml"
+
+- name: deploy thanos-query
+  k8s:
+    state: present
+    src: "{{ mktemp.stdout }}/thanos-query.yml"

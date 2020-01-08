@@ -1,0 +1,242 @@
+- name: create clusterrole for grafana
+  k8s:
+    state: present
+    definition:
+      apiVersion: authorization.openshift.io/v1
+      kind: ClusterRole
+      metadata:
+        name: grafana
+      rules:
+        - apiGroups:
+            - authentication.k8s.io
+          attributeRestrictions: null
+          resources:
+            - tokenreviews
+          verbs:
+            - create
+        - apiGroups:
+            - authorization.k8s.io
+          attributeRestrictions: null
+          resources:
+            - subjectaccessreviews
+          verbs:
+            - create
+
+- name: create grafana service account
+  k8s:
+    state: present
+    api_version: v1
+    name: "{{ grafana_service_account }}"
+    kind: ServiceAccount
+    namespace: "{{ monitoring_namespace }}"
+    definition:
+      metadata:
+        annotations:
+           serviceaccounts.openshift.io/oauth-redirectreference.primary: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"grafana"}}'
+
+- name: set clusterrolebinding for grafana service account
+  k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      kind: ClusterRoleBinding
+      metadata:
+        name: "{{ grafana_service_account }}"
+        labels:
+          app-monitor: "{{ prometheus_custom_label }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: grafana
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ grafana_service_account }}"
+          namespace: "{{ monitoring_namespace }}"
+
+- name: create service for grafana
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: grafana
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/scheme: http
+          service.alpha.openshift.io/serving-cert-secret-name: grafana-tls
+        namespace: "{{ monitoring_namespace }}"
+        labels:
+          name: grafana
+      spec:
+        ports:
+          - name: http
+            port: "{{ grafana_port }}"
+            protocol: TCP
+            targetPort: http
+        selector:
+          app: grafana
+
+- name: create route for grafana
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Route
+      metadata:
+        name: grafana
+        namespace: "{{ monitoring_namespace }}"
+        annotations:
+          haproxy.router.openshift.io/ip_whitelist: "{{ ip_whitelist_monitoring|join(' ') }}"
+      spec:
+        host: "grafana.{{ openshift_public_hostname }}"
+        to:
+          kind: Service
+          name: grafana
+        port:
+          targetPort: http
+        tls:
+          termination: Edge
+          insecureEdgeTerminationPolicy: Redirect
+          caCertificate: |
+            {{ api_domain_cert.tls_ca_certificate }}
+          certificate: |
+            {{ api_domain_cert.tls_certificate }}
+          key: |
+            {{ api_domain_cert.tls_secret_key }}
+
+- name: create grafana session_secret
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: grafana-proxy
+        namespace: "{{ monitoring_namespace }}"
+      stringData:
+        session_secret: "{{ monitoring_access_token }}"
+
+- name: create grafana pvc
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: "{{ grafana_service_account }}-pvc"
+        labels:
+          app: "{{ grafana_service_account }}"
+          app-monitor: "{{ prometheus_custom_label }}"
+        namespace: "{{ monitoring_namespace }}"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: standard-rwo
+        resources:
+          requests:
+            storage: 1Gi
+
+
+- name: template deployment and grafana-config
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ mktemp.stdout }}/{{ item | basename }}"
+  loop:
+    - "grafana/grafana.yml"
+
+- name: create grafana-config configmap
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        namespace: "{{ monitoring_namespace }}"
+        name: grafana-config
+      data:
+        grafana.ini: |
+          [auth]
+          disable_login_form = true
+          [users]
+          auto_assign_org_role = Admin
+          [auth.basic]
+          enabled = false
+          [auth.proxy]
+          auto_sign_up = true
+          enabled = true
+          header_name = X-Forwarded-User
+          [paths]
+          data = /var/lib/grafana
+          [server]
+          http_addr = 127.0.0.1
+          http_port = {{ grafana_port }}
+
+- name: create grafana datasource secret
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: grafana-datasources
+        namespace: "{{ monitoring_namespace }}"
+      stringData:
+        prometheus.yaml: |-
+          {
+              "apiVersion": 1,
+              "datasources": [
+                  {
+                      "access": "proxy",
+                      "isDefault": true,
+                      "jsonData": {},
+                      "name": "prometheus",
+                      "type": "prometheus",
+                      "url": "http://thanos-query:9090",
+                      "withCredentials": false
+                  }
+              ]
+          }
+
+- name: create grafana dashboard-config configmap
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: grafana-dashboards-config
+        namespace: "{{ monitoring_namespace }}"
+      data:
+        dashboards.yaml: |-
+          apiVersion: 1
+
+          providers:
+          - name: 'thanos'
+            orgId: 1
+            folder: ''
+            folderUid: ''
+            type: file
+            disableDeletion: true
+            editable: true
+            updateIntervalSeconds: 10
+            allowUiUpdates: true
+            options:
+              path: /var/lib/grafana/dashboards
+
+- name: create grafana dashboard configmap
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: grafana-dashboard
+        namespace: "{{ monitoring_namespace }}"
+      data:
+        thanos.json: "{{ lookup('file', 'grafana/grafana-dashboard.json') }}"
+
+- name: create grafana deployment
+  k8s:
+    state: present
+    src: "{{ mktemp.stdout }}/grafana.yml"

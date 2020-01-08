@@ -1,0 +1,30 @@
+---
+
+monitoring_namespace: monitoring-infra
+
+prometheus_operator_service_account: prometheus-operator
+prometheus_service_account: prometheus
+prometheus_custom_label: "thanos-prometheus"
+prometheus_default_labelselector: "prometheus: monitoring"
+prometheus_oauth_proxy_memory_requests: 200Mi
+prometheus_oauth_proxy_cpu_requests: 200m
+prometheus_oauth_proxy_memory_limit: 200Mi
+prometheus_oauth_proxy_cpu_limit: 200m
+prometheus_nodeselector: "type: master"
+prometheus_storage_class: standard-rwo
+prometheus_pvc_size: 20Gi
+prometheus_retention_time: 3h
+
+grafana_service_account: grafana
+grafana_oauth_port: 3000
+grafana_port: 3001
+grafana_memory_requests: 100Mi
+grafana_memory_limit: 200Mi
+grafana_cpu_requests: 100m
+grafana_cpu_limit: 200m
+
+thanos_image: quay.io/thanos/thanos
+thanos_image_version: v0.9.0
+thanos_service_account: thanos
+
+default_image_pull_policy: "Always"

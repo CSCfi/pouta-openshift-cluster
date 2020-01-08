@@ -1,0 +1,121 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: {{ monitoring_namespace }}
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+      name: grafana
+    spec:
+      serviceAccountName: {{ grafana_service_account }}
+      containers:
+      - name: oauth-proxy
+        args:
+          - '-https-address='
+          - '-http-address=:{{ grafana_oauth_port }}'
+          - '-email-domain=*'
+          - '-client-id=system:serviceaccount:{{ monitoring_namespace }}:{{ grafana_service_account }}'
+          - '-upstream=http://localhost:{{ grafana_port }}'
+          - '-htpasswd-file=/etc/proxy/htpasswd/auth'
+          - '-provider=openshift'
+          - '-openshift-sar={"namespace": "{{ monitoring_namespace }}", "verb": "list", "resource": "services"}'
+          - '-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token'
+          - '-cookie-secret-file=/etc/proxy/secrets/session_secret'
+          - '-openshift-service-account={{ grafana_service_account }}'
+          - '-openshift-ca=/etc/pki/tls/cert.pem'
+          - '-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+          - '-skip-auth-regex=^/metrics,/api/datasources,/api/dashboards'
+        image: "openshift/oauth-proxy"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+{% if prometheus_oauth_proxy_memory_requests is defined and prometheus_oauth_proxy_memory_requests is not none %}
+            memory: "{{ prometheus_oauth_proxy_memory_requests }}"
+{% endif %}
+{% if prometheus_oauth_proxy_cpu_requests is defined and prometheus_oauth_proxy_cpu_requests is not none %}
+            cpu: "{{ prometheus_oauth_proxy_cpu_requests }}"
+{% endif %}
+          limits:
+{% if prometheus_oauth_proxy_memory_limit is defined and prometheus_oauth_proxy_memory_limit is not none %}
+            memory: "{{ prometheus_oauth_proxy_memory_limit }}"
+{% endif %}
+{% if prometheus_oauth_proxy_cpu_limit is defined and prometheus_oauth_proxy_cpu_limit is not none %}
+            cpu: "{{ prometheus_oauth_proxy_cpu_limit }}"
+{% endif %}
+        ports:
+        - containerPort: {{ grafana_oauth_port }}
+          name: http
+        volumeMounts:
+        - mountPath: /etc/proxy/secrets
+          name: grafana-proxy-secrets
+        - mountPath: /etc/proxy/htpasswd
+          name: secret-monitoring-token
+      - name: grafana
+        args:
+          - '-config=/etc/grafana/grafana.ini'
+        image: "grafana/grafana:5.2.1"
+        imagePullPolicy: {{ default_image_pull_policy }}
+        resources:
+          requests:
+{% if grafana_memory_requests is defined and grafana_memory_requests is not none %}
+            memory: "{{ grafana_memory_requests }}"
+{% endif %}
+{% if grafana_cpu_requests is defined and grafana_cpu_requests is not none %}
+            cpu: "{{ grafana_cpu_requests }}"
+{% endif %}
+          limits:
+{% if grafana_memory_limit is defined and grafana_memory_limit is not none %}
+            memory: "{{ grafana_memory_limit }}"
+{% endif %}
+{% if grafana_cpu_limit is defined and grafana_cpu_limit is not none %}
+            cpu: "{{ grafana_cpu_limit }}"
+{% endif %}
+        ports:
+        - name: grafana-http
+          containerPort: {{ grafana_oauth_port }}
+        volumeMounts:
+        - mountPath: "/var/lib/grafana"
+          name: grafana-data
+        - mountPath: "/etc/grafana"
+          name: grafana-config
+        - mountPath: /etc/proxy/secrets
+          name: grafana-proxy-secrets
+        - name: grafana-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: grafana-dashboards-config
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: grafana-dashboard
+          mountPath: /var/lib/grafana/dashboards
+      volumes:
+      - name: grafana-config
+        configMap:
+          name: grafana-config
+      - name: grafana-dashboard
+        configMap:
+          name: grafana-dashboard
+      - name: grafana-dashboards-config
+        configMap:
+          name: grafana-dashboards-config
+      - name: grafana-datasources
+        secret:
+          secretName: grafana-datasources
+          defaultMode: 420
+      - name: grafana-proxy-secrets
+        secret:
+          secretName: grafana-proxy
+      - name: secret-monitoring-token
+        secret:
+          secretName: monitoring-token
+      - name: grafana-data
+        persistentVolumeClaim:
+          claimName: {{ grafana_service_account }}-pvc

@@ -1,0 +1,146 @@
+---
+
+- name: create clusterrole for node-exporter
+  k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: "node-exporter"
+      rules:
+      - apiGroups:
+        - authentication.k8s.io
+        resources:
+        - tokenreviews
+        verbs:
+        - create
+      - apiGroups:
+        - authorization.k8s.io
+        resources:
+        - subjectaccessreviews
+        verbs:
+        - create
+
+- name: create service account for node-exporter
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: node-exporter
+        namespace: "{{ monitoring_namespace }}"
+
+- name: ensure the service account has hostaccess
+  oc_adm_policy_user:
+    namespace: "{{ monitoring_namespace }}"
+    resource_kind: scc
+    resource_name: hostaccess
+    state: present
+    user: "system:serviceaccount:{{ monitoring_namespace }}:node-exporter"
+
+- name: create node exporter cluster role binding
+  k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: node-exporter
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: node-exporter
+      subjects:
+        - kind: ServiceAccount
+          name: node-exporter
+          namespace: "{{ monitoring_namespace }}"
+      userNames:
+        - system:serviceaccount:{{ monitoring_namespace }}:node-exporter
+
+- name: create node-exporter service
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        labels:
+          k8s-app: node-exporter
+        name: node-exporter
+        namespace: "{{ monitoring_namespace }}"
+      spec:
+        clusterIP: None
+        ports:
+          - name: http
+            port: 9100
+            targetPort: http
+        selector:
+          app: node-exporter
+
+- name: create node-exporter daemonset
+  k8s:
+    state: present
+    definition:
+      apiVersion: extensions/v1beta1
+      kind: DaemonSet
+      metadata:
+        labels:
+          app: node-exporter
+        name: node-exporter
+        namespace: "{{ monitoring_namespace }}"
+      spec:
+        selector:
+          matchLabels:
+            app: node-exporter
+        template:
+          metadata:
+            labels:
+              app: node-exporter
+          spec:
+            containers:
+              - args:
+                  - --path.procfs=/host/proc
+                  - --path.sysfs=/host/sys
+                  - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+)($|/)
+                  - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
+                  - --no-collector.wifi
+                image: openshift/prometheus-node-exporter:v0.16.0
+                name: node-exporter
+                volumeMounts:
+                  - mountPath: /host/proc
+                    name: proc
+                  - mountPath: /host/sys
+                    name: sys
+                  - mountPath: /host/root
+                    mountPropagation: HostToContainer
+                    name: root
+                    readOnly: true
+            dnsPolicy: ClusterFirst
+            hostNetwork: true
+            hostPID: true
+            nodeSelector:
+              beta.kubernetes.io/os: linux
+            serviceAccount: node-exporter
+            serviceAccountName: node-exporter
+            tolerations:
+              - effect: NoSchedule
+                key: node-role.kubernetes.io/master
+            volumes:
+              - hostPath:
+                  path: /proc
+                  type: ""
+                name: proc
+              - hostPath:
+                  path: /sys
+                  type: ""
+                name: sys
+              - hostPath:
+                  path: /
+                  type: ""
+                name: root
+        updateStrategy:
+          rollingUpdate:
+            maxUnavailable: 1
+          type: RollingUpdate

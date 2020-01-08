@@ -131,6 +131,12 @@
       changed_when: swift_output.rc == 0
       ignore_errors: yes
 
+    - name: Delete the monitoring object storage container
+      shell: openstack container delete {{ cluster_name }}-monitoring --recursive
+      register: swift_output
+      changed_when: swift_output.rc == 0
+      ignore_errors: yes
+
     - name: Delete dynamically created Cinder volumes
       os_volume:
         display_name: "{{ item }}"

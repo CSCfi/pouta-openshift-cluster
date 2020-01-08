@@ -1,5 +1,0 @@
----
-- name: Setup InfluxDB node(s)
-  hosts: influxdb
-  roles:
-    - role: influxdb_node

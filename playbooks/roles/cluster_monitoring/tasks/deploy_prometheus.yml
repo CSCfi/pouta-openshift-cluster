@@ -1,0 +1,228 @@
+- name: create prometheus clusterrole
+  k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      kind: ClusterRole
+      metadata:
+        name: "{{ prometheus_service_account }}"
+      rules:
+        - apiGroups:
+            - authentication.k8s.io
+          attributeRestrictions: null
+          resources:
+            - tokenreviews
+          verbs:
+            - create
+        - apiGroups:
+            - authorization.k8s.io
+          attributeRestrictions: null
+          resources:
+            - subjectaccessreviews
+          verbs:
+            - create
+        - apiGroups: [""]
+          resources:
+          - nodes
+          - services
+          - endpoints
+          - pods
+          verbs: ["get", "list", "watch"]
+        - apiGroups: [""]
+          resources:
+          - configmaps
+          verbs: ["get"]
+        - nonResourceURLs: ["/metrics"]
+          verbs: ["get"]
+
+- name: create prometheus service account
+  k8s:
+    state: present
+    api_version: v1
+    name: "{{ prometheus_service_account }}"
+    kind: ServiceAccount
+    namespace: "{{ monitoring_namespace }}"
+    definition:
+      metadata:
+        annotations:
+           serviceaccounts.openshift.io/oauth-redirectreference.primary: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"prometheus"}}'
+
+- name: create clusterrolebinding for oAuth
+  k8s:
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      kind: ClusterRoleBinding
+      metadata:
+        name: "{{ prometheus_service_account }}-{{ monitoring_namespace }}"
+        labels:
+          app-monitor: "{{ prometheus_custom_label }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: "{{ prometheus_service_account }}"
+      subjects:
+      - kind: ServiceAccount
+        name: "{{ prometheus_service_account }}"
+        namespace: "{{ monitoring_namespace }}"
+
+- name: create clusterrolebinding for prometheus
+  k8s:
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      kind: ClusterRoleBinding
+      metadata:
+        name: "{{ prometheus_service_account }}-{{ monitoring_namespace }}-cluster-reader"
+        labels:
+          app-monitor: "{{ prometheus_custom_label }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-reader
+      subjects:
+      - kind: ServiceAccount
+        name: "{{ prometheus_service_account }}"
+        namespace: "{{ monitoring_namespace }}"
+
+- name: create service for prometheus
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: prometheus
+        namespace: "{{ monitoring_namespace }}"
+      spec:
+        ports:
+          - name: http
+            port: 8080
+            protocol: TCP
+            targetPort: 8080
+        selector:
+          prometheus: "{{ prometheus_service_account }}"
+
+- name: create prometheus route
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Route
+      metadata:
+        name: prometheus
+        namespace: "{{ monitoring_namespace }}"
+        annotations:
+          haproxy.router.openshift.io/ip_whitelist: "{{ ip_whitelist_monitoring|join(' ') }}"
+      spec:
+        host: "prometheus.{{ openshift_public_hostname }}"
+        to:
+          kind: Service
+          name: prometheus
+        port:
+          targetPort: http
+        tls:
+          termination: Edge
+          insecureEdgeTerminationPolicy: Redirect
+          caCertificate: |
+            {{ api_domain_cert.tls_ca_certificate }}
+          certificate: |
+            {{ api_domain_cert.tls_certificate }}
+          key: |
+            {{ api_domain_cert.tls_secret_key }}
+
+- name: create prometheus session_secret
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: prometheus-proxy
+        namespace: "{{ monitoring_namespace }}"
+      stringData:
+        session_secret: "{{ monitoring_access_token }}"
+
+- name: generate session secret for prometheus
+  htpasswd:
+    path: "{{ mktemp.stdout }}/prometheus.htpasswd"
+    name: token
+    password: "{{ monitoring_access_token }}"
+    crypt_scheme: ldap_sha1
+
+- name: register htpasswd contents
+  slurp:
+    src: "{{ mktemp.stdout }}/prometheus.htpasswd"
+  register: prometheus_htpasswd
+
+- name: create prometheus htpasswd auth secret
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: monitoring-token
+        namespace: "{{ monitoring_namespace }}"
+      stringData:
+        auth: "{{ prometheus_htpasswd.content | b64decode }}"
+
+- name: create service for the thanos sidecar container
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: thanos-sidecar
+        namespace: "{{ monitoring_namespace }}"
+      spec:
+        ports:
+          - name: grpc
+            port: 10901
+            protocol: TCP
+            targetPort: 10901
+        selector:
+          prometheus: "{{ prometheus_service_account }}"
+
+- name: create the monitoring swift container/bucket
+  os_object:
+    state: present
+    container: "{{ cluster_name }}-monitoring"
+  delegate_to: localhost
+
+- name: create bucket-config secret
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: bucket-config
+        namespace: "{{ monitoring_namespace }}"
+      stringData:
+        thanos.yml: |
+          type: SWIFT
+          config:
+            auth_url: "{{ openshift_cloudprovider_openstack_auth_url }}"
+            username: "{{ openshift_cloudprovider_openstack_username }}"
+            password: "{{ openshift_cloudprovider_openstack_password }}"
+            domain_name: "{{ openshift_cloudprovider_openstack_domain_name }}"
+            project_name: "{{ openshift_cloudprovider_openstack_tenant_name }}"
+            region_name: "{{ openshift_cloudprovider_openstack_region }}"
+            container_name: "{{ cluster_name }}-monitoring"
+
+- name: template prometheus deployment files
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ mktemp.stdout }}/{{ item | basename}}"
+  loop:
+    - "prometheus/prometheus.yml"
+    - "prometheus/prometheus-rules.yml"
+
+- name: create prometheus scrape config
+  k8s:
+    state: present
+    src: "{{ mktemp.stdout }}/prometheus-rules.yml"
+
+# Ansible 2.6 does not support patching CRDs. Let's use shell as a workaround
+- name: create prometheus CRD deployment
+  shell: "oc apply -f {{ mktemp.stdout }}/prometheus.yml"
