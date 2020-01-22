@@ -1,4 +1,4 @@
-ansible==2.6.5 # Base dependency since is present in openshift-ansible requirements
+ansible==2.6.18 # Base dependency since is present in openshift-ansible requirements
 appdirs==1.4.3
 asn1crypto==0.24.0
 attrs==19.1.0
