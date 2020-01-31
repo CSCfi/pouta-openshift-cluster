@@ -127,6 +127,7 @@
       when:
         - set_glusterblock_storage_provisioner_node_selector|default(true)|bool
         - openshift_storage_glusterfs_block_deploy|default(true)|bool
+        - openshift_storage_glusterfs_is_native|default(false)|bool
 
     - name: Deploy openshift-metrics-server on infra nodes by adding a node selector
       oc_edit:
