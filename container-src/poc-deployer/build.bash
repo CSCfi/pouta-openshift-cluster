@@ -6,4 +6,4 @@
 
 set -ex
 
-docker build --pull=true -t ${1-cscfi/poc-deployer} .
+docker build --no-cache --pull=true -t ${1-cscfi/poc-deployer} .
