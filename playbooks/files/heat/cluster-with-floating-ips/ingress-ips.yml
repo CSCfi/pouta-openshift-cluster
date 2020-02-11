@@ -1,0 +1,158 @@
+---
+heat_template_version: newton
+
+description: >
+  Provision ingress VMs and ports for hosting ingress IPs.
+
+parameters:
+  env_name:
+    description: >
+      A name for the OpenShift environment to be used for naming resources.
+    type: string
+    default: { get_param: 'OS::stack_name' }
+  key_name:
+    description: >
+      The name of the SSH key to initially insert into VMs.
+    type: string
+  network_id:
+    description: >
+      Id of cluster network
+    type: string
+  subnet_id:
+    description: >
+      Id of cluster subnet
+    type: string
+  network_prefix:
+    description: >
+      The first two (/16) or three (/24) octets of a private network CIDR.
+    type: string
+    default: "192.168"
+  secgroup_id_infra:
+    description: >
+      Id of infra security group
+    type: string
+  secgroup_id_common:
+    description: >
+      Id of common security group
+    type: string
+  ingress_vm_image:
+    description: >
+      What OpenStack image to use for the ingress hosts.
+    type: string
+  ingress_vm_flavor:
+    description: >
+      What OpenStack flavor to use for the ingress VMs.
+    type: string
+  ingress_vol_size:
+    description: >
+      The size of the Cinder volume to attach to ingress VMs.
+    type: number
+  ingress_resource_group_identifier:
+    description: >
+      The part of the cluster IP address that differentiates the ingress
+      resource group. Comes after network prefix but before index (1-9). Ends
+      with a dot (when cluster network is /16) or not (when cluster network is
+      /24).
+    type: string
+    default: "4."
+
+resources:
+
+  #-----------------------------------
+  # Ingress IPs ports and security groups
+  #-----------------------------------
+
+  {% for ingress_ip in heat_ingress_ips %}
+
+  secgroup_ingress_{{ ingress_ip.floating_ip }}:
+    type: {{ playbook_dir }}/files/heat/common/secgroup.yaml
+    properties:
+      env_name: { get_param: env_name }
+      name_suffix: "ingress-access-{{ ingress_ip.floating_ip }}"
+      rules:
+        - protocol: {{ ingress_ip.protocol }}
+          port_range_min: {{ ingress_ip.port_range_min }}
+          port_range_max: {{ ingress_ip.port_range_max }}
+          direction: ingress
+          remote_ip_prefix: {{ ingress_ip.remote_ip_prefix|default('0.0.0.0/0') }}
+
+  ingress_port_{{ ingress_ip.floating_ip }}:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: network_id }
+      fixed_ips:
+        - ip_address: {{ ingress_ip.private_ip }}
+      security_groups:
+        - { get_resource: secgroup_ingress_{{ ingress_ip.floating_ip }} }
+
+  ingress_floating_ip_association_{{ ingress_ip.floating_ip }}:
+    type: OS::Neutron::FloatingIPAssociation
+    properties:
+      floatingip_id: {{ ingress_ip.floating_ip_id }}
+      port_id: { get_resource: ingress_port_{{ ingress_ip.floating_ip }} }
+
+  {% endfor %}
+
+  ingress_vm_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: network_id }
+      fixed_ips:
+        - ip_address:
+            str_replace:
+              template: network_prefix.ingress_resource_group_identifier
+              params:
+                network_prefix: { get_param: network_prefix }
+                ingress_resource_group_identifier: { get_param: ingress_resource_group_identifier }
+      security_groups:
+        - { get_param: secgroup_id_infra }
+        - { get_param: secgroup_id_common }
+
+  #-----------------------------------
+  # Nova server groups (anti-affinity)
+  #-----------------------------------
+
+  ingress:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: ingress
+      policies: ['anti-affinity']
+
+  #-----------------------------------
+  # VM resource groups
+  #-----------------------------------
+
+  ingress_vm_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: 1
+      removal_policies: [{'resource_list': ['0']}]
+      resource_def:
+        type: {{ playbook_dir }}/files/heat/common/vm_with_volume.yaml
+        properties:
+          vm_name:
+            str_replace:
+              template: env_name-name_suffix-%index%
+              params:
+                env_name: { get_param: env_name }
+                name_suffix: "ingress"
+          image: { get_param: ingress_vm_image }
+          networks:
+            - port: { get_resource: ingress_vm_port }
+
+            {% for ingress_ip in heat_ingress_ips %}
+
+            - port: { get_resource: ingress_port_{{ ingress_ip.floating_ip }} }
+
+            {% endfor %}
+
+          flavor: { get_param: ingress_vm_flavor }
+          security_groups: []
+          metadata:
+            groups: "ingress"
+            stack: { get_param: env_name }
+          key_name: { get_param: key_name }
+          scheduler_hints:
+            group: { get_resource: ingress }
+          vol_name_suffix: "data"
+          vol_size: { get_param: ingress_vol_size }

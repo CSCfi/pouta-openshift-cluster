@@ -26,6 +26,9 @@
 
     - role: openshift_login_page_logo
       when: login_page_logo_url is defined
+
+    - role: openshift_ingress_ips
+      when: ingress_ips_cidr is defined
   tasks:
     - name: generate bash completion with oc
       shell: oc completion bash > /etc/bash_completion.d/oc

@@ -173,3 +173,45 @@
     - gpu_node_groups is defined
     - item.stderr.find('Stack not found') != -1 or
       item.item.stack_name in allow_heat_stack_update_node_groups|default([])
+
+- when: ingress_ips is defined
+  block:
+  - name: source the floating IP IDs
+    shell: "openstack floating ip show -f value -c id {{ item.floating_ip }}"
+    register: floating_ip_ids
+    with_items: "{{ ingress_ips|default([]) }}"
+
+  - name: append floating_ip_ids to the ingress-ips array
+    set_fact:
+      heat_ingress_ips: "{{ heat_ingress_ips|default([]) + [item.0 | combine({'floating_ip_id': item.1.stdout})] }}"
+    loop: "{{ ingress_ips | zip(floating_ip_ids.results) | list }}"
+
+  - name: create temp directory for templating
+    command: mktemp -d
+    register: mktemp
+    changed_when: False
+
+  - name: generate ingress-ips Heat template definition
+    copy:
+      dest: "{{ mktemp.stdout }}/ingress-ips.yml"
+      content: "{{ lookup('template', 'files/heat/cluster-with-floating-ips/ingress-ips.yml') }}"
+
+  - name: Build/update the ingress IP Heat stack
+    register: ingress_ip_stack
+    os_stack:
+      name: "{{ cluster_name }}-ingress-ips"
+      state: present
+      template: "{{ mktemp.stdout }}/ingress-ips.yml"
+      wait: yes
+      parameters:
+        env_name: "{{ cluster_name }}"
+        key_name: "{{ cluster_name }}"
+        network_id: "{{ base_stack_outputs.network_id }}"
+        network_prefix: "{{ openshift_network_prefix }}"
+        ingress_resource_group_identifier: "{{ ingress_resource_group_identifier }}"
+        subnet_id: "{{ base_stack_outputs.subnet_id }}"
+        secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
+        secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
+        ingress_vm_image: "{{ ingress_vm_image }}"
+        ingress_vm_flavor: "{{ ingress_vm_flavor }}"
+        ingress_vol_size: "{{ ingress_vol_size }}"

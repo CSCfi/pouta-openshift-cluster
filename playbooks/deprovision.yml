@@ -119,6 +119,12 @@
         state: absent
         wait: yes
 
+    - name: Delete stack {{ cluster_name }}-ingress-ips
+      os_stack:
+        name: "{{ cluster_name }}-ingress-ips"
+        state: absent
+        wait: yes
+
     - name: Delete stack {{ cluster_name }}-base
       os_stack:
         name: "{{ cluster_name }}-base"

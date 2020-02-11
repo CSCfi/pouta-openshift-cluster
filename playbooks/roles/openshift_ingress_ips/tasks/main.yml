@@ -1,0 +1,8 @@
+- name: Configure ingress IPs on master nodes
+  yedit:
+    src: "{{ openshift_master_config_file }}"
+    key: networkConfig.ingressIPNetworkCIDR
+    value: "{{ ingress_ips_cidr }}"
+  notify:
+    - restart master
+    - restart master api

@@ -1,0 +1,7 @@
+- name: Setup the ingress IP ports
+  hosts: localhost
+  gather_facts: no
+  connection: local
+  roles:
+    - poc_facts
+  tasks:
