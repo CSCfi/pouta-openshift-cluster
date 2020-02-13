@@ -6,12 +6,22 @@
 # The name of the environment is extracted from active tmux session name or from
 # the first shell arg.
 #
+# If you are using mac then please install greadlink through: brew install coreutils
 
 # get sudo rights if we do not have them already
 [ "$UID" -eq 0 ] || exec sudo "$0" "$@"
 
+# Check the OS
+OS="$(uname -s)"
+
 # figure out where we live to find run_deployment_container.bash
-script_dir="$(dirname "$(readlink -f "$0")")"
+if [[ $OS == "Darwin" ]]; then
+   readlink_cmd="greadlink"
+else
+   readlink_cmd="readlink"
+fi
+
+script_dir="$(dirname "$(${readlink_cmd} -f "$0")")"
 
 # try to extract session name from tmux
 if [[ ! -z $TMUX ]]; then
@@ -29,6 +39,19 @@ if [[ -z $env_name ]]; then
     exit 1
 fi
 
+case "${OS}" in
+    Darwin*)
+      vaultpass_dir="/Volumes/rRAMDisk/secret"
+      ;;
+    Linux*)
+      vaultpass_dir="/dev/shm/secret"
+      ;;
+    *)
+      echo "Only Darwin and Linux supported"
+      exit 1
+      ;;
+esac
+
 # check if a deployment container is already running
 if docker ps | grep -q ${env_name}-deployer; then
     echo
@@ -38,11 +61,11 @@ if docker ps | grep -q ${env_name}-deployer; then
 else
     echo
     echo "Launching a new deployment container '${env_name}-deployer'"
-    if [[ -e "/dev/shm/secret/vaultpass-${env_name}" ]]; then
-        vaultpass_path="/dev/shm/secret/vaultpass-${env_name}"
+    if [[ -e "${vaultpass_dir}/vaultpass-${env_name}" ]]; then
+        vaultpass_path="${vaultpass_dir}/vaultpass-${env_name}"
         echo "    using environment specific vaultpass-${env_name}"
     else
-        vaultpass_path="/dev/shm/secret/vaultpass"
+        vaultpass_path="${vaultpass_dir}/vaultpass"
     fi
     echo
 
