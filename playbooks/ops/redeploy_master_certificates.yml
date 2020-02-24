@@ -125,7 +125,12 @@
       command: >
         oc adm create-api-client-config
         --certificate-authority={{ openshift_ca_cert }}
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
         --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
+        --master={{ openshift.master.api_url }}
+        --public-master={{ openshift.master.api_url }}
         --signer-cert={{ openshift_ca_cert }}
         --signer-key={{ openshift_ca_key }}
         --signer-serial={{ openshift_ca_serial }}
@@ -139,8 +144,13 @@
       command: >
         oc adm create-api-client-config
         --certificate-authority={{ openshift_ca_cert }}
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
         --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
         --groups=system:node-admins
+        --master={{ openshift.master.api_url }}
+        --public-master={{ openshift.master.api_url }}
         --signer-cert={{ openshift_ca_cert }}
         --signer-key={{ openshift_ca_key }}
         --signer-serial={{ openshift_ca_serial }}
@@ -154,7 +164,12 @@
       command: >
         oc adm create-api-client-config
         --certificate-authority={{ openshift_ca_cert }}
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
         --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
+        --master={{ openshift.master.api_url }}
+        --public-master={{ openshift.master.api_url }}
         --signer-cert={{ openshift_ca_cert }}
         --signer-key={{ openshift_ca_key }}
         --signer-serial={{ openshift_ca_serial }}
@@ -168,8 +183,13 @@
       command: >
         oc adm create-api-client-config
         --certificate-authority={{ openshift_ca_cert }}
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
         --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
         --groups=system:cluster-admins
+        --master={{ openshift.master.api_url }}
+        --public-master={{ openshift.master.api_url }}
         --signer-cert={{ openshift_ca_cert }}
         --signer-key={{ openshift_ca_key }}
         --signer-serial={{ openshift_ca_serial }}
@@ -179,17 +199,6 @@
       delegate_to: "{{ openshift_ca_host }}"
       run_once: true
 
-    - name: delete the extra kubelet files and generated ca.crt
-      file:
-        path: "{{ openshift_generated_configs_dir.stdout }}/{{ inventory_hostname }}/{{ item }}"
-        state: absent
-      with_items:
-        - master.proxy-client.kubeconfig
-        - master.kubelet-client.kubeconfig
-        - openshift-aggregator.kubeconfig
-        - admin.kubeconfig
-        - ca.crt
-      delegate_to: "{{ openshift_ca_host }}"
 
     - name: copy proxy and kubelet client certificates to other master directories
       copy:
