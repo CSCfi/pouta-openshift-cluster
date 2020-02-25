@@ -58,6 +58,11 @@
       - openshift-aggregator.key
       - admin.crt
       - admin.key
+      - admin.kubeconfig
+      - master.kubelet-client.kubeconfig
+      - master.proxy-client.kubeconfig
+      - openshift-aggregator.kubeconfig
+      - openshift-master.kubeconfig
 
     openshift_ca_host: "{{ groups.masters.0 }}"
     openshift_ca_cert: "{{ openshift_master_config_dir }}/ca.crt"
