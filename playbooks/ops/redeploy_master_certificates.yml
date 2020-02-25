@@ -199,6 +199,13 @@
       delegate_to: "{{ openshift_ca_host }}"
       run_once: true
 
+    - name: delete generated ca.crt
+      file:
+        path: "{{ openshift_generated_configs_dir.stdout }}/{{ inventory_hostname }}/{{ item }}"
+        state: absent
+      with_items:
+        - ca.crt
+      delegate_to: "{{ openshift_ca_host }}"
 
     - name: copy proxy and kubelet client certificates to other master directories
       copy:
