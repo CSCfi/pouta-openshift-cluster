@@ -12,8 +12,8 @@
 #   - master.proxy-client.key
 #   - master.kubelet-client.crt
 #   - master.kubelet-client.key
-#   - openshift-aggregator.crt
-#   - openshift-aggregator.key
+#   - aggregator-front-proxy.crt
+#   - aggregator-front-proxy.key
 #   - admin.crt
 #   - admin.key
 
@@ -54,14 +54,14 @@
       - master.proxy-client.key
       - master.kubelet-client.crt
       - master.kubelet-client.key
-      - openshift-aggregator.crt
-      - openshift-aggregator.key
+      - aggregator-front-proxy.crt
+      - aggregator-front-proxy.key
       - admin.crt
       - admin.key
       - admin.kubeconfig
       - master.kubelet-client.kubeconfig
       - master.proxy-client.kubeconfig
-      - openshift-aggregator.kubeconfig
+      - aggregator-front-proxy.kubeconfig
       - openshift-master.kubeconfig
 
     openshift_ca_host: "{{ groups.masters.0 }}"
@@ -173,13 +173,10 @@
         --certificate-authority {{ named_ca_certificate }}
         {% endfor %}
         --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
-        --master={{ openshift.master.api_url }}
-        --public-master={{ openshift.master.api_url }}
         --signer-cert={{ openshift_ca_cert }}
         --signer-key={{ openshift_ca_key }}
         --signer-serial={{ openshift_ca_serial }}
-        --user=system:openshift-aggregator
-        --basename=openshift-aggregator
+        --user=aggregator-front-proxy
         --expire-days={{ openshift_master_cert_expire_days }}
       delegate_to: "{{ openshift_ca_host }}"
       run_once: true
