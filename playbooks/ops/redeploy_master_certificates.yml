@@ -69,9 +69,9 @@
     openshift_ca_key: "{{ openshift_master_config_dir }}/ca.key"
     openshift_ca_serial: "{{ openshift_master_config_dir }}/ca.serial.txt"
 
-    frontproxy_ca_cert: "{{ openshift_master_config_dir }}/frontproxy-ca.crt"
-    frontproxy_ca_key: "{{ openshift_master_config_dir }}/frontproxy-ca.key"
-    frontproxy_ca_serial: "{{ openshift_master_config_dir }}/frontproxy-ca.serial.txt"
+    front-proxy_ca_cert: "{{ openshift_master_config_dir }}/front-proxy-ca.crt"
+    front-proxy_ca_key: "{{ openshift_master_config_dir }}/front-proxy-ca.key"
+    front-proxy_ca_serial: "{{ openshift_master_config_dir }}/front-proxy-ca.serial.txt"
     
     skip_sanity_checks: true
 
@@ -124,7 +124,7 @@
         --user=system:openshift-master
         --basename=openshift-master
         --expire-days={{ openshift_master_cert_expire_days }}
-      args:
+      args:oc adm create-api-client-config
         creates: "{{ openshift_generated_configs_dir.stdout }}/{{ hostvars[item].openshift.common.hostname }}/openshift-master.kubeconfig"
       with_items: "{{ groups.masters }}"
       delegate_to: "{{ openshift_ca_host }}"
@@ -172,14 +172,14 @@
     - name: generate the openshift-aggregator client config
       command: >
         oc adm create-api-client-config
-        --certificate-authority={{ openshift_ca_cert }}
+        --certificate-authority={{ front-proxy_ca_cert }}
         {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
         --certificate-authority {{ named_ca_certificate }}
         {% endfor %}
         --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
-        --signer-cert={{ frontproxy_ca_cert }}
-        --signer-key={{ frontproxy_ca_key }}
-        --signer-serial={{ frontproxy_ca_serial }}
+        --signer-cert={{ front-proxy_ca_cert }}
+        --signer-key={{ front-proxy_ca_key }}
+        --signer-serial={{ front-proxy_ca_serial }}
         --user=aggregator-front-proxy
         --expire-days={{ openshift_master_cert_expire_days }}
       delegate_to: "{{ openshift_ca_host }}"
