@@ -72,7 +72,7 @@
     front_proxy_ca_authority: "{{ openshift_master_config_dir }}/front-proxy-ca.crt"
     front_proxy_ca_cert: "{{ openshift_master_config_dir }}/front-proxy-ca.crt"
     front_proxy_ca_key: "{{ openshift_master_config_dir }}/front-proxy-ca.key"
-    front_proxy_ca_serial: "{{ openshift_master_config_dir }}/frontproxy-ca.serial.txt"
+
     
     skip_sanity_checks: true
 
@@ -125,7 +125,7 @@
         --user=system:openshift-master
         --basename=openshift-master
         --expire-days={{ openshift_master_cert_expire_days }}
-      args:
+      args: 
         creates: "{{ openshift_generated_configs_dir.stdout }}/{{ hostvars[item].openshift.common.hostname }}/openshift-master.kubeconfig"
       with_items: "{{ groups.masters }}"
       delegate_to: "{{ openshift_ca_host }}"
@@ -170,6 +170,8 @@
       delegate_to: "{{ openshift_ca_host }}"
       run_once: true
 
+
+# N.B. For some reason, OpenShift wants to use the ca_serial.txt instead of frontproxy-ca.serial.txt,
     - name: generate the openshift-aggregator client config
       command: >
         oc adm create-api-client-config
