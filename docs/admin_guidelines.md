@@ -8,34 +8,36 @@ System access by code automation.
 
 ## Access to the vault key of Rahti environments 
 
-| *Person* | *Reason* |
-| João da Silva | System administrator |
-| Ahsan Feroz | System administrator |
-| Kalle Happonen | System administrator / group manager |
-| Álvaro González | End-user support |
-| Olli Tourunen | Backup system administrator |
+*Person* | *Reason*
+--- | ---
+João da Silva | System administrator 
+Ahsan Feroz | System administrator
+Kalle Happonen | System administrator / group manager
+Álvaro González | End-user support
+Olli Tourunen | Backup system administrator
 
 ## Access to the vault key of Valinor environments
 
-| *Person* | *Reason* |
-| João da Silva | System administrator |
-| Ahsan Feroz | System administrator |
-| Kalle Happonen | System administrator / group manager |
-| Álvaro González | End-user support |
-| Olli Tourunen | Backup system administrator |
+*Person* | *Reason*
+--- | ---
+João da Silva | System administrator
+Ahsan Feroz | System administrator
+Kalle Happonen | System administrator / group manager
+Álvaro González | End-user support
+Olli Tourunen | Backup system administrator
 
 ## Access to the Rahti !OpenStack environment
 
-## Access to the Valiinor !OpenStack environment
+## Access to the Valinor !OpenStack environment
 
 ## Process for adding or removing admin accounts
 
-   1 Get preliminary approval from the group manager.
-   1 Create a branch of this repo
-   1 Add changes to admin accounts in the sections.
-   1 Do a merge request, assing the group manager as the reviewer
-   1 Get group manager to merge the MR.
-   1 Deploy the changes.
+1. Get preliminary approval from the group manager.
+2. Create a branch of this repo
+3. Add changes to admin accounts in the sections.
+4. Do a merge request, assing the group manager as the reviewer
+5. Get group manager to merge the MR.
+6. Deploy the changes.
 
 # Admin credential guidelines
 
