@@ -23,7 +23,6 @@ Olli Tourunen | Backup system administrator
 João da Silva | System administrator
 Ahsan Feroz | System administrator
 Kalle Happonen | System administrator / group manager
-Álvaro González | End-user support
 Olli Tourunen | Backup system administrator
 
 ## Access to the Rahti OpenStack environment
