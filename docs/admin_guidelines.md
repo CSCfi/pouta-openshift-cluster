@@ -1,4 +1,4 @@
-¤ Admin Credential Holders
+# Admin Credential Holders
 
 This is a list of admin credential holders on the pouta production systems. Any changes to this list needs to be approved by the group manager of the team running the service. The available accounts should be reviewed against this list.
 
@@ -26,9 +26,9 @@ Kalle Happonen | System administrator / group manager
 Álvaro González | End-user support
 Olli Tourunen | Backup system administrator
 
-## Access to the Rahti !OpenStack environment
+## Access to the Rahti OpenStack environment
 
-## Access to the Valinor !OpenStack environment
+## Access to the Valinor OpenStack environment
 
 ## Process for adding or removing admin accounts
 
