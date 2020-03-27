@@ -27,7 +27,19 @@ Olli Tourunen | Backup system administrator
 
 ## Access to the Rahti OpenStack environment
 
+*Person* | *Reason* | *Comment*
+--- | --- | ---
+m2m_rahti | Automation account | All users with the vault key can use this account
+Ahsan Feroz | System administrator |
+João da Silva | System administrator |
+
 ## Access to the Valinor OpenStack environment
+
+*Person* | *Reason* | *Comment
+--- | --- | ---
+m2mvardarahti | Automation account | All users with the vault key can use this account
+Ahsan Feroz | System administrator |
+João da Silva | System administrator |
 
 ## Process for adding or removing admin accounts
 
