@@ -35,7 +35,7 @@ João da Silva | System administrator |
 
 ## Access to the Valinor OpenStack environment
 
-*Person* | *Reason* | *Comment
+*Person* | *Reason* | *Comment*
 --- | --- | ---
 m2mvardarahti | Automation account | All users with the vault key can use this account
 Ahsan Feroz | System administrator |
