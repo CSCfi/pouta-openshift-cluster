@@ -68,6 +68,8 @@ There are common security practices to be taken into account.
    * Your laptop must always be locked when it is unattended.
    * If you leave your laptop unattended outside the offices (e.g. hotel room, airport security, etc.), power it off completely. Otherwise disk encryption keys remain in memory.
    * You may not store any secrets (passwords, keys) unencrypted on your laptop.
+     * Use a non-cloud based password manager to store the passwords (e.g. KeepassX)
+     * Use your password manager's (e.g. KeepassX) clipboard timeout feature
    * You may not store any secrets which give you admin access to the systems on your personal devices, or cloud services e.g. google drive, even encrypted. The exception is to have a backup of your encrypted data on a non-internet connected device, e.g. a USB hard-disk for backups.
    * You may never transmit secrets (passwords, secret keys) in plain text over the network.
    * The passwords used for administrative access must be unique, and not in use anywhere else.
