@@ -76,7 +76,7 @@ There are common security practices to be taken into account.
       * history -d linenumber
    * Some tools may require you to enter a password on the command line. Always clear the history of passwords.
    * Never run commands that may delete user data unless you are sure what the outcome of the command is.
-   * If you are unsure about running a potentially destructive command, verify with a collegue rather than guessing it will be ok.
+   * If you are unsure about running a potentially destructive command, verify with a colleague rather than guessing it will be ok.
    * Never access a customers pods or data. The exceptions are:
       * The data available on the pod logs, and you are debugging that pod.
       * You're debugging a very difficult problem, and get explicit written permission from the customer (as an e-mail to the ticket).
