@@ -16,10 +16,7 @@
   changed_when: false
   when: test_vg.rc!=5
 
-- name: Create a physical volume on {{ pv_path }}
-  command: /usr/sbin/pvcreate {{ pv_path }}
-  when: test_vg.rc==5
-
+# Ansible's vg module creates a pv if neccessary
 - name: Create volume group {{ vg_name }} on {{ pv_path }}
   lvg: vg={{ vg_name }} pvs={{ pv_path }}
   when: test_vg.rc==5
