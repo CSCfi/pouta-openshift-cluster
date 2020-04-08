@@ -43,12 +43,6 @@ def get_pvc_states():
         if pvc.status.phase == "Failed":
             pvc_failed_list.append(pvc.metadata.uid)
 
-    # print the lists
-    if pvc_failed_list:
-        print("Failed PVCs: ", pvc_failed_list)
-    else:
-        print('No Failed PVC!')
-
 # this function will return all the failed persistent volumes
 def get_pv_states():
     pvs = dyn_client.resources.get(api_version='v1', kind='PersistentVolume')
@@ -59,11 +53,6 @@ def get_pv_states():
         if pv.status.phase == "Failed":
             pv_failed_list.append(pv.metadata.uid)
 
-    # print the lists
-    if pv_failed_list:
-        print("Failed PVs: " , pv_failed_list)
-    else:
-        print('No Failed PV!')
 
 def main():
     # global start_time
@@ -89,14 +78,12 @@ def main():
     except:
         print('Unexpected error: ', sys.exc_info()[0])
         sys.exit(NAGIOS_STATE_CRITICAL)
-    finally:
-        print("End")
 
     if pv_failed_list or pvc_failed_list:
-        print('failed')
+        print("Failed PVs: ",pv_failed_list , " Failed PVCs:", pvc_failed_list)
         sys.exit(NAGIOS_STATE_CRITICAL)
     else:
-        print('ok')
+        print("Ok")
         sys.exit(NAGIOS_STATE_OK)
 
 if __name__ == '__main__':
