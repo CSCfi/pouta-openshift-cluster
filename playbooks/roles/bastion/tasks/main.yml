@@ -27,6 +27,12 @@
     - nmap
     - origin-clients
 
+- name: update pip and virtualenv from repo versions
+  pip:
+    name:
+      - virtualenv>20
+      - pip>20
+
 - name: create /dev/shm/secret directory for secrets
   file:
     path: /dev/shm/secret
