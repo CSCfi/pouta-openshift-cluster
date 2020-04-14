@@ -26,6 +26,9 @@
   with_items:
     - nmap
     - origin-clients
+    - gcc
+    - python-devel
+    - python3-devel
 
 - name: update pip and virtualenv from repo versions
   pip:
@@ -55,3 +58,17 @@
       https://{{ openshift_public_hostname }}:8443|{{ testuser_username }}|{{ testuser_password }}
   when:
     - testuser_username is defined
+
+- name: create openstack openrc 
+  copy:
+    dest: "/dev/shm/secret/openrc.sh"
+    mode: 0440
+    owner: cloud-user
+    group: nrpe
+    content: |
+      export OS_AUTH_URL="{{ openshift_cloudprovider_openstack_auth_url }}"
+      export OS_IDENTITY_API_VERSION=3
+      export OS_USERNAME="{{ openshift_cloudprovider_openstack_username }}"
+      export OS_USER_DOMAIN_NAME="{{ openshift_cloudprovider_openstack_domain_name }}"
+      export OS_PASSWORD="{{ openshift_cloudprovider_openstack_password }}"
+      export OS_TENANT_ID="{{ openshift_cloudprovider_openstack_tenant_id }}"
