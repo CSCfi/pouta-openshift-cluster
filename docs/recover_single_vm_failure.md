@@ -80,13 +80,13 @@ ansible-playbook -v -l [vm_to_replace],bastion pre_install.yml
 
 A failed node can be rebuilt by following these steps:
 
-1. Check for attached volumes, first in the node's terminal, and then on the deployment container's terminal:
+1. Check for attached volumes (there shouldn't be any external volumes attached), first in the node's terminal, and then on the deployment container's terminal:
 ```bash
 $ lsblk
 ```
 
 ```bash
-$ openstack server 
+$ openstack server show [server-name]
 ```
 
 
