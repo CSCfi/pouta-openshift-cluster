@@ -32,6 +32,9 @@
     name:
       - virtualenv>20
       - pip>20
+      - setuptools>44
+      - zipp
+      - configparser
 
 - name: create /dev/shm/secret directory for secrets
   file:
