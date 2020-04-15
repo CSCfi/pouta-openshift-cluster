@@ -1,0 +1,321 @@
+# This playbook generates and redeploys fresh master server/client certificates.
+# During the playbook run, a backup of /etc/origin will be taken
+# under: /tmp/etc-origin-<timestamp>.tgz.
+
+# The generated filenames are:
+#   - master.server.key
+#   - master.server.crt
+#   - openshift-master.kubeconfig
+#   - openshift-master.key
+#   - openshift-master.crt
+#   - master.proxy-client.crt
+#   - master.proxy-client.key
+#   - master.kubelet-client.crt
+#   - master.kubelet-client.key
+#   - aggregator-front-proxy.crt
+#   - aggregator-front-proxy.key
+#   - admin.crt
+#   - admin.key
+
+# After having the new certificates and kubeconfig files in place, the master
+# nodes are restarted one by one in a user controlled manner.
+
+# Finally, check the automatically generated certificates which are referred to by services
+# with the : "service.alpha.openshift.io/serving-cert-secret-name" annotation set. In OKD 3.11
+# The following secrets/pods need to be deleted:
+# ---
+# oc -n openshift-ansible-service-broker delete secret asb-tls
+# oc -n openshift-ansible-service-broker delete pods -l app=openshift-ansible-service-broker
+# ---
+# oc -n kube-service-catalog delete secret controllermanager-ssl
+# oc -n kube-service-catalog delete pods -l app=controller-manager
+# ---
+# oc -n openshift-console delete secret console-serving-cert
+# oc -n openshift-console delete pods -l app=openshift-console
+# ---
+# oc -n openshift-infra delete secret heapster-certs
+# oc -n openshift-infra delete pods -l metrics-infra=heapster
+# ---
+# oc -n openshift-template-service-broker delete secret apiserver-serving-cert
+# oc -n openshift-template-service-broker delete pods -l apiserver=true
+# ---
+# oc -n openshift-web-console delete secret webconsole-serving-cert
+# oc -n openshift-web-console delete pods -l app=openshift-web-console
+
+---
+
+- name: Redeploy the master certificates
+  hosts: masters
+  vars:
+    openshift_master_cert_expire_days: 730
+    openshift_master_config_dir: "/etc/origin/master"
+    openshift_master_client_generated_files:
+      - master.proxy-client.crt
+      - master.proxy-client.key
+      - master.kubelet-client.crt
+      - master.kubelet-client.key
+      - aggregator-front-proxy.crt
+      - aggregator-front-proxy.key
+      - admin.crt
+      - admin.key
+      - admin.kubeconfig
+      - master.kubelet-client.kubeconfig
+      - master.proxy-client.kubeconfig
+      - aggregator-front-proxy.kubeconfig
+      - openshift-master.kubeconfig
+
+    openshift_ca_host: "{{ groups.masters.0 }}"
+    openshift_ca_cert: "{{ openshift_master_config_dir }}/ca.crt"
+    openshift_ca_key: "{{ openshift_master_config_dir }}/ca.key"
+    openshift_ca_serial: "{{ openshift_master_config_dir }}/ca.serial.txt"
+
+    front_proxy_ca_authority: "{{ openshift_master_config_dir }}/front-proxy-ca.crt"
+    front_proxy_ca_cert: "{{ openshift_master_config_dir }}/front-proxy-ca.crt"
+    front_proxy_ca_key: "{{ openshift_master_config_dir }}/front-proxy-ca.key"
+
+    
+    skip_sanity_checks: true
+
+  roles:
+    - role: openshift_master_facts
+
+  tasks:
+    - name: backup /etc/origin on all master nodes under /tmp
+      archive:
+        path: /etc/origin
+        dest: /tmp/etc-origin-{{ ansible_date_time.epoch }}.tgz
+
+    - name: create a directory for generated certs
+      command: mktemp -d /tmp/generated_certificates_XXXXX
+      register: openshift_generated_configs_dir
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: create the master server certificates
+      command: >
+        oc adm ca create-server-cert
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
+        --hostnames={{ hostvars[item].openshift.common.all_hostnames | join(',') }}
+        --cert={{ openshift_generated_configs_dir.stdout }}/{{ hostvars[item].openshift.common.hostname }}/master.server.crt
+        --key={{ openshift_generated_configs_dir.stdout }}/{{ hostvars[item].openshift.common.hostname }}/master.server.key
+        --expire-days={{ openshift_master_cert_expire_days }}
+        --signer-cert={{ openshift_ca_cert }}
+        --signer-key={{ openshift_ca_key }}
+        --signer-serial={{ openshift_ca_serial }}
+      with_items: "{{ groups.masters }}"
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: generate the loopback master client config
+      command: >
+        oc adm create-api-client-config
+        --certificate-authority={{ openshift_ca_cert }}
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
+        --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ hostvars[item].openshift.common.hostname }}
+        --groups=system:masters,system:openshift-master
+        --master={{ hostvars[item].openshift.master.loopback_api_url }}
+        --public-master={{ hostvars[item].openshift.master.loopback_api_url }}
+        --signer-cert={{ openshift_ca_cert }}
+        --signer-key={{ openshift_ca_key }}
+        --signer-serial={{ openshift_ca_serial }}
+        --user=system:openshift-master
+        --basename=openshift-master
+        --expire-days={{ openshift_master_cert_expire_days }}
+      args: 
+        creates: "{{ openshift_generated_configs_dir.stdout }}/{{ hostvars[item].openshift.common.hostname }}/openshift-master.kubeconfig"
+      with_items: "{{ groups.masters }}"
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: generate the master proxy client config
+      command: >
+        oc adm create-api-client-config
+        --certificate-authority={{ openshift_ca_cert }}
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
+        --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
+        --master={{ openshift.master.api_url }}
+        --public-master={{ openshift.master.api_url }}
+        --signer-cert={{ openshift_ca_cert }}
+        --signer-key={{ openshift_ca_key }}
+        --signer-serial={{ openshift_ca_serial }}
+        --user=system:master-proxy
+        --basename=master.proxy-client
+        --expire-days={{ openshift_master_cert_expire_days }}
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: generate the master kubelet client config
+      command: >
+        oc adm create-api-client-config
+        --certificate-authority={{ openshift_ca_cert }}
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
+        --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
+        --groups=system:node-admins
+        --master={{ openshift.master.api_url }}
+        --public-master={{ openshift.master.api_url }}
+        --signer-cert={{ openshift_ca_cert }}
+        --signer-key={{ openshift_ca_key }}
+        --signer-serial={{ openshift_ca_serial }}
+        --user=system:openshift-node-admin
+        --basename=master.kubelet-client
+        --expire-days={{ openshift_master_cert_expire_days }}
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+
+# N.B. For some reason, OpenShift wants to use the ca_serial.txt instead of frontproxy-ca.serial.txt,
+    - name: generate the openshift-aggregator client config
+      command: >
+        oc adm create-api-client-config
+        --certificate-authority={{ front_proxy_ca_authority }}
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
+        --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
+        --signer-cert={{ front_proxy_ca_cert }}
+        --signer-key={{ front_proxy_ca_key }}
+        --signer-serial={{ openshift_ca_serial }}
+        --user=aggregator-front-proxy
+        --expire-days={{ openshift_master_cert_expire_days }}
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: generate the admin client config
+      command: >
+        oc adm create-api-client-config
+        --certificate-authority={{ openshift_ca_cert }}
+        {% for named_ca_certificate in openshift.master.named_certificates | default([]) | lib_utils_oo_collect('cafile') %}
+        --certificate-authority {{ named_ca_certificate }}
+        {% endfor %}
+        --client-dir={{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}
+        --groups=system:cluster-admins
+        --master={{ openshift.master.api_url }}
+        --public-master={{ openshift.master.api_url }}
+        --signer-cert={{ openshift_ca_cert }}
+        --signer-key={{ openshift_ca_key }}
+        --signer-serial={{ openshift_ca_serial }}
+        --user=system:admin
+        --basename=admin
+        --expire-days={{ openshift_master_cert_expire_days }}
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: delete generated ca.crt
+      file:
+        path: "{{ openshift_generated_configs_dir.stdout }}/{{ inventory_hostname }}/{{ item }}"
+        state: absent
+      with_items:
+        - ca.crt
+      delegate_to: "{{ openshift_ca_host }}"
+
+    - name: copy proxy and kubelet client certificates to other master directories
+      copy:
+        src: "{{ openshift_generated_configs_dir.stdout }}/{{ openshift_ca_host }}//{{ item.1 }}"
+        dest: "{{ openshift_generated_configs_dir.stdout }}/{{ item.0 }}/"
+        mode: preserve
+        remote_src: true
+      with_nested:
+        - "{{ groups.masters }}"
+        - "{{ openshift_master_client_generated_files }}"
+      when: item.0 != openshift_ca_host
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: make a tarball with the generated config
+      archive:
+        path: "{{ openshift_generated_configs_dir.stdout }}/*"
+        dest: "{{ openshift_generated_configs_dir.stdout }}/generated-certs.tgz"
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: copy the generated certs to localhost
+      fetch:
+        src: "{{ openshift_generated_configs_dir.stdout }}/generated-certs.tgz"
+        dest: "/tmp/"
+        flat: yes
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: delete the temporary directory
+      file:
+        path: "{{ openshift_generated_configs_dir.stdout }}/"
+        state: absent
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
+    - name: unpack the tarball on localhost
+      unarchive:
+        src: "/tmp/generated-certs.tgz"
+        dest: "/tmp"
+      delegate_to: localhost
+      run_once: true
+
+- name: Copy the new certificates, restart the master API, controllers and kubelet one master node at a time
+  hosts: masters
+  serial: 1
+  vars:
+    openshift_master_config_dir: "/etc/origin/master"
+    openshift_node_config_dir: "/etc/origin/node"
+
+  tasks:
+    - name: replace the old certificates and client config with new ones
+      copy:
+        src: "{{ item }}"
+        dest: "{{ openshift_master_config_dir }}"
+        mode: preserve
+      with_fileglob:
+        - "/tmp/{{ inventory_hostname }}/*"
+
+    - name: update admin client kubeconfig CA data
+      kubeclient_ca:
+        client_path: "{{ openshift_master_config_dir }}/admin.kubeconfig"
+        ca_path: "{{ openshift_master_config_dir }}/ca-bundle.crt"
+
+    - name: copy the admin client config(s)
+      copy:
+        src: "{{ openshift_master_config_dir }}/admin.kubeconfig"
+        dest: "{{ item }}/.kube/config"
+        remote_src: yes
+        mode: 0700
+        owner: "{{ item | basename }}"
+        group: "{{ item | basename }}"
+      with_items:
+        - /root
+        - /home/cloud-user
+
+    - name: copy admin.kubeconfig in order to bootstrap the master node kubelet with fresh certificates
+      copy:
+        src: "{{ openshift_master_config_dir }}/admin.kubeconfig"
+        dest: "{{ openshift_node_config_dir }}/{{ item }}"
+        remote_src: true
+      with_items:
+        - "node.kubeconfig"
+        - "bootstrap.kubeconfig"
+
+    - name: restart master API and controllers
+      command: /usr/local/bin/master-restart "{{ item }}"
+      with_items:
+        - api
+        - controllers
+
+    - name: restart origin-node and docker
+      systemd:
+        state: restarted
+        name: "{{ item }}"
+      with_items:
+        - origin-node
+        - docker
+
+    - name: pause to make sure the API is up and running
+      pause:
+        prompt: >
+          Please make sure that the API and the kubelet are up on {{ inventory_hostname }}!
+          Press return to continue or Ctrl+c and then "A" to abort
