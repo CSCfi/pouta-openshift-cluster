@@ -12,6 +12,12 @@
   register: templatize_base_repo_config_file
   when: lock_os_minor_version|bool == False
 
+- name: add the glusterfs41 repo
+  yum:
+    pkg: centos-release-gluster41
+    state: present
+  when: "not poc_installed|default(False)"
+
 - name: remove base repo config if OS minor version is locked
   file:
     path: /etc/yum.repos.d/CentOS-Base.repo
