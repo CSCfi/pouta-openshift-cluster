@@ -21,7 +21,7 @@
 - name: create CA bundle on the deployment container
   hosts: localhost
   tasks:
-  - when: not hostvars[groups['masters'][0]]['existing_webhooks_secret'].results.exists or
+  - when: not hostvars[groups['masters'][0]]['existing_webhooks_secret'].module_results.exists or
           generate_new_ns_webhook_certs|default(false)|bool
     block:
     - name: create temp directory for templating
@@ -74,7 +74,7 @@
       - path: cert
         data: "{{ hostvars['localhost']['crtfile'].stdout }}"
     register: cabundle
-    when: not existing_webhooks_secret.results.exists or
+    when: not existing_webhooks_secret.module_results.exists or
           generate_new_ns_webhook_certs|default(false)|bool
 
   - name: upsert ldap secrets in webhooks project
@@ -119,7 +119,7 @@
       namespace: webhooks
       ca_bundle: "{{ hostvars['localhost']['crtfile'].stdout | b64encode }}"
       template_base_name: ns_project_label_mutating_config.yaml.j2
-    when: not existing_webhooks_secret.results.exists or
+    when: not existing_webhooks_secret.module_results.exists or
           generate_new_ns_webhook_certs|default(false)|bool
 
   - name: wait for namespace label webhook to start

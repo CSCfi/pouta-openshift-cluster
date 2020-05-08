@@ -28,7 +28,7 @@
       set_fact:
         pv_gluster_volume_ids: "{{ pv_gluster_volume_ids|default([]) + [ item.spec.glusterfs.path ] }}"
       with_items:
-        - "{{ pv_list.results.results[0]['items'] }}"
+        - "{{ pv_list.module_results.results[0]['items'] }}"
       when:
         - item.spec.storageClassName == 'glusterfs-storage'
         - item.status.phase == 'Bound'
