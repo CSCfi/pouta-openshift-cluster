@@ -7,7 +7,7 @@
 - name: fail if the project doesn't exist
   assert:
     that:
-      - "{{ project_exists.results|length>0 }}"
+      - "{{ project_exists.module_results.results|length>0 }}"
     msg: "The project -{{ namespace }}- must be created first"
 
 - name: make sure the existing project owner matches the inventory information
