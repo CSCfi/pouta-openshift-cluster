@@ -57,4 +57,4 @@
     content: |
       export OPENSHIFT_RELEASE="{{ openshift_release }}"
       export OPENSHIFT_ANSIBLE_REPO="{{ openshift_ansible_repo|default('https://github.com/CSCfi/openshift-ansible') }}"
-      export OPENSHIFT_ANSIBLE_BRANCH="{{ openshift_ansible_branch|default('kalles-311-fix') }}"
+      export OPENSHIFT_ANSIBLE_BRANCH="{{ openshift_ansible_branch|default('release-3.11.1-csc') }}"
