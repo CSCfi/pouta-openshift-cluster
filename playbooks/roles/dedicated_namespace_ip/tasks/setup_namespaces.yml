@@ -7,13 +7,13 @@
 - name: fail if the project doesn't exist
   assert:
     that:
-      - "{{ project_exists.module_results.results|length>0 }}"
+      - "{{ project_exists.module_results|length>0 }}"
     msg: "The project -{{ namespace }}- must be created first"
 
 - name: make sure the existing project owner matches the inventory information
   assert:
     that:
-      - "{{ project_exists.results.metadata.annotations['openshift.io/requester'] == admin_user }}"
+      - "{{ project_exists.module_results.metadata.annotations['openshift.io/requester'] == admin_user }}"
     msg: "The existing project owner for -{{ namespace }}- is different from the inventory admin user!"
 
 - name: allocate the IP to the namespace
@@ -26,4 +26,4 @@
         - "{{ private_ip }}"
       metadata:
         name: "{{ namespace }}"
-  when: project_exists.results|length>0
+  when: project_exists.module_results|length>0
