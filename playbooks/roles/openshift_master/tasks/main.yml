@@ -51,6 +51,15 @@
         job: "/usr/local/bin/poc_sync_ldap_groups.bash --confirm"
   # endblock
 
+
+- name: update pip and virtualenv from repo versions
+  pip:
+    name:
+      - virtualenv==20.0.17
+      - pip==20.0.2
+      - zipp==1.2.0
+      - configparser==4.0.2
+
 - name: add a script for restarting heketi-storage
   copy:
     src: files/poc_restart_heketi.bash
