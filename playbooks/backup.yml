@@ -126,7 +126,7 @@
       shell: >
         ~/backup/venv/bin/python ~/backup/heketi_backup.py
         --user admin
-        --key {{ heketi_secret.results.decoded.key }}
+        --key {{ heketi_secret.module_results.decoded.key }}
         --host https://heketi-storage-glusterfs.{{ openshift_public_hostname }}
         --file /tmp/heketi.db
       run_once: true
@@ -148,7 +148,7 @@
     - name: get topology information from Heketi
       shell: >
         oc rsh -n glusterfs dc/heketi-storage
-        heketi-cli --user admin --secret {{ heketi_secret.results.decoded.key }}
+        heketi-cli --user admin --secret {{ heketi_secret.module_results.decoded.key }}
         topology info --json
       run_once: true
       register: heketi_topology
