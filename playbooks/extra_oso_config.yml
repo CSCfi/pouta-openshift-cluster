@@ -83,7 +83,7 @@
         namespace: "glusterfs"
         name: "heketi-storage"
       register: glusterfs_heketi_deployment_config
-
+      
     - name: create heketi secret
       oc_secret:
         namespace: "glusterfs"
@@ -93,7 +93,7 @@
         force: True
         contents:
           - path: key
-            data: "{{ (glusterfs_heketi_deployment_config.results.results[0].spec.template.spec.containers[0].env | selectattr('name', 'match', '^HEKETI_ADMIN_KEY$') | first).value }}"
+            data: "{{ (glusterfs_heketi_deployment_config.module_results.results[0].spec.template.spec.containers[0].env | selectattr('name', 'match', '^HEKETI_ADMIN_KEY$') | first).value }}"
 
     - name: replace default route for Heketi with a more secure one (TLS+whitelist)
       include: tasks/upsert_k8s_object.yml
