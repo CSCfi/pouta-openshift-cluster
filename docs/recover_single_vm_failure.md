@@ -78,9 +78,34 @@ ansible-playbook -v -l [vm_to_replace],bastion pre_install.yml
 
 ## Nodes
 
-A failed node can be configured simply by running site.yml.
-For example for OpenShift 3.11:
+A failed node can be rebuilt by following these steps:
 
+1. Check for attached volumes (there shouldn't be any external volumes attached), first in the node's terminal, and then on the deployment container's terminal:
+```bash
+$ lsblk
+```
+
+```bash
+$ openstack server show [server-name]
+```
+
+
+2. Rebuild the node in question:
+```bash
+openstack server rebuild [server-name]
+```
+
+4. When the rebuild is finished, ssh into the node, run yum update and reboot it:
+```bash
+$ yum update -y
+$ shutdown -r now
+```
+
+5. Run pre-install.yml:
+```bash
+ansible-playbook -v -l [server-name],bastion pre_install.yml
+``` 
+6. Run site.yml:
 ```bash
 ansible-playbook -v site.yml
 ```
