@@ -81,6 +81,7 @@ ansible-playbook -v -l [vm_to_replace],bastion pre_install.yml
 A failed node can be rebuilt by following these steps:
 
 1. Check for attached volumes (there shouldn't be any external volumes attached), first in the node's terminal, and then on the deployment container's terminal:
+
 ```bash
 $ lsblk
 ```
@@ -112,7 +113,11 @@ ansible-playbook -v site.yml
 
 ## Masters
 
-Restore etc/origin from backups
+Rebuilding master nodes will require slighty different steps, depending on their being the first (primary), or second and third master (secondary masters). Rebuilding a primary master requires that /etc/origin is restored from backup before running site.yml, whereas rebuilding secondary masters requires running site.yml only.
+
+### Rebuilding a primary master
+
+Restore /etc/origin from backups:
 
 ```bash
 export HOST_TO_REPLACE=$ENV_NAME-master-X
@@ -127,7 +132,6 @@ ssh $HOST_TO_REPLACE sudo tar xvf /tmp/etc-origin-backup.latest.tar.gz -C /etc
 Then run site. Here we are running OpenShift 3.11:
 
 ```bash
-# second and third master
 ansible-playbook -v site.yml
 ```
 
@@ -135,13 +139,14 @@ For the first master there is an additional safety in place because running site
 an empty master-1 will create a new CA and result in a conflict between new and old CAs. Make sure
 the backup has been extracted properly before running this.
 
+On the primary master, double check that the backup contents were extracted:
+
 ```bash
-# primary master
-
-# double check that the backup contents were extracted
 ansible $ENV_NAME-master-1 -a 'ls /etc/origin/master'
+```
 
-# run site
+Run site.yml
+```bash
 ansible-playbook -v -e allow_first_master_scaleup=1 site.yml
 ```
 
@@ -153,6 +158,14 @@ ssh $ENV_NAME-master-1
 oc get nodes
 oc adm manage-node [host] --schedulable=true
 oc label node [host] node-role.kubernetes.io/compute-
+```
+
+### Secondary Masters
+
+Ensure that you have an operational primary master first. Then, run site.yml:
+
+```bash
+ansible-playbook -v site.yml
 ```
 
 ## Load balancers
