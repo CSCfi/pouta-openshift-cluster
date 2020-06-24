@@ -187,15 +187,3 @@ check_namespace_pod_health() {
     [[ "$output" =~ "{\"error\":\"unable to parse authentication credentials\"}" ]]
 }
 
-@test "test query against InfluxDB" {
-    if [[ $POC_DEPLOY_MONITORING == 'False' ]]; then
-        skip "Monitoring deployment is not enabled, skipping check"
-    fi
-
-    token=$(oc get -o template secret monitoring-token --template={{.data.token}} -n monitoring-infra | base64 -d)
-    url=$(oc get route -n monitoring-infra -o json -o jsonpath='{.spec.host}' influxdb-route)
-
-    run bash -c "curl -G -u admin:$token --data-urlencode 'db=prometheus' --data-urlencode 'q=SELECT * FROM \"1m\".\"machine_cpu_cores\" LIMIT 1' https://$url/query"
-
-    [[ "$output" =~ "kubernetes_io_hostname" ]]
-}
