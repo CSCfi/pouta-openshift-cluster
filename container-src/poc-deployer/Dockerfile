@@ -7,7 +7,7 @@ RUN yum install -y \
     && \
     yum install -y \
         openssh-clients \
-        python-devel python2-pip \
+        python3-devel python3-pip \
         gcc openssl-devel openssl \
         java-1.8.0-openjdk-headless httpd-tools \
         jq \
@@ -17,8 +17,8 @@ RUN yum install -y \
 
 COPY requirements.txt /root/requirements.txt
 
-RUN pip install --no-cache-dir -U setuptools wheel
-RUN pip install --no-cache-dir -r /root/requirements.txt
+RUN pip3 install --no-cache-dir -U setuptools wheel
+RUN pip3 install --no-cache-dir -r /root/requirements.txt
 
 # Choose an arbitrary GID so that vault password can be made group readable when mounted as a volume
 # in a reasonably safe way
