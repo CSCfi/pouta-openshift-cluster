@@ -12,6 +12,7 @@ System access by code automation.
 --- | ---
 João da Silva | System administrator 
 Ahsan Feroz | System administrator
+Teemu Frisk | system administrator
 Kalle Happonen | System administrator / group manager
 Álvaro González | End-user support
 Olli Tourunen | Backup system administrator
@@ -22,6 +23,7 @@ Olli Tourunen | Backup system administrator
 --- | ---
 João da Silva | System administrator
 Ahsan Feroz | System administrator
+Teemu Frisk | System administrator
 Kalle Happonen | System administrator / group manager
 Olli Tourunen | Backup system administrator
 
@@ -32,6 +34,7 @@ Olli Tourunen | Backup system administrator
 m2m_rahti | Automation account | All users with the vault key can use this account
 Ahsan Feroz | System administrator |
 João da Silva | System administrator |
+Teemu Frisk | System administrator |
 
 ## Access to the Valinor OpenStack environment
 
@@ -40,6 +43,7 @@ João da Silva | System administrator |
 m2mvardarahti | Automation account | All users with the vault key can use this account
 Ahsan Feroz | System administrator |
 João da Silva | System administrator |
+Teemu Frisk | System administrator |
 
 ## Process for adding or removing admin accounts
 
