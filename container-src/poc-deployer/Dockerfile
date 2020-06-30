@@ -18,7 +18,7 @@ RUN dnf install -y \
 
 COPY requirements.txt /root/requirements.txt
 
-# Set default python version
+# Set default python version and install packages
 RUN alternatives --set python /usr/bin/python3 \
     && pip3 install --no-cache-dir -U setuptools wheel \
     && pip3 install --no-cache-dir -r /root/requirements.txt
