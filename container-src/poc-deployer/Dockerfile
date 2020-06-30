@@ -7,9 +7,9 @@ RUN dnf install -y \
     && \
     dnf install -y \
         openssh-clients \
-        python3-devel python3-pip \
-        gcc openssl-devel openssl \
-        java-1.8.0-openjdk-headless httpd-tools \
+        python3-pip \
+        openssl \
+        httpd-tools \
         glibc-langpack-en \
         jq \
         tmux less git man bash-completion \
