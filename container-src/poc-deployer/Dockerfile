@@ -40,6 +40,6 @@ COPY run_playbook.bash run_playbook.bash
 COPY run_backup.bash run_backup.bash
 COPY bashrc .bashrc
 
-ADD mitogen-0.2.7.tar.gz /opt/deployment
+ADD mitogen-0.2.9.tar.gz /opt/deployment
 
 CMD /usr/bin/bash
