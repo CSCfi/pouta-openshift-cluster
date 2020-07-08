@@ -1,5 +1,5 @@
 # Ansible version used in container
-ansible==2.6.20
+ansible==2.6.5
 
 # packages for ansible openstack dynamic inventory
 openstacksdk==0.36.3
