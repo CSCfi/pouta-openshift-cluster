@@ -4,5 +4,4 @@ local_auth_mapping_method: "claim"
 github_auth_mapping_method: "claim"
 gitlab_auth_mapping_method: "claim"
 ldap_auth_mapping_method: "claim"
-local_auth_mapping_htaccess_entries: {}
 ldap_bind_account_password_vault: "UNDEFINED"
