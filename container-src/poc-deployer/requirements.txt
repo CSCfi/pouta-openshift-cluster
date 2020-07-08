@@ -6,6 +6,9 @@ openstacksdk==0.36.3
 os-client-config==1.28.0 # Do not bump up, at least 1.31.2 breaks things (21.2.2019)
 shade==1.32.0
 
+# openshift_metrics playbook
+passlib==1.7.2
+
 # openstack command line clients
 # Pouta client docs: https://docs.csc.fi/cloud/pouta/command-line-tools/
 # These are newer versions than listed in Pouta docs but they work better.
