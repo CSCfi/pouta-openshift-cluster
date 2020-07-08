@@ -11,6 +11,7 @@ shade==1.32.0
 # These are newer versions than listed in Pouta docs but they work better.
 python-cinderclient==4.3.0
 python-glanceclient==3.2.0
+python-heatclient==1.18.0
 python-keystoneclient==3.18.0
 python-novaclient==17.1.0
 python-openstackclient==3.19.0
