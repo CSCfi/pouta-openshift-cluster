@@ -154,10 +154,7 @@ sudo scripts/read_vault_pass_from_clipboard.bash
 To launch a shell in a temporary container for deploying environment 'oso-devel-singlemaster', run
 
 ```bash
-sudo scripts/run_deployment_container.bash \
-  -e oso-devel-singlemaster \
-  -p /dev/shm/secret/vaultpass \
-  -i
+sudo scripts/dcterm.bash oso-devel-singlemaster
 ```
 
 Run site.yml to provision infrastructure on OpenStack and install OpenShift on this infrastructure:
