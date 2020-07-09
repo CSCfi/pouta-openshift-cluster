@@ -154,7 +154,19 @@ sudo scripts/read_vault_pass_from_clipboard.bash
 To launch a shell in a temporary container for deploying environment 'oso-devel-singlemaster', run
 
 ```bash
-sudo scripts/dcterm.bash oso-devel-singlemaster
+# Linux version
+sudo scripts/run_deployment_container.bash \
+  -e oso-devel-singlemaster \
+  -p /dev/shm/secret/vaultpass
+```
+
+On mac, the required secret file is located in different path
+
+```bash
+# Mac version
+sudo scripts/run_deployment_container.bash \
+  -e oso-devel-singlemaster \
+  -p /Volumes/rRAMDisk/secret/vaultpass
 ```
 
 Run site.yml to provision infrastructure on OpenStack and install OpenShift on this infrastructure:
@@ -174,6 +186,8 @@ sudo scripts/run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm
 
 If you run the above from terminal locally while developing, add '-i' option to attach the terminal
 to the process for the color coding and ctrl+c to work.
+
+On mac, correct location for vaultpass file is `/Volumes/rRAMDisk/secret/vaultpass`.
 
 ### Usage in a GitLab pipeline
 
