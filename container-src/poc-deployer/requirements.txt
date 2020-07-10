@@ -1,5 +1,6 @@
 # Ansible version used in container
 ansible==2.7.18
+ansible-lint
 
 # packages for ansible openstack dynamic inventory
 openstacksdk==0.36.3
