@@ -110,7 +110,7 @@
     owner: root
     group: root
     content: |
-      {% for user, pass in local_auth_mapping_htaccess_entries.iteritems() %}
+      {% for user, pass in local_auth_mapping_htaccess_entries.items() %}
       {{   user ~ ':' ~ pass }}
       {% endfor %}
 
