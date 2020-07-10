@@ -4,7 +4,6 @@ import time
 import requests
 import sys
 import random
-from IPython import embed
 
 from kubernetes import client, config
 from openshift.dynamic import DynamicClient
