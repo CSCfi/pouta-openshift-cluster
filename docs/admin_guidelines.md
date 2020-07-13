@@ -41,6 +41,13 @@ m2mvardarahti | Automation account | All users with the vault key can use this a
 Ahsan Feroz | System administrator |
 João da Silva | System administrator |
 
+## Read only admin accounts
+
+*Person* | *Reason* | *Comment*
+--- | --- | ---
+reppu | Cluster admin account | Only for Rahti
+m2m_oso_dvel | Cluster admin account | This user is used for Nagios checks in Rahti and Valinor
+
 ## Process for adding or removing admin accounts
 
 1. Get preliminary approval from the group manager.
