@@ -63,32 +63,12 @@
     templatized_base_repo_config_file_removed.changed
 
 - name: install basic tools
-  yum: pkg={{item}} state=present
-  with_items:
-    - dstat
-    - lsof
-    - bash-completion
-    - time
-    - tmux
-    - git
-    - xauth
-    - screen
-    - nano
-    - vim
-    - bind-utils
-    - nmap-ncat
-    - lvm2
-    - chrony
-    - bzip2
-    - iptables
-    - iptables-services
-    - NetworkManager
-    - jq
-    - sysstat
-    - logrotate
-    - python-pip
-    - python-passlib
-    - python2-openshift
+  yum:
+    pkg: ['dstat', 'lsof', 'bash-completion', 'time', 'tmux', 'git', 'xauth',
+'screen', 'nano', 'vim', 'bind-utils', 'nmap-ncat', 'lvm2', 'chrony', 'bzip2',
+'iptables', 'iptables-services', 'NetworkManager', 'jq',
+'sysstat', 'logrotate', 'python-pip', 'python-passlib', 'python2-openshift']
+    state: present
 
 - name: install virtualenv for Python
   pip: name=virtualenv state=present
