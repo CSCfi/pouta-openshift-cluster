@@ -83,7 +83,7 @@
         namespace: "glusterfs"
         name: "heketi-storage"
       register: glusterfs_heketi_deployment_config
-      
+
     - name: create heketi secret
       oc_secret:
         namespace: "glusterfs"

@@ -12,7 +12,8 @@
         state: present
 
     - name: create temp directory for templating
-      command: mktemp -d
+      tempfile:
+        state: directory
       register: mktemp
       changed_when: False
 
@@ -200,7 +201,7 @@
           password: "{{ monitoring_access_token }}"
           status_code:
           - 200
-        with_items: "{{ influxdb_additional_queries }}"
+        with_items: "{{ influxdb_additional_queries }}"
       # end block
 
     - name: create a user with read access to the prometheus db in influxdb

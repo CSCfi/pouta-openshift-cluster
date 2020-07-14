@@ -25,7 +25,8 @@
           generate_new_ns_webhook_certs|default(false)|bool
     block:
     - name: create temp directory for templating
-      command: mktemp -d
+      tempfile:
+        state: directory
       register: mktemp
       changed_when: False
 

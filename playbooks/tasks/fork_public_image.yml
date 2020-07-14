@@ -22,7 +22,8 @@
 
 - block:
   - name: create temp directory for image download
-    command: mktemp -d
+    tempfile:
+      state: directory
     register: image_dl_temp_dir
     changed_when: false
 

@@ -53,7 +53,7 @@
   when:
     - testuser_username is defined
 
-- name: create openstack openrc 
+- name: create openstack openrc
   copy:
     dest: "/dev/shm/secret/openrc.sh"
     mode: 0440

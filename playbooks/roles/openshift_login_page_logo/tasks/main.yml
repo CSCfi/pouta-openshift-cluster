@@ -15,7 +15,7 @@
 
 - name: update the login pages configuration in master-config
   yedit:
-    src: "{{ openshift_master_config_file }}"
+    src: "{{ openshift_master_config_file }}"
     key: oauthConfig.templates
     value: |
       errorPage: /etc/origin/master/login/error.html

@@ -52,7 +52,7 @@
       etcd_vm_flavor: "{{ etcd_vm_flavor }}"
       secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
       secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
-      network_id: "{{ base_stack_outputs.network_id}}"
+      network_id: "{{ base_stack_outputs.network_id }}"
       network_prefix: "{{ openshift_network_prefix }}"
       resource_group_identifier: "{{ etcd_resource_group_identifier }}"
       public_ip_network_id: "{{ public_ip_network_id }}"

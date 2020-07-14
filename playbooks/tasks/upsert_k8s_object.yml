@@ -1,7 +1,8 @@
 ---
 - block:
   - name: create temp directory for templating ({{ name }})
-    command: mktemp -d
+    tempfile:
+      state: directory
     register: upsert_mktemp
     changed_when: False
 

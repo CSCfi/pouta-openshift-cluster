@@ -1,7 +1,7 @@
 ---
 - name: Setup OAuth authentication providers
   yedit:
-    src: "{{ openshift_master_config_file }}"
+    src: "{{ openshift_master_config_file }}"
     key: oauthConfig.identityProviders
     value: |
       {% if poc_disable_htpasswd_authentication | d() | bool == false -%}

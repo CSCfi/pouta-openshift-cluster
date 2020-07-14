@@ -246,7 +246,7 @@
     - name: Refresh dynamic inventory
       meta: refresh_inventory
 
-- include: generate_ssh_config.yml
+- import_playbook: generate_ssh_config.yml
 
 - hosts: localhost
   gather_facts: no
