@@ -45,6 +45,14 @@ Ahsan Feroz | System administrator |
 João da Silva | System administrator |
 Teemu Frisk | System administrator |
 
+## Openshift cluster-read only admin accounts
+
+*Person* | *Reason* | *Comment*
+--- | --- | ---
+reppu | Cluster reader account | Data for usage reporting for Rahti
+m2m_rahti | Cluster reader account | This user is used for Nagios checks in Rahti
+m2mvardarahti | Cluster reader account | This user is used for Nagios checks in Valinor
+
 ## Process for adding or removing admin accounts
 
 1. Get preliminary approval from the group manager.

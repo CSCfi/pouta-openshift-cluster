@@ -1,0 +1,19 @@
+- name: Mapping monitoring account
+  hosts: bastion
+  run_once: true
+  tasks:
+  - name: login using nagios account
+    shell: oc login https://{{ openshift_public_hostname }}:8443 --username "{{ testuser_username }}" --password {{ testuser_password }}
+
+- name: give role to the nagios account
+  hosts: masters
+  run_once: true
+  tasks:
+  - name: set cluster roles to the nagios account {{ testuser_username }}
+    oc_adm_policy_user:
+      state: present
+      resource_kind: cluster-role
+      resource_name: "cluster-reader"
+      user: "{{ testuser_username }}"
+
+
