@@ -41,12 +41,13 @@ m2mvardarahti | Automation account | All users with the vault key can use this a
 Ahsan Feroz | System administrator |
 João da Silva | System administrator |
 
-## Read only admin accounts
+## Openshift cluster-read only admin accounts
 
 *Person* | *Reason* | *Comment*
 --- | --- | ---
-reppu | Cluster admin account | Only for Rahti
-m2m_oso_dvel | Cluster admin account | This user is used for Nagios checks in Rahti and Valinor
+reppu | Cluster reader account | Data for usage reporting for Rahti
+m2m_rahti | Cluster reader account | This user is used for Nagios checks in Rahti
+m2mvardarahti | Cluster reader account | This user is used for Nagios checks in Valinor
 
 ## Process for adding or removing admin accounts
 
