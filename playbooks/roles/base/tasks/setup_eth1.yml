@@ -22,12 +22,12 @@
       USERCTL=no
   register: eth1_script
   when:
-    - poc_eth1_present
+    - poc_eth1_present | bool
 
 - name: restart network
   service:
     name: network
     state: restarted
   when:
-    - poc_eth1_present
+    - poc_eth1_present | bool
     - eth1_script.changed

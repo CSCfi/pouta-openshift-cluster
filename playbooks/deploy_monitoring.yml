@@ -36,7 +36,7 @@
 
     - name: create project monitoring-infra
       shell: oc create -f "{{ mktemp.stdout }}/infra-project.yaml"
-      when: not existing_monitoring_project.stdout_lines
+      when: existing_monitoring_project.stdout_lines | length == 0
 
     - name: create htpasswd access token file
       htpasswd:

@@ -137,11 +137,11 @@
         state: absent
       with_items: "{{ hostvars[groups['masters'][0]]['cinder_volume_names']|default([]) }}"
       when:
-      - groups['masters']
+      - groups['masters'] | length > 0
       - ('success' in hostvars[groups['masters'][0]]['ssh_result'].stdout)
 
     - when:
-      - groups['masters']
+      - groups['masters'] | length > 0
       block:
       - name: Assert that SSH connections to masters worked
         assert:

@@ -40,11 +40,11 @@
 
   - name: run mkswap on {{ lv_path }}
     command: mkswap -L {{ filesystem_spec.name }} {{ lv_path }}
-    when: not swapon_output.stdout_lines
+    when: swapon_output.stdout_lines | length == 0
 
   - name: run swapon {{ lv_path }}
     command: swapon {{ lv_path }}
-    when: not swapon_output.stdout_lines
+    when: swapon_output.stdout_lines | length == 0
 
   - name: write swap entry in fstab
     mount:

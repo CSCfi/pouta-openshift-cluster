@@ -23,12 +23,12 @@
 
   - name: create object ({{ name }})
     shell: oc create -n {{ namespace }} -f {{ l_object_yaml_path }}
-    when: not upsert_existing_object.stdout_lines
+    when: upsert_existing_object.stdout_lines | length == 0
 
   - name: replace object ({{ name }})
     shell: oc replace -n {{ namespace }} -f {{ l_object_yaml_path }}
     when:
-    - upsert_existing_object.stdout_lines
+    - upsert_existing_object.stdout_lines | length > 0
     - upsert_replace|default(true)|bool
     failed_when: false
 

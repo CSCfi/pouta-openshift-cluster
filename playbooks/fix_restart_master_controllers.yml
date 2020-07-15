@@ -27,7 +27,7 @@
             state: restarted
           when:
           - openshift_release is version('3.10', '<')
-          - not cluster_local_in_resolv_conf.stdout_lines
+          - cluster_local_in_resolv_conf.stdout_lines | length == 0
 
         - name: restart master controllers if needed
           command: /usr/local/bin/master-restart controllers
@@ -37,4 +37,4 @@
           until: result.rc == 0
           when:
           - openshift_release is version('3.10', '>=')
-          - not cluster_local_in_resolv_conf.stdout_lines
+          - cluster_local_in_resolv_conf.stdout_lines | length == 0
