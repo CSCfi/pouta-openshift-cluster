@@ -7,12 +7,12 @@
 
 - fail:
     msg: "No public image found for forking with name {{ public_image_name }}"
-  when: not openstack_image | bool
+  when: not openstack_image
 
 - name: get id of public image
   set_fact:
     public_image_id: "{{ openstack_image.id }}"
-  when: openstack_image | bool
+  when: openstack_image
 
 - name: check existence of forked image
   os_image_facts:
@@ -41,7 +41,7 @@
       filename: "{{ image_dl_temp_dir.stdout }}/public_image.img"
       properties: "{{ image_properties | default({}) }}"
 
-  when: not openstack_image | bool
+  when: not openstack_image
   always:
   - name: delete temp directory
     file:
