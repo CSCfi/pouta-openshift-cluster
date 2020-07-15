@@ -24,7 +24,7 @@
       export OS_TENANT_ID="{{ openshift_cloudprovider_openstack_tenant_id }}"
       export OS_TENANT_NAME="{{ openshift_cloudprovider_openstack_tenant_name }}"
       export OS_REGION="{{ openshift_cloudprovider_openstack_region }}"
-  when: openshift_cloudprovider_openstack_auth_url is regex_search('(/v3)')
+  when: openshift_cloudprovider_openstack_auth_url is regex('(/v3)')
 
 - name: Create OpenStack openrc.sh for Keystone API v2.0
   copy:
@@ -37,7 +37,7 @@
       export OS_TENANT_ID="{{ openshift_cloudprovider_openstack_tenant_id }}"
       export OS_TENANT_NAME="{{ openshift_cloudprovider_openstack_tenant_name }}"
       export OS_REGION="{{ openshift_cloudprovider_openstack_region }}"
-  when: openshift_cloudprovider_openstack_auth_url is regex_search('(/v2.0)')
+  when: openshift_cloudprovider_openstack_auth_url is regex('(/v2.0)')
 
 - name: Copy ssh private key
   copy:
