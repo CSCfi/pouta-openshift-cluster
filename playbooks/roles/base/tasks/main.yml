@@ -10,7 +10,7 @@
     src: base.repo.j2
     dest: /etc/yum.repos.d/CentOS-Base.repo
   register: templatize_base_repo_config_file
-  when: lock_os_minor_version|bool == False
+  when: not lock_os_minor_version
 
 - name: add the glusterfs41 repo
   yum:

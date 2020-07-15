@@ -106,7 +106,7 @@
   - name: restart the webhook if it already existed and secrets changed
     shell: oc -n webhooks rollout latest ns-project-label-webhook
     when: ( ldap_upsert.changed or cabundle.changed ) and
-          existing_ns_webhook_deployment.stdout_lines | length > 0
+          existing_ns_webhook_deployment.stdout_lines
 
   - name: upsert namespace label webhook service
     include_tasks: tasks/upsert_k8s_object.yml

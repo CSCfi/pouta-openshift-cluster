@@ -11,7 +11,7 @@
     - name: remove infra label from master nodes if there are infra nodes
       shell: oc label node "{{ item }}" node-role.kubernetes.io/infra-
       with_items: "{{ groups['masters'] }}"
-      when: groups['infra'] | default([]) | length > 0
+      when: groups['infra'] | default([])
 
     - name: update storage classes (1st pass)
       k8s:
@@ -22,7 +22,7 @@
       ignore_errors: true
       register: sc_updates
       when:
-        - skip_pvc|default(false) == false
+        - not skip_pvc|default(false)
         - item.metadata.name in active_storage_classes
 
     - name: delete storage classes that failed to update due to a 422 error (parameter updates are not supported)
@@ -35,7 +35,7 @@
       when:
         - item.failed|default(false)
         - item.error == 422
-        - skip_pvc|default(false) == false
+        - not skip_pvc|default(false)
 
     - name: update storage classes (2nd pass)
       k8s:
@@ -43,7 +43,7 @@
         definition: "{{ item }}"
       with_items: "{{ storage_classes|default([]) }}"
       when:
-        - skip_pvc|default(false) == false
+        - not skip_pvc|default(false)
         - item.metadata.name in active_storage_classes
 
     - name: copy nfs_pv definitions to first master
@@ -70,11 +70,11 @@
 
     - name: import project template
       shell: oc create -n default -f /home/cloud-user/project-request.yaml
-      when: existing_template.stdout_lines | length == 0
+      when: not existing_template.stdout_lines
 
     - name: update project template
       shell: oc replace -n default -f /home/cloud-user/project-request.yaml
-      when: existing_template.stdout_lines | length > 0
+      when: existing_template.stdout_lines
 
     - name: get heketi deployment config
       oc_obj:

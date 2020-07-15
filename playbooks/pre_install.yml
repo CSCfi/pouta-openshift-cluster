@@ -55,7 +55,7 @@
 
 - name: Configure keepalived on LB nodes (multimaster installations)
   vars:
-    - keepalived_state: "{{ 'MASTER' if inventory_hostname.find('lb-1') != -1 else 'BACKUP' }}"
+    - keepalived_state: "{{ 'MASTER' if inventory_hostname.find('lb-1') != -1 else 'BACKUP' }}"
     - keepalived_priority: "{{ 90 if inventory_hostname.find('lb-1') != -1 else 60 }}"
     - keepalived_app_routes_down_weight: "-40"
     - keepalived_vip: "{{ lb_vip_ip }}"

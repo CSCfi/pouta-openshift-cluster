@@ -4,7 +4,7 @@
     src: "{{ openshift_master_config_file }}"
     key: oauthConfig.identityProviders
     value: |
-      {% if poc_disable_htpasswd_authentication | d() | bool == false -%}
+      {% if not poc_disable_htpasswd_authentication | d() | bool -%}
       - name: Local account
         login: true
         mappingMethod: "{{ local_auth_mapping_method }}"
@@ -14,7 +14,7 @@
           file: /etc/origin/master/htpasswd
           kind: HTPasswdPasswordIdentityProvider
       {% endif %}
-      {% if deploy_github_auth | d() | bool == true -%}
+      {% if deploy_github_auth | d() | bool -%}
       - name: GitHub
         challenge: false
         login: true
@@ -29,7 +29,7 @@
             - {{ org }}
       {%   endfor %}
       {% endif %}
-      {% if deploy_gitlab_auth | d() | bool == true -%}
+      {% if deploy_gitlab_auth | d() | bool -%}
       - name: "{{ gitlab_oauth_provider_name }}"
         challenge: true
         login: true
@@ -41,7 +41,7 @@
           clientID: "{{ gitlab_oauth_client_id }}"
           clientSecret: "{{ gitlab_oauth_client_secret }}"
       {% endif %}
-      {% if deploy_ldap_auth | d() | bool == true -%}
+      {% if deploy_ldap_auth | d() | bool -%}
       - name: "{{ ldap_auth_provider_name }}"
         challenge: true
         login: true
@@ -65,7 +65,7 @@
       {%   endif %}
           url: "{{ ldap_user_query }}"
       {% endif %}
-      {% if deploy_openid_connect_auth | d() | bool == true -%}
+      {% if deploy_openid_connect_auth | d() | bool -%}
       {%   for conf in openid_connect_auth_providers %}
       - name: "{{ conf.name }}"
         challenge: true

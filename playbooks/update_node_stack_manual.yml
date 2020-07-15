@@ -67,7 +67,7 @@
     - name: Wait for SSH to work
       shell: ssh {{ bastion_public_ip }} 'echo success'
       register: result
-      until: result.stdout.find('success') != -1
+      until: ('success' in result.stdout)
       retries: 30
       delay: 5
       changed_when: false

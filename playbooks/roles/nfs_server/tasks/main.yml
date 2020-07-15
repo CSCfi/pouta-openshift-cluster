@@ -25,7 +25,7 @@
 - name: enable rpcbind
   command: "systemctl enable rpcbind"
   register: systemctl_result
-  changed_when: systemctl_result.stderr != ''
+  changed_when: systemctl_result.stderr
 
 - name: create exports
   lineinfile:

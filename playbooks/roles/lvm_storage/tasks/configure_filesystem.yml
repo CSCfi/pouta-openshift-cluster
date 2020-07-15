@@ -15,7 +15,7 @@
     lv: "{{ lv_name }}"
     size: "{{ filesystem_spec.size|default('99%VG') }}"
     shrink: false
-  when: stat_lv_path.stat.exists == False
+  when: not stat_lv_path.stat.exists
 
 - name: make sure {{ filesystem_spec.name }} mount path exists
   file:
@@ -40,11 +40,11 @@
 
   - name: run mkswap on {{ lv_path }}
     command: mkswap -L {{ filesystem_spec.name }} {{ lv_path }}
-    when: swapon_output.stdout_lines | length == 0
+    when: not swapon_output.stdout_lines
 
   - name: run swapon {{ lv_path }}
     command: swapon {{ lv_path }}
-    when: swapon_output.stdout_lines | length == 0
+    when: not swapon_output.stdout_lines
 
   - name: write swap entry in fstab
     mount:

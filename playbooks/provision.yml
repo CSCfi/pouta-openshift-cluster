@@ -202,12 +202,12 @@
     - name: Provision resources with floating IP network
       include_tasks: tasks/provision_with_floating_ips.yml
       when:
-        - poc_public_ip_network|default('') == ''
+        - not poc_public_ip_network|default('')
 
     - name: Provision resources with public IP network
       include_tasks: tasks/provision_with_public_ips.yml
       when:
-        - poc_public_ip_network|default('') != ''
+        - poc_public_ip_network|default('')
 
     - name: Remove inventory cache
       file:
@@ -219,7 +219,7 @@
 
     # Floating IP setup
     - when:
-        - poc_public_ip_network|default('') == ''
+        - not poc_public_ip_network|default('')
       block:
         - name: Associate floating IP with bastion host
           os_floating_ip:
@@ -232,7 +232,7 @@
             floating_ip_address: "{{ openshift_public_ip }}"
           when:
             - master_vm_group_size == 1
-            - skip_public_ip_association|default(false)|bool == false
+            - not skip_public_ip_association|default(false)
 
         - name: Assign extra floating IPs
           os_floating_ip:
@@ -263,7 +263,7 @@
     - name: Wait for SSH to work
       shell: ssh {{ bastion_public_ip }} 'echo success'
       register: result
-      until: result.stdout.find('success') != -1
+      until: ('success' in result.stdout)
       retries: 30
       delay: 5
       changed_when: false
@@ -314,7 +314,7 @@
   tasks:
     - when:
         - poc_update_and_reboot|default(false)|bool
-        - poc_installed|default(false)|bool == false
+        - not poc_installed|default(false)|bool
       block:
         - name: update OS packages
           yum:
@@ -347,7 +347,7 @@
         - name: wait for connectivity on port 22 on hosts
           shell: ssh {{ ansible_ssh_host }} 'echo success'
           register: result
-          until: result.stdout.find('success') != -1
+          until: ('success' in result.stdout)
           retries: 30
           delay: 10
           changed_when: false

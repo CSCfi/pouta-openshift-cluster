@@ -7,7 +7,7 @@
     line: >-
       {{ hostvars[item]['ansible_ssh_host'] }}
       {{ item }}
-      {%- if poc_override_domain_suffix != '' %} {{ item }}{{ poc_override_domain_suffix }}{% endif -%}
+      {%- if poc_override_domain_suffix %} {{ item }}{{ poc_override_domain_suffix }}{% endif -%}
       {%- if 'node_alt_name' in hostvars[item] %} {{ hostvars[item]['node_alt_name'] }}{% endif -%}
   when: hostvars[item]['ansible_ssh_host'] is defined
   with_items: "{{ groups['all'] }}"

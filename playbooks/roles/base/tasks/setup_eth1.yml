@@ -4,7 +4,7 @@
 
 - name: check if eth1 is present
   set_fact:
-    poc_eth1_present: ip_link_output.stdout.find(' eth1:') != -1
+    poc_eth1_present: ('eth1' in ip_link_output.stdout)
 
 - name: create a network script for eth1
   copy:
