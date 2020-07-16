@@ -7,7 +7,7 @@
     changed_when: False
 
   - set_fact:
-      l_object_yaml_path: "{{ upsert_mktemp.stdout }}/{{ (template_base_name | splitext)[0] }}"
+      l_object_yaml_path: "{{ upsert_mktemp.path }}/{{ (template_base_name | splitext)[0] }}"
 
   - name: instantiate template to object definition ({{ name }})
     template:
@@ -35,7 +35,7 @@
   always:
   - name: delete temp directory
     file:
-      path: "{{ upsert_mktemp.stdout }}"
+      path: "{{ upsert_mktemp.path }}"
       state: absent
     changed_when: False
     check_mode: no
