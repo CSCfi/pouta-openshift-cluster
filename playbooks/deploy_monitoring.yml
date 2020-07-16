@@ -26,7 +26,7 @@
     - name: create project definition
       template:
         src: infra-project.yaml.j2
-        dest: "{{ mktemp.stdout }}/infra-project.yaml"
+        dest: "{{ mktemp.path }}/infra-project.yaml"
       vars:
         name: monitoring-infra
         labels: {}
@@ -35,18 +35,18 @@
       changed_when: no
 
     - name: create project monitoring-infra
-      shell: oc create -f "{{ mktemp.stdout }}/infra-project.yaml"
+      shell: oc create -f "{{ mktemp.path }}/infra-project.yaml"
       when: existing_monitoring_project.stdout_lines | length == 0
 
     - name: create htpasswd access token file
       htpasswd:
-        path: "{{ mktemp.stdout }}/proxy-htpasswd"
+        path: "{{ mktemp.path }}/proxy-htpasswd"
         name: token
         password: "{{ monitoring_access_token }}"
 
     - name: register htpasswd contents
       slurp:
-        src: "{{ mktemp.stdout }}/proxy-htpasswd"
+        src: "{{ mktemp.path }}/proxy-htpasswd"
       register: proxy_htpasswd
 
     - name: upsert secret in monitoring-infra
@@ -130,7 +130,7 @@
 
     - name: delete temp directory
       file:
-        path: "{{ mktemp.stdout }}"
+        path: "{{ mktemp.path }}"
         state: absent
       changed_when: False
       check_mode: no
