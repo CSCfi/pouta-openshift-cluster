@@ -21,6 +21,10 @@
     backup: True
 
 - name: install Red Hat certificate bundle
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     name: "python-rhsm-certificates"
     state: present
@@ -33,6 +37,10 @@
     owner: root
 
 - name: set {{ docker_package_name }} state to {{ docker_package_state }}
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     name: "{{ docker_package_name }}"
     state: "{{ docker_package_state }}"

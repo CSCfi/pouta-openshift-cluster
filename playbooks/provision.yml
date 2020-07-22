@@ -317,6 +317,9 @@
         - not poc_installed|default(false)|bool
       block:
         - name: update OS packages
+          retries: 3
+          delay: 20
+          until: os_packages_updated.failed is false
           yum:
             name: '*'
             state: latest

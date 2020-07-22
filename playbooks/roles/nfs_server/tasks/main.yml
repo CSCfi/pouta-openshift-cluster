@@ -8,6 +8,10 @@
   notify: restart iptables
 
 - name: install NFS server packages
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     name: nfs-utils
     state: present

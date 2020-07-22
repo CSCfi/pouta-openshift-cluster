@@ -30,6 +30,10 @@
     - masters
   tasks:
     - name: install python2-openshift
+      retries: 3
+      delay: 20
+      register: yumresult
+      until: yumresult.failed is false
       yum:
         pkg: "python2-openshift"
         state: present

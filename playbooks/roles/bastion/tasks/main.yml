@@ -1,9 +1,4 @@
 ---
-- name: Install nmap-ncat
-  yum:
-    name: nmap-ncat
-    state: present
-
 - name: allow connections from the monitoring server to monitoring daemons
   lineinfile:
     line: "-A INPUT -p tcp -m tcp -s {{ monitoring_server_ip }} --dport {{ item }} -j ACCEPT"
@@ -15,16 +10,28 @@
   notify: restart iptables
 
 - name: install CentOS PaaS repo
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     name: centos-release-openshift-origin36
     state: present
 
 - name: install required packages
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
-    pkg: ['nmap', 'origin-clients', 'gcc', 'python-devel', 'python3-devel']
+    pkg: ['nmap', 'nmap-ncat', 'origin-clients', 'gcc', 'python-devel', 'python3-devel']
     state: present
 
 - name: update pip and virtualenv from repo versions
+  retries: 3
+  delay: 20
+  register: pipresult
+  until: pipresult.failed is false
   pip:
     name:
       - virtualenv==20.0.17

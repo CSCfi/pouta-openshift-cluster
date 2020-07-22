@@ -13,6 +13,10 @@
   when: not lock_os_minor_version
 
 - name: add the glusterfs41 repo
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     pkg: centos-release-gluster41
     state: present
@@ -63,6 +67,10 @@
     templatized_base_repo_config_file_removed.changed
 
 - name: install basic tools
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     pkg: ['dstat', 'lsof', 'bash-completion', 'time', 'tmux', 'git', 'xauth',
 'screen', 'nano', 'vim', 'bind-utils', 'nmap-ncat', 'lvm2', 'chrony', 'bzip2',
@@ -71,7 +79,13 @@
     state: present
 
 - name: install virtualenv for Python
-  pip: name=virtualenv state=present
+  retries: 3
+  delay: 20
+  register: pipresult
+  until: pipresult.failed is false
+  pip:
+    name: virtualenv
+    state: present
 
 - name: disable kdump
   service:

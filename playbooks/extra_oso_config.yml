@@ -1,5 +1,9 @@
 ---
 - name: Import objects through first master
+  # Disable mitogen for this step. Otherwise we get mitogen importer error
+  # that says google is blacklisted while loading openshift python library.
+  # See ./pre_install.yml for more context.
+  strategy: linear
   hosts: masters
   run_once: true
   roles:
