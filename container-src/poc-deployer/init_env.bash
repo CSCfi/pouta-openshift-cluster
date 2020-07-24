@@ -39,7 +39,31 @@ if [[ ! -e /dev/shm/secret/vaultpass ]]; then
     unset VAULT_PASS
 fi
 
-export ANSIBLE_INVENTORY=$HOME/openshift-environments/$env_name
+# If we are in CI pipeline, make a copy of environment and append
+# pipeline id to cluster_name to allow parallel pipeline execution
+# Detection uses CI_PIPELINE_ID variable that is set by gitlab
+if [ -z ${CI_PIPELINE_ID+x} ]; then
+    # Normal operation
+    export ANSIBLE_INVENTORY=$HOME/openshift-environments/${env_name}
+else
+    new_env_name="${env_name}-${CI_PIPELINE_ID}"
+    echo "CI pipeline detected, change env_name to ${new_env_name}"
+    mkdir -p /tmp/ci-ansible-environment
+    cp -aR /opt/deployment/openshift-environments/* /tmp/ci-ansible-environment/
+    # Replace name in groups file
+    sed -i "s/${env_name}/${new_env_name}/g" "/tmp/ci-ansible-environment/${env_name}/groups"
+    # Rename directories
+    mv /tmp/ci-ansible-environment/${env_name} /tmp/ci-ansible-environment/${new_env_name}
+    mv /tmp/ci-ansible-environment/group_vars/${env_name} /tmp/ci-ansible-environment/group_vars/${new_env_name}
+    # Set ansible_inventory variable
+    export ANSIBLE_INVENTORY=/tmp/ci-ansible-environment/${new_env_name}
+    # Set env_name+ENV_NAME (yes, it is case sensitive) to new_env_name
+    env_name=${new_env_name}
+    ENV_NAME=${new_env_name}
+    # Set ANSIBLE_ENVIRONMENT_PATH for os_env_path in initialize_ramdisk.yml
+    export ANSIBLE_ENVIRONMENT_PATH=/tmp/ci-ansible-environment
+fi
+
 echo "ANSIBLE_INVENTORY set to $ANSIBLE_INVENTORY"
 echo
 

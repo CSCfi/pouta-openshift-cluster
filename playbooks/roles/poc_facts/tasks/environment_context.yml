@@ -1,6 +1,19 @@
+- name: CI environment detection
+  # If CI environment is detected and parallel execution is set,
+  # ANSIBLE_ENVIRONMENT_PATH variable is set in init_env.bash
+  # Value /tmp/ci-ansible-environment is set in init_env.bash
+  set_fact:
+    ansible_environment: "{{ lookup('env', 'ANSIBLE_ENVIRONMENT_PATH') }}"
+
+- name: Set facts for environment context (CI override)
+  set_fact:
+    os_env_path: "{{ os_env_path|default(lookup('env','ANSIBLE_ENVIRONMENT_PATH')) }}"
+  when: ansible_environment == '/tmp/ci-ansible-environment'
+
 - name: Set facts for environment context
   set_fact:
     os_env_path: "{{ os_env_path|default('/opt/deployment/openshift-environments') }}"
+  when: ansible_environment != '/tmp/ci-ansible-environment'
 
 - name: Get context for current environment
   include_vars:
