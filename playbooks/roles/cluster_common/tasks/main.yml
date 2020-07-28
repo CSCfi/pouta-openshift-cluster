@@ -26,6 +26,7 @@
     ssh_key_type: rsa
   when: inventory_hostname in groups.bastion
 
+# Here we assume we have only one bastion host per cluster
 - name: download public ssh key from bastion
   fetch:
     dest: /tmp/ansible/public_keys/bastion/
@@ -37,7 +38,6 @@
   authorized_key:
     user: cloud-user
     key: "{{ lookup('file', '/tmp/ansible/public_keys/bastion/id_rsa.pub') }}"
-  with_items: "{{ groups.bastion }}"
   when: inventory_hostname not in groups.bastion
 
 - name: set SELinux state
