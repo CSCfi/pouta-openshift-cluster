@@ -57,6 +57,13 @@
     - ansible-role-nrpe
     - ansible-role-nrpe-plugins
 
+- name: Configure sudo for nrpe
+  hosts: all
+  become: yes
+  roles:
+    - ansible-role-sudo
+
+
 - name: Configure keepalived on LB nodes (multimaster installations)
   vars:
     - keepalived_state: "{{ 'MASTER' if inventory_hostname.find('lb-1') != -1 else 'BACKUP' }}"

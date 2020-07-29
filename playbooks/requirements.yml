@@ -10,3 +10,9 @@
 - src: https://github.com/CSCfi/ansible-role-mod_gearman.git
   scm: git
   version: e7fa472a81365f249677e1bb69cb5156960b9e58
+
+- src: https://github.com/weareinteractive/ansible-sudo
+  scm: git
+  path: roles
+  name: ansible-role-sudo
+  version: "c829754f44e75b25b46b0663f223d51c2b6324ce"
