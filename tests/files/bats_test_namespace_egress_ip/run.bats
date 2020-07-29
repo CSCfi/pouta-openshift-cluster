@@ -1,6 +1,10 @@
 #!/usr/bin/env bats
 
-@test "build egress-ip-checker container" {
+setup() {
+    # Delete existing job if it is there so that a new job is always created
+    oc -n $PROJECT_NAME delete job/egress-ip-checker || true
+
+    # Build docker image if not present
     if ! oc -n $PROJECT_NAME get bc egress-ip-checker; then
         oc -n $PROJECT_NAME new-build --to egress-ip-checker -D - < Dockerfile
     fi
@@ -17,10 +21,12 @@
     [ "$status" -eq 1 ]
 }
 
-@test "check the namespace egress ip" {
-
+teardown() {
     # Delete existing job if it is there so that a new job is always created
     oc -n $PROJECT_NAME delete job/egress-ip-checker || true
+}
+
+@test "check the namespace egress ip" {
 
     ipcheck=$(mktemp)
     echo $ipcheck
