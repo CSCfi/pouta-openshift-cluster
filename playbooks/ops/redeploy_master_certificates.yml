@@ -277,7 +277,7 @@
     - name: update admin client kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_master_config_dir }}/admin.kubeconfig"
-        ca_path: "{{ openshift_master_config_dir }}/ca-bundle.crt"
+        ca_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
 
     - name: copy the admin client config(s)
       copy:
