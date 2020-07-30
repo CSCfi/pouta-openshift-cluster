@@ -5,13 +5,13 @@
 - name: restart master api
   systemd: name=origin-master-api state=restarted
   when:
-    - openshift_release|version_compare('3.10', '<')
+    - openshift_release is version('3.10', '<')
   notify: verify API server
 
 - name: restart master controllers
   systemd: name=origin-master-controllers state=restarted
   when:
-    - openshift_release|version_compare('3.10', '<')
+    - openshift_release is version('3.10', '<')
 
 - name: restart master
   command: /usr/local/bin/master-restart "{{ item }}"
@@ -24,7 +24,7 @@
   until: result.rc == 0
   notify: verify API server
   when:
-    - openshift_release|version_compare('3.10', '>=')
+    - openshift_release is version('3.10', '>=')
 
 - name: verify API server
   command: >

@@ -1,5 +1,9 @@
 ---
 - name: Import objects through first master
+  # Disable mitogen for this step. Otherwise we get mitogen importer error
+  # that says google is blacklisted while loading openshift python library.
+  # See ./pre_install.yml for more context.
+  strategy: linear
   hosts: masters
   run_once: true
   roles:
@@ -22,7 +26,7 @@
       ignore_errors: true
       register: sc_updates
       when:
-        - skip_pvc|default(false) == false
+        - not skip_pvc|default(false)
         - item.metadata.name in active_storage_classes
 
     - name: delete storage classes that failed to update due to a 422 error (parameter updates are not supported)
@@ -35,7 +39,7 @@
       when:
         - item.failed|default(false)
         - item.error == 422
-        - skip_pvc|default(false) == false
+        - not skip_pvc|default(false)
 
     - name: update storage classes (2nd pass)
       k8s:
@@ -43,7 +47,7 @@
         definition: "{{ item }}"
       with_items: "{{ storage_classes|default([]) }}"
       when:
-        - skip_pvc|default(false) == false
+        - not skip_pvc|default(false)
         - item.metadata.name in active_storage_classes
 
     - name: copy nfs_pv definitions to first master
@@ -83,7 +87,7 @@
         namespace: "glusterfs"
         name: "heketi-storage"
       register: glusterfs_heketi_deployment_config
-      
+
     - name: create heketi secret
       oc_secret:
         namespace: "glusterfs"

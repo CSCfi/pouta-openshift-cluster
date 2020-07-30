@@ -21,7 +21,7 @@
         name: "{{ item }}"
         groups: new_masters
       when:
-        - hostvars[item].poc_installed|default(False)|bool == False
+        - not hostvars[item].poc_installed|default(False)
       with_items: "{{ groups['masters']|default([]) }}"
 
     - name: safety for first master scaleup
@@ -32,14 +32,14 @@
       when:
         - cluster_name + '-master-1' in groups['new_masters']|default([])
         - groups['new_masters']|default([])|length < groups['masters']|default([])|length
-        - allow_first_master_scaleup|default(False)|bool == False
+        - not allow_first_master_scaleup|default(False)
 
     - name: populate new_etcd -group for scaleup
       add_host:
         name: "{{ item }}"
         groups: new_etcd
       when:
-        - hostvars[item].poc_installed|default(False)|bool == False
+        - not hostvars[item].poc_installed|default(False)
       with_items: "{{ groups['etcd']|default([]) }}"
 
     - name: populate new_nodes -group for scaleup
@@ -47,5 +47,5 @@
         name: "{{ item }}"
         groups: new_nodes
       when:
-        - hostvars[item].poc_installed|default(False)|bool == False
+        - not hostvars[item].poc_installed|default(False)
       with_items: "{{ groups['nodes']|default([]) }}"

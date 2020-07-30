@@ -6,18 +6,52 @@
 # The name of the environment is extracted from active tmux session name or from
 # the first shell arg.
 #
-# If you are using mac then please install greadlink through: brew install coreutils
+# If you are using mac then you can use greadlink through: brew install coreutils
+# or use inline function to emulate same behavior.
+
+# Give basic usage info if no arguments given
+if (( $# < 1 )); then
+   echo "Usage: dcterm.bash [environment-name]"
+   exit 1
+fi
 
 # get sudo rights if we do not have them already
 [ "$UID" -eq 0 ] || exec sudo "$0" "$@"
+
+# OSX readlink -f substitute without external dependencies
+# https://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
+function inline_osx_readlink() {
+   TARGET_FILE=$2
+   cd `dirname $TARGET_FILE`
+   TARGET_FILE=`basename $TARGET_FILE`
+   # Iterate down a (possible) chain of symlinks
+   while [ -L "$TARGET_FILE" ]
+   do
+      TARGET_FILE=`readlink $TARGET_FILE`
+      cd `dirname $TARGET_FILE`
+      TARGET_FILE=`basename $TARGET_FILE`
+   done
+   # Compute the canonicalized name by finding the physical path 
+   # for the directory we're in and appending the target file.
+   PHYS_DIR=`pwd -P`
+   RESULT=$PHYS_DIR/$TARGET_FILE
+   echo $RESULT
+}
 
 # Check the OS
 OS="$(uname -s)"
 
 # figure out where we live to find run_deployment_container.bash
 if [[ $OS == "Darwin" ]]; then
-   readlink_cmd="greadlink"
+   if hash greadlink &> /dev/null; then
+      # Let's use greadlink if we have it installed
+      readlink_cmd="greadlink"
+   else
+      # Otherwise use our inline function
+      readlink_cmd="inline_osx_readlink"
+    fi
 else
+   # With Linux we can use native readlink which supports '-f' option
    readlink_cmd="readlink"
 fi
 

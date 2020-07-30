@@ -26,7 +26,7 @@
             name: origin-master-controllers
             state: restarted
           when:
-          - openshift_release|version_compare('3.10', '<')
+          - openshift_release is version('3.10', '<')
           - cluster_local_in_resolv_conf.stdout_lines | length == 0
 
         - name: restart master controllers if needed
@@ -36,5 +36,5 @@
           register: result
           until: result.rc == 0
           when:
-          - openshift_release|version_compare('3.10', '>=')
+          - openshift_release is version('3.10', '>=')
           - cluster_local_in_resolv_conf.stdout_lines | length == 0

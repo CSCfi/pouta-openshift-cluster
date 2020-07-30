@@ -1,6 +1,6 @@
 - name: Enable Openshift mutating admission webhook API
   yedit:
-    src: "{{ openshift_master_config_file }}"
+    src: "{{ openshift_master_config_file }}"
     key: admissionConfig.pluginConfig.MutatingAdmissionWebhook
     value: |
       configuration:

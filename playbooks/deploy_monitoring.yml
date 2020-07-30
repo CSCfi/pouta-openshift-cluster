@@ -7,12 +7,17 @@
     - role: poc_facts
   tasks:
     - name: install python-passlib
+      retries: 3
+      delay: 20
+      register: yumresult
+      until: yumresult.failed is false
       yum:
         name: python-passlib
         state: present
 
     - name: create temp directory for templating
-      command: mktemp -d
+      tempfile:
+        state: directory
       register: mktemp
       changed_when: False
 
@@ -25,7 +30,7 @@
     - name: create project definition
       template:
         src: infra-project.yaml.j2
-        dest: "{{ mktemp.stdout }}/infra-project.yaml"
+        dest: "{{ mktemp.path }}/infra-project.yaml"
       vars:
         name: monitoring-infra
         labels: {}
@@ -34,18 +39,18 @@
       changed_when: no
 
     - name: create project monitoring-infra
-      shell: oc create -f "{{ mktemp.stdout }}/infra-project.yaml"
+      shell: oc create -f "{{ mktemp.path }}/infra-project.yaml"
       when: existing_monitoring_project.stdout_lines | length == 0
 
     - name: create htpasswd access token file
       htpasswd:
-        path: "{{ mktemp.stdout }}/proxy-htpasswd"
+        path: "{{ mktemp.path }}/proxy-htpasswd"
         name: token
         password: "{{ monitoring_access_token }}"
 
     - name: register htpasswd contents
       slurp:
-        src: "{{ mktemp.stdout }}/proxy-htpasswd"
+        src: "{{ mktemp.path }}/proxy-htpasswd"
       register: proxy_htpasswd
 
     - name: upsert secret in monitoring-infra
@@ -70,7 +75,7 @@
         size: "{{ prometheus_pvc_size|default('10Gi') }}"
         storage_class: "{{ prometheus_pvc_storage_class|default('') }}"
         upsert_replace: false
-      when: skip_pvc|default(false) == False
+      when: not skip_pvc|default(false)
 
     - name: upsert prometheus deployment
       include: tasks/upsert_k8s_object.yml
@@ -118,7 +123,7 @@
         labels: {}
         size: "1Gi"
         upsert_replace: false
-      when: skip_pvc|default(false) == False
+      when: not skip_pvc|default(false)
 
     - name: upsert grafana deployment
       include: tasks/upsert_k8s_object.yml
@@ -129,7 +134,7 @@
 
     - name: delete temp directory
       file:
-        path: "{{ mktemp.stdout }}"
+        path: "{{ mktemp.path }}"
         state: absent
       changed_when: False
       check_mode: no
@@ -200,7 +205,7 @@
           password: "{{ monitoring_access_token }}"
           status_code:
           - 200
-        with_items: "{{ influxdb_additional_queries }}"
+        with_items: "{{ influxdb_additional_queries }}"
       # end block
 
     - name: create a user with read access to the prometheus db in influxdb

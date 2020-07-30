@@ -8,4 +8,4 @@
         dest: "/var/lib/POC_INSTALLED"
         content: |
           POC installed this host at {{ ansible_date_time['iso8601'] }}
-      when: poc_installed | default(False) | bool == False
+      when: not poc_installed | default(False) | bool

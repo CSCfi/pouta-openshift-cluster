@@ -14,10 +14,10 @@
       no_log: True
 
     - block:
-      - set_fact: ssh_config_file={{lookup('env', 'HOME')}}/.ssh/config
+      - set_fact: ssh_config_file={{ lookup('env', 'HOME') }}/.ssh/config
       - name: create $HOME/.ssh/
         file:
-          dest: "{{lookup('env', 'HOME')}}/.ssh/"
+          dest: "{{ lookup('env', 'HOME') }}/.ssh/"
           state: directory
       - name: add cluster common ssh config
         blockinfile:

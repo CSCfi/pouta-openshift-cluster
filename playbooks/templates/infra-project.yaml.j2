@@ -4,7 +4,7 @@ metadata:
   name: "{{ name }}"
 {% if annotations is defined %}
   annotations:
-{% for key, value in annotations.iteritems() %}
+{% for key, value in annotations.items() %}
     {{ key }}: {{ value }}
 {% endfor %}
 {% endif %}

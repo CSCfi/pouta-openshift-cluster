@@ -19,7 +19,7 @@
       --template="{{ '{{' }}.status.succeeded{{ '}}' }}"
       -n monitoring-infra
     register: result
-    until: result.stdout.find("1") != -1
+    until: ("1" in result.stdout)
     retries: 50
     delay: 10
     changed_when: false

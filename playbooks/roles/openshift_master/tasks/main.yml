@@ -53,6 +53,10 @@
 
 
 - name: update pip and virtualenv from repo versions
+  retries: 3
+  delay: 20
+  register: pipresult
+  until: pipresult.failed is false
   pip:
     name:
       - virtualenv==20.0.17

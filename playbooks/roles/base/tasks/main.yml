@@ -10,9 +10,13 @@
     src: base.repo.j2
     dest: /etc/yum.repos.d/CentOS-Base.repo
   register: templatize_base_repo_config_file
-  when: lock_os_minor_version|bool == False
+  when: not lock_os_minor_version
 
 - name: add the glusterfs41 repo
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     pkg: centos-release-gluster41
     state: present
@@ -63,35 +67,25 @@
     templatized_base_repo_config_file_removed.changed
 
 - name: install basic tools
-  yum: pkg={{item}} state=present
-  with_items:
-    - dstat
-    - lsof
-    - bash-completion
-    - time
-    - tmux
-    - git
-    - xauth
-    - screen
-    - nano
-    - vim
-    - bind-utils
-    - nmap-ncat
-    - lvm2
-    - chrony
-    - bzip2
-    - iptables
-    - iptables-services
-    - NetworkManager
-    - jq
-    - sysstat
-    - logrotate
-    - python-pip
-    - python-passlib
-    - python2-openshift
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
+  yum:
+    pkg: ['dstat', 'lsof', 'bash-completion', 'time', 'tmux', 'git', 'xauth',
+'screen', 'nano', 'vim', 'bind-utils', 'nmap-ncat', 'lvm2', 'chrony', 'bzip2',
+'iptables', 'iptables-services', 'NetworkManager', 'jq',
+'sysstat', 'logrotate', 'python-pip', 'python-passlib', 'python2-openshift']
+    state: present
 
 - name: install virtualenv for Python
-  pip: name=virtualenv state=present
+  retries: 3
+  delay: 20
+  register: pipresult
+  until: pipresult.failed is false
+  pip:
+    name: virtualenv
+    state: present
 
 - name: disable kdump
   service:
