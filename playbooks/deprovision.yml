@@ -9,7 +9,7 @@
       assert:
         that:
           - "{{ deprovision_allowed|default(False) }} == True"
-        msg: "Must set deprovision_allowed to True to deprovision"
+        fail_msg: "Must set deprovision_allowed to True to deprovision"
 
 - name: Get info on volumes to delete
   gather_facts: no
@@ -75,6 +75,9 @@
         name: "{{ cluster_name }}"
 
     - name: Delete compute nodes stacks
+      async: 300
+      poll: 0
+      register: async_job_compute
       os_stack:
         name: "{{ cluster_name }}-{{ item.stack_name }}"
         state: absent
@@ -82,6 +85,9 @@
       with_items: "{{ compute_node_groups }}"
 
     - name: Delete infra nodes stacks
+      async: 300
+      poll: 0
+      register: async_job_infra
       os_stack:
         name: "{{ cluster_name }}-{{ item.stack_name }}"
         state: absent
@@ -89,6 +95,9 @@
       with_items: "{{ infra_node_groups|default([]) }}"
 
     - name: Delete gpu nodes stacks
+      async: 300
+      poll: 0
+      register: async_job_gpu
       os_stack:
         name: "{{ cluster_name }}-{{ item.stack_name }}"
         state: absent
@@ -96,35 +105,112 @@
       with_items: "{{ gpu_node_groups|default([]) }}"
 
     - name: Delete stack {{ cluster_name }}-etcd (multimaster)
+      async: 300
+      poll: 0
+      register: async_job_etcd
       os_stack:
         name: "{{ cluster_name }}-etcd"
         state: absent
         wait: yes
 
     - name: Delete stack {{ cluster_name }}-cluster
+      async: 300
+      poll: 0
+      register: async_job_cluster
       os_stack:
         name: "{{ cluster_name }}-cluster"
         state: absent
         wait: yes
 
     - name: Delete stack {{ cluster_name }}-glusterfs
+      async: 300
+      poll: 0
+      register: async_job_glusterfs
       os_stack:
         name: "{{ cluster_name }}-glusterfs"
         state: absent
         wait: yes
 
     - name: Delete stack {{ cluster_name }}-egress-ips
+      async: 300
+      poll: 0
+      register: async_job_egress
       os_stack:
         name: "{{ cluster_name }}-egress-ips"
         state: absent
         wait: yes
 
     - name: Delete stack {{ cluster_name }}-base
+      async: 300
+      poll: 0
+      register: async_job_base
       os_stack:
         name: "{{ cluster_name }}-base"
         state: absent
         wait: yes
 
+    # Wait for async jobs to finish
+    # Steps that used with_items have to use with_items here as well
+    - name: Wait for async deletion to complete (compute)
+      async_status: jid="{{ item.ansible_job_id }}"
+      register: async_poll_compute
+      until: async_poll_compute.finished
+      retries: 30
+      delay: 3
+      with_items: "{{ async_job_compute.results }}"
+
+    - name: Wait for async deletion to complete (infra)
+      async_status: jid="{{ item.ansible_job_id }}"
+      register: async_poll_infra
+      until: async_poll_infra.finished
+      retries: 30
+      delay: 3
+      with_items: "{{ async_job_infra.results }}"
+
+    - name: Wait for async deletion to complete (gpu)
+      async_status: jid="{{ item.ansible_job_id }}"
+      register: async_poll_gpu
+      until: async_poll_gpu.finished
+      retries: 30
+      delay: 3
+      with_items: "{{ async_job_gpu.results }}"
+
+    - name: Wait for async deletion to complete (etcd)
+      async_status: jid="{{ async_job_etcd.ansible_job_id }}"
+      register: async_poll_etcd
+      until: async_poll_etcd.finished
+      retries: 30
+      delay: 3
+
+    - name: Wait for async deletion to complete (cluster)
+      async_status: jid="{{ async_job_cluster.ansible_job_id }}"
+      register: async_poll_cluster
+      until: async_poll_cluster.finished
+      retries: 30
+      delay: 3
+    
+    - name: Wait for async deletion to complete (glusterfs)
+      async_status: jid="{{ async_job_glusterfs.ansible_job_id }}"
+      register: async_poll_glusterfs
+      until: async_poll_glusterfs.finished
+      retries: 30
+      delay: 3
+
+    - name: Wait for async deletion to complete (egress-ips)
+      async_status: jid="{{ async_job_egress.ansible_job_id }}"
+      register: async_poll_egress
+      until: async_poll_egress.finished
+      retries: 30
+      delay: 3
+    
+    - name: Wait for async deletion to complete (base)
+      async_status: jid="{{ async_job_base.ansible_job_id }}"
+      register: async_poll_base
+      until: async_poll_base.finished
+      retries: 30
+      delay: 3
+
+    # Async tasks completed, continue with the rest
     - name: Delete the integrated registry object storage container
       shell: openstack container delete {{ openshift_hosted_registry_storage_swift_container }} --recursive
       register: swift_output
@@ -147,17 +233,21 @@
         assert:
           that:
             - ('success' in hostvars[groups['masters'][0]]['ssh_result'].stdout)
-          msg: >
+          fail_msg: >
             SSH connection to master nodes failed during deprovisioning.
             There might be some leftover Cinder volumes which need to be deleted manually.
             Please check the list of volumes by running: "openstack volume list", and
             manually deleting them with: "openstack volume delete <VOLUME_NAME>"
 
       - name: Assert the potential of having leftover cinder volumes
+        # Volume deletion may take a while so retry few times
+        retries: 10
+        delay: 3
+        until: hostvars[groups['masters'][0]]['volume_name_result'].rc == 0
         assert:
           that:
             - hostvars[groups['masters'][0]]['volume_name_result'].rc == 0
-          msg: >
+          fail_msg: >
             API query on master nodes did not work during deprovisioning.
             There might be some leftover Cinder volumes which need to be deleted manually.
             Please check the list of volumes by running: "openstack volume list", and
