@@ -73,7 +73,7 @@ def main(argv=None):
         if key in all_volumes_per_cinder:
             for vol in all_volumes_per_nova[key]:
                 if vol not in all_volumes_per_cinder[key]:
-                    missing_from_cinder.append(vol)
+                    missing_from_cinder.append("server " + key + " vol: " + vol)
         else:
             missing_from_cinder.extend(all_volumes_per_nova[key])
 
@@ -86,9 +86,14 @@ def main(argv=None):
             missing_from_nova.extend(all_volumes_per_cinder[key])
 
     if len(missing_from_nova) == 0 and len(missing_from_cinder) == 0 and len(volume_errors) == 0:
-        print( "Volumes OK")
+        print("Volumes OK")
+    elif len(missing_from_nova) == 0 and len(missing_from_cinder) == 0:
+        # ERROR volumes are a warning
+        print("Volumes in error state %s:"  % str(volume_errors))
+        retcode = 1
     else:
-        print("Missing from nova: %s Missing from cinder: %s Volumes in error state %s:"  % (str(missing_from_nova), str(missing_from_cinder), str(error_volumes)))
+        # inconsistent mount info is critical
+        print("Missing from nova: %s Missing from cinder: %s Volumes in error state %s:"  % (str(missing_from_nova), str(missing_from_cinder), str(volume_errors)))
         retcode = 2
 
     exit(retcode)
