@@ -4,7 +4,8 @@
 - name: Store inventory value of service broker feature flags
   hosts: all
   tasks:
-    - set_fact:
+    - name: Store inventory value of service broker feature flags
+      set_fact:
         inv_ansible_service_broker_install: "{{ ansible_service_broker_install }}"
         inv_template_service_broker_install: "{{ template_service_broker_install }}"
 
@@ -14,7 +15,8 @@
 - name: Disable installation of service brokers during main openshift-ansible install
   hosts: all
   tasks:
-    - set_fact:
+    - name: set service broker installation facts
+      set_fact:
         ansible_service_broker_install: False
         template_service_broker_install: False
 
@@ -62,6 +64,16 @@
   become: yes
   roles:
     - ansible-role-sudo
+
+- name: Allow nrpe to run sudo in selinux
+  hosts: all
+  become: yes
+  tasks:
+    - name: selinux nagios_run_sudo flag
+      seboolean:
+        name: nagios_run_sudo
+        state: true
+        persistent: true
 
 
 - name: Configure keepalived on LB nodes (multimaster installations)
