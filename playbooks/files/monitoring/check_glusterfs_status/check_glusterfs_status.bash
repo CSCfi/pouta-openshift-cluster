@@ -33,18 +33,17 @@ CLUSTER_NAME="$(hostname | sed -e 's/-bastion//')"
 OPENSHIFT_VOLUME_FILE=$TMPDIR/volumes.openshift
 GLUSTERFS_VOLUME_FILE=$TMPDIR/volumes.glusterfs
 
-ssh $CLUSTER_NAME-master-2 "oc get pv -o json | jq '.items[] | .spec.glusterfs.path' -r | grep -v null" > $OPENSHIFT_VOLUME_FILE
+ssh $CLUSTER_NAME-master-2 "oc get pv -o json | jq '.items[] | .spec.glusterfs.path' -r | grep -v null" > $OPENSHIFT_VOLUME_FILE 2>/dev/null
 
 case $CLUSTER_NAME in
   rahti-int)
-    ssh $CLUSTER_NAME-master-2 "oc -n glusterfs rsh ds/glusterfs-storage gluster volume list" > $GLUSTERFS_VOLUME_FILE
+    ssh $CLUSTER_NAME-master-2 "oc -n glusterfs rsh ds/glusterfs-storage gluster volume list" > $GLUSTERFS_VOLUME_FILE 2>/dev/null
     ;;
   rahti|varda|oso-qa|oso-devel-2-mm)
-    ssh $CLUSTER_NAME-glusterfs-1 "sudo gluster volume list" > $GLUSTERFS_VOLUME_FILE
+    ssh $CLUSTER_NAME-glusterfs-1 "sudo gluster volume list" > $GLUSTERFS_VOLUME_FILE 2>/dev/null
     ;;
   *)
-    echo "default value"
-    ssh $CLUSTER_NAME-master-2 "oc -n glusterfs rsh ds/glusterfs-storage gluster volume list" > $GLUSTERFS_VOLUME_FILE
+    ssh $CLUSTER_NAME-glusterfs-1 "sudo gluster volume list" > $GLUSTERFS_VOLUME_FILE 2>/dev/null
     ;;
 esac
 
@@ -65,18 +64,24 @@ sort $GLUSTERFS_VOLUME_FILE > $GLUSTERFS_VOLUME_FILE.sorted
 # Get diff on volume listings
 EXTRA_VOLUMES_ON_OPENSHIFT="$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%<' --unchanged-group-format='')"
 EXTRA_VOLUMES_ON_GLUSTERFS="$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%>' --unchanged-group-format='')"
-#EXTRA_VOLUMES_ON_OPENSHIFT=
-#EXTRA_VOLUMES_ON_GLUSTERFS=
+
+OPENSHIFT_EXCLUSIVE=$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%<' --unchanged-group-format='' | wc -l)
+GLUSTERFS_EXCLUSIVE=$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%>' --unchanged-group-format='' | wc -l)
+COMMON_VOLUMES=$(comm -1 -2 $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted | wc -l)
 
 if [ "${EXTRA_VOLUMES_ON_OPENSHIFT}" = "${EXTRA_VOLUMES_ON_GLUSTERFS}" ]; then
-  echo "volumes are in sync"
+  echo "OK"
   CHECK_STATUS=$NAGIOS_STATE_OK
 else
-  echo "volumes are not in sync"
-  CHECK_STATUS=$NAGIOS_STATE_WARNING
-  echo "openshift exlusive volumes: $(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%<' --unchanged-group-format='' | wc -l)"
-  echo "glusterfs exclusive volumes: $(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%>' --unchanged-group-format='' | wc -l)"
-  echo "common volumes: $(comm -1 -2 $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted | wc -l)"
+
+  if [ $OPENSHIFT_EXCLUSIVE == 0 ] && [ $GLUSTERFS_EXCLUSIVE == 1 ] && [ "$EXTRA_VOLUMES_ON_GLUSTERFS" == "heketidbstorage" ]; then
+      echo "OK"
+      #echo "volumes are in sync and the only difference is heketidbstorage"
+      CHECK_STATUS=$NAGIOS_STATE_OK
+  else
+    CHECK_STATUS=$NAGIOS_STATE_WARNING
+    echo "list of exclusive volumes in openshift: $EXTRA_VOLUMES_ON_OPENSHIFT list of exclusive volumes in glusterfs: $EXTRA_VOLUMES_ON_GLUSTERFS" | tr '\n' ','
+  fi
 fi
 
 ret=$CHECK_STATUS
