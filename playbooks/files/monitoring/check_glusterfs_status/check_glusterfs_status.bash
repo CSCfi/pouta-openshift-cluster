@@ -47,11 +47,6 @@ case $CLUSTER_NAME in
     ;;
 esac
 
-
-# Debug
-#cat $OPENSHIFT_VOLUME_FILE | wc -l
-#cat $GLUSTERFS_VOLUME_FILE | wc -l
-
 # Sanity check, test if we have volume listings
 if [ ! -f $OPENSHIFT_VOLUME_FILE ] || [ ! -f $GLUSTERFS_VOLUME_FILE ]; then
   exit $CHECK_STATUS
@@ -67,7 +62,6 @@ EXTRA_VOLUMES_ON_GLUSTERFS="$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLU
 
 OPENSHIFT_EXCLUSIVE=$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%<' --unchanged-group-format='' | wc -l)
 GLUSTERFS_EXCLUSIVE=$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%>' --unchanged-group-format='' | wc -l)
-COMMON_VOLUMES=$(comm -1 -2 $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted | wc -l)
 
 if [ "${EXTRA_VOLUMES_ON_OPENSHIFT}" = "${EXTRA_VOLUMES_ON_GLUSTERFS}" ]; then
   echo "OK"
@@ -76,7 +70,6 @@ else
 
   if [ $OPENSHIFT_EXCLUSIVE == 0 ] && [ $GLUSTERFS_EXCLUSIVE == 1 ] && [ "$EXTRA_VOLUMES_ON_GLUSTERFS" == "heketidbstorage" ]; then
       echo "OK"
-      #echo "volumes are in sync and the only difference is heketidbstorage"
       CHECK_STATUS=$NAGIOS_STATE_OK
   else
     CHECK_STATUS=$NAGIOS_STATE_WARNING
