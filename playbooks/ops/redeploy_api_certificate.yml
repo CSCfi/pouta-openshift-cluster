@@ -25,10 +25,17 @@
     openshift_node_config_dir: "/etc/origin/node"
 
   tasks:
+    - name: get CA data from openshift master
+      slurp:
+          src: "{{ openshift_master_config_dir }}/ca.crt"
+      register: os_ca_data
+      run_once: true
+
+
     - name: update admin client kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_master_config_dir }}/admin.kubeconfig"
-        ca_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
 
     - name: copy the admin client config(s)
       copy:
@@ -48,8 +55,8 @@
         dest: "{{ openshift_node_config_dir }}/{{ item }}"
         remote_src: true
       with_items:
-        - "node.kubeconfig"
-        - "bootstrap.kubeconfig"
+       - "node.kubeconfig"
+       - "bootstrap.kubeconfig"
 
     - name: restart master API and controllers
       command: /usr/local/bin/master-restart "{{ item }}"
@@ -65,6 +72,12 @@
         - origin-node
         - docker
 
+    - name: pause to make sure the API is up and running
+      pause:
+        prompt: >
+          Please make sure that the API and the kubelet are up on {{ inventory_hostname }}!
+          Press return to continue or Ctrl+c and then "A" to abort
+
 # CA info needs to be updated in bootstrap configs of the nodes 
 - name: Fix bootstrap config for other nodes
   hosts: ssd,lb,glusterfs,influxdb
@@ -74,21 +87,23 @@
     openshift_node_config_dir: "/etc/origin/node"
 
   tasks:
-    - name: Copy TLS certificate for {{ item.domain }}
-      copy:
-        dest: "/tmp/{{ api_domain_cert.domain }}.crt"
-        content: "{{ api_domain_cert.tls_certificate }}"
-        mode: 0600
+    - name: get CA data from openshift master
+      slurp:
+          src: "{{ openshift_master_config_dir }}/ca.crt"
+      register: os_ca_data
+      run_once: true
+      delegate_to: "{{ groups.masters.0 }}"
       
     - name: update admin client kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_node_config_dir }}/bootstrap.kubeconfig"
-        ca_path: "/tmp/{{ api_domain_cert.domain }}.crt"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+
 
     - name: update admin client kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_node_config_dir }}/node.kubeconfig"
-        ca_path: "/tmp/{{ api_domain_cert.domain }}.crt"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
 
     - name: restart origin-node and docker
       systemd:
