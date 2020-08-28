@@ -1,15 +1,18 @@
+---
 - name: Get id for the network with public IPs
   command: openstack network show  -f value -c id {{ poc_public_ip_network }}
   register: cmd_public_ip_network
 
-- set_fact:
+- name: Set facts
+  set_fact:
     public_ip_network_id: "{{ cmd_public_ip_network.stdout }}"
 
 - name: Get id for the public IP subnet
   command: openstack subnet show  -f value -c id {{ poc_public_ip_subnet }}
   register: cmd_public_ip_subnet
 
-- set_fact:
+- name: Set facts
+  set_fact:
     public_ip_subnet_id: "{{ cmd_public_ip_subnet.stdout }}"
 
 - name: Build/update the OpenShift Heat stack with public IP network (base)

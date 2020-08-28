@@ -1,3 +1,4 @@
+---
 - name: Additional master configuration
   import_playbook: extra_master_config.yml
 
@@ -49,7 +50,8 @@
 - name: Set service broker feature flags based on inventory
   hosts: all
   tasks:
-    - set_fact:
+    - name: Set facts
+      set_fact:
         ansible_service_broker_install: "{{ inv_ansible_service_broker_install }}"
         template_service_broker_install: "{{ inv_template_service_broker_install }}"
       when:

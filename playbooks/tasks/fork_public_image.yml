@@ -5,7 +5,8 @@
   failed_when: false
   changed_when: false
 
-- fail:
+- name: fail if public image not found
+  fail:
     msg: "No public image found for forking with name {{ public_image_name }}"
   when: not openstack_image
 

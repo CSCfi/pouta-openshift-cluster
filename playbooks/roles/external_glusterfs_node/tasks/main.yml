@@ -45,14 +45,14 @@
   register: vg_list
 
 - name: activate all the volume groups
-  shell: vgchange -ay {{ item }}
+  command: vgchange -ay {{ item }}
   with_items: "{{ vg_list.stdout_lines }}"
 
 - name: mount all the bricks (External GlusterFS)
-  shell: "mount -a --fstab /etc/fstab"
+  command: "mount -a --fstab /etc/fstab"
   when: not poc_installed|default(False)
 
 - name: probe glusterfs nodes
   run_once: true
-  shell: "gluster peer probe {{ item }}"
+  command: "gluster peer probe {{ item }}"
   with_items: "{{ groups['glusterfs'] }}"

@@ -1,3 +1,4 @@
+---
 - name: Setup the egress IP ports
   hosts: localhost
   gather_facts: no
@@ -8,7 +9,7 @@
     - when: egress_ips is defined
       block:
       - name: source the floating IP IDs
-        shell: "openstack floating ip show -f value -c id {{ item.floating_ip }}"
+        command: "openstack floating ip show -f value -c id {{ item.floating_ip }}"
         register: floating_ip_ids
         with_items: "{{ egress_ips|default([]) }}"
 
@@ -18,7 +19,8 @@
         loop: "{{ egress_ips | zip(floating_ip_ids.results) | list }}"
 
       - name: create temp directory for templating
-        command: mktemp -d
+        tempfile:
+          state: directory
         register: mktemp
         changed_when: False
 

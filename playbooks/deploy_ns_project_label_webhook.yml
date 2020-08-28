@@ -1,3 +1,4 @@
+---
 - name: check if webhook project, secret and mutating config already exist
   hosts: masters[0]
   tasks:
@@ -14,7 +15,7 @@
     register: existing_webhooks_secret
 
   - name: check if ns webhook deployment exists
-    shell: oc get dc -n webhooks ns-project-label-webhook
+    command: oc get dc -n webhooks ns-project-label-webhook
     register: existing_ns_webhook_deployment
     ignore_errors: yes
 
@@ -50,12 +51,12 @@
         provider: selfsigned
 
     - name: save the certificate file
-      shell: cat "{{ mktemp.path }}/webhook.crt"
+      command: cat "{{ mktemp.path }}/webhook.crt"
       register: crtfile
       changed_when: False
 
     - name: save the key file
-      shell: cat "{{ mktemp.path }}/webhookCA.key"
+      command: cat "{{ mktemp.path }}/webhookCA.key"
       register: keyfile
       changed_when: False
 
@@ -104,7 +105,7 @@
       name: ns-webhook
 
   - name: restart the webhook if it already existed and secrets changed
-    shell: oc -n webhooks rollout latest ns-project-label-webhook
+    command: oc -n webhooks rollout latest ns-project-label-webhook
     when: ( ldap_upsert.changed or cabundle.changed ) and
           existing_ns_webhook_deployment.stdout_lines | length > 0
 

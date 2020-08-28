@@ -65,7 +65,7 @@
         delay: 5
         timeout: 900
     - name: Wait for SSH to work
-      shell: ssh {{ bastion_public_ip }} 'echo success'
+      command: ssh {{ bastion_public_ip }} 'echo success'
       register: result
       until: ('success' in result.stdout)
       retries: 30
