@@ -80,7 +80,7 @@
 
 # CA info needs to be updated in bootstrap configs of the nodes 
 - name: Fix bootstrap config for other nodes
-  hosts: ssd,lb,glusterfs,influxdb
+  hosts: ssd,lb,glusterfs,influxdb,infra
   serial: 1
   vars:
     openshift_master_config_dir: "/etc/origin/master"
