@@ -72,12 +72,6 @@
         - origin-node
         - docker
 
-    - name: pause to make sure the API is up and running
-      pause:
-        prompt: >
-          Please make sure that the API and the kubelet are up on {{ inventory_hostname }}!
-          Press return to continue or Ctrl+c and then "A" to abort
-
 # CA info needs to be updated in bootstrap configs of the nodes 
 - name: Fix bootstrap config for other nodes
   hosts: ssd,lb,glusterfs,influxdb,infra
@@ -112,4 +106,37 @@
       with_items:
         - origin-node
         - docker
+
+- name: Fix default-www-app
+  hosts: masters
+  run_once: true
+
+  tasks:
+    - name: delete default-www app routes
+      oc_route:
+        state: absent
+        name: "default-www-{{ item.name }}"
+        namespace: default-www
+      with_items:
+      - name: default
+        hostname: "{{ openshift_public_hostname }}"
+      - name: www
+      - name: admin
+
+    - name: create default www app routes
+      oc_route:
+        state: present
+        name: "default-www-{{ item.name }}"
+        namespace: default-www
+        service_name: default-www-app
+        cert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
+        key_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key"
+        cacert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}_ext_ca.crt"
+        host: "{{ item.hostname|default(item.name + '.' + openshift_public_hostname) }}"
+        tls_termination: edge
+      with_items:
+      - name: default
+        hostname: "{{ openshift_public_hostname }}"
+      - name: www
+      - name: admin
 
