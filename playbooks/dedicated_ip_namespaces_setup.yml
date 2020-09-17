@@ -26,7 +26,7 @@
 
       - name: generate egress-ips Heat template definition
         copy:
-          dest: "{{ mktemp.stdout }}/egress-ips.yml"
+          dest: "{{ mktemp.path }}/egress-ips.yml"
           content: "{{ lookup('template', 'files/heat/cluster-with-floating-ips/egress-ips.yml.j2') }}"
 
       - name: Build/update the egress IP Heat stack
@@ -34,7 +34,7 @@
         os_stack:
           name: "{{ cluster_name }}-egress-ips"
           state: present
-          template: "{{ mktemp.stdout }}/egress-ips.yml"
+          template: "{{ mktemp.path }}/egress-ips.yml"
           wait: yes
           parameters:
             network_id: "{{ cluster_name }}-network"
