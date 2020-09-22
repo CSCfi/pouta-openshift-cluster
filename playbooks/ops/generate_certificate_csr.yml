@@ -5,7 +5,7 @@
 
 
   tasks:
-    - name: copy the login page html files
+    - name: Copy the OpenSSL config
       template:
         src: "openssl_csr_template.cnf.j2"
         dest: "/tmp/openssl_csr.cnf"
