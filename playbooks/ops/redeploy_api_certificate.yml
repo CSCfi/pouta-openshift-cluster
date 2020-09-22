@@ -16,6 +16,17 @@
   - role: openshift_named_certificates
 
 
+- name: Remove old configs so they get recreated
+  hosts: "{{ groups.masters.0 }}"
+
+  tasks:
+    - name: Remove old config bundes so they get recreated
+      file:
+          path: "/etc/origin/generated-configs/master-{{ item }}.tgz"
+          state: absent
+      with_items:
+          - "{{ groups.masters }}"
+
 # CA info needs to be updated in the kubeconfigs
 - name: Copy the new certificates, restart the master API, controllers and kubelet one master node at a time
   hosts: masters
@@ -31,10 +42,24 @@
       register: os_ca_data
       run_once: true
 
+    - name: update ca-bundle
+      copy:
+          dest: "{{ openshift_master_config_dir }}/ca-bundle.crt"
+          content: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) }}"
 
     - name: update admin client kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_master_config_dir }}/admin.kubeconfig"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+
+    - name: update proxyclient kubeconfig CA data
+      kubeclient_ca:
+        client_path: "{{ openshift_master_config_dir }}/master.proxy-client.kubeconfig"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+
+    - name: update proxyclient kubeconfig CA data
+      kubeclient_ca:
+        client_path: "{{ openshift_node_config_dir }}/system:node:{{ ansible_hostname }}.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
 
     - name: copy the admin client config(s)
@@ -122,6 +147,7 @@
         hostname: "{{ openshift_public_hostname }}"
       - name: www
       - name: admin
+      when: deploy_default_www_app
 
     - name: create default www app routes
       oc_route:
@@ -139,4 +165,5 @@
         hostname: "{{ openshift_public_hostname }}"
       - name: www
       - name: admin
+      when: deploy_default_www_app
 
