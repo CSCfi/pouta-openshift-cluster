@@ -52,15 +52,27 @@
         client_path: "{{ openshift_master_config_dir }}/admin.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
 
+    - name: check for existence of proxy-client.kubeconfig
+      stat:
+        path: "{{ openshift_master_config_dir }}/master.proxy-client.kubeconfig"
+      register: proxy_client_kubeconfig
+
     - name: update proxyclient kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_master_config_dir }}/master.proxy-client.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+      when: proxy_client_kubeconfig.stat.exists
+
+    - name: check for existence of system node user kubeconfig
+      stat:
+        path: "{{ openshift_master_config_dir }}/master.proxy-client.kubeconfig"
+      register: system_node_kubeconfig
 
     - name: update system node user kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_node_config_dir }}/system:node:{{ ansible_hostname }}.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+      when: system_node_kubeconfig.stat.exists
 
     - name: copy the admin client config(s)
       copy:
