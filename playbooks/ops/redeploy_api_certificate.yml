@@ -101,13 +101,12 @@
         - api
         - controllers
 
-    - name: restart origin-node and docker
+    - name: restart origin-node
       systemd:
         state: restarted
         name: "{{ item }}"
       with_items:
         - origin-node
-        - docker
 
 # CA info needs to be updated in bootstrap configs of the nodes 
 - name: Fix bootstrap config for other nodes
@@ -136,13 +135,12 @@
         client_path: "{{ openshift_node_config_dir }}/node.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
 
-    - name: restart origin-node and docker
+    - name: restart origin-node
       systemd:
         state: restarted
         name: "{{ item }}"
       with_items:
         - origin-node
-        - docker
 
 - name: Fix default-www-app
   hosts: masters
