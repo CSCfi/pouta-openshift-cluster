@@ -65,7 +65,7 @@
 
     - name: check for existence of system node user kubeconfig
       stat:
-        path: "{{ openshift_master_config_dir }}/master.proxy-client.kubeconfig"
+        path: "{{ openshift_node_config_dir }}/system:node:{{ ansible_hostname }}.kubeconfig"
       register: system_node_kubeconfig
 
     - name: update system node user kubeconfig CA data
