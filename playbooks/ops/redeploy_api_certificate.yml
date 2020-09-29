@@ -210,3 +210,16 @@
         name: heketi-storage
         upsert_replace: true
 
+# CA info needs to be updated in bootstrap configs of the nodes 
+- name: Fix bootstrap config for other nodes
+  hosts: lb,influxdb,infra,masters,ssd,glusterfs
+  serial: 1
+  tasks:
+
+    - name: restart docker
+      systemd:
+        state: restarted
+        name: "{{ item }}"
+      with_items:
+        - docker
+
