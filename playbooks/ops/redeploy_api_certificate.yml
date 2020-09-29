@@ -177,3 +177,36 @@
       - name: admin
       when: deploy_default_www_app
 
+
+#These are created differently than the default-www routes as they are created the same way the are created during provisioning
+# create a unified set of common and extra ip address data
+    - set_fact:
+        ip_address_data: "{{ common_ip_address_data|default([]) + extra_ip_address_data|default([]) }}"
+    
+    # pre-filter all entries that have whitelist data
+    - set_fact:
+        ip_address_data_for_whitelists: >
+          {{ ip_address_data | json_query("[?allow_access_to]") }}
+    
+    # extract heketi storage administration whitelist
+    - set_fact:
+        ip_whitelist_heketi: >
+          {{ ip_address_data_for_whitelists | json_query("[?contains(allow_access_to, 'heketi')].address") }}
+
+
+    - name: upsert heketi-metrics-exporter  router
+      include: ../tasks/upsert_k8s_object.yml
+      vars:
+        namespace: glusterfs
+        template_base_name: heketi-metrics-route.yaml.j2
+        name: heketi-metrics-exporter
+        upsert_replace: true
+
+    - name: replace default route for Heketi with a more secure one (TLS+whitelist)
+      include: ../tasks/upsert_k8s_object.yml
+      vars:
+        namespace: glusterfs
+        template_base_name: heketi-storage-route.yaml.j2
+        name: heketi-storage
+        upsert_replace: true
+

@@ -1,0 +1,22 @@
+---
+# Create an edge terminated, whitelisted route for heketi-metrics-exporter
+apiVersion: v1
+kind: Route
+metadata:
+  annotations:
+    haproxy.router.openshift.io/ip_whitelist: "{{ ip_whitelist_heketi|join(' ') }}"
+  name: heketi-metrics-exporter
+  namespace: glusterfs
+spec:
+  host: "heketi-metrics-exporter.{{ openshift_public_hostname }}"
+  tls:
+    caCertificate: |
+      {{ api_domain_cert.tls_ca_certificate|indent(width=6) }}
+    certificate: |
+      {{ api_domain_cert.tls_certificate|indent(width=6) }}
+    key: |
+      {{ api_domain_cert.tls_secret_key|indent(width=6) }}
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    name: heketi-metrics-exporter
