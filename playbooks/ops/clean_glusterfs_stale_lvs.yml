@@ -133,6 +133,13 @@
       with_items:
         - "{{ bricks_to_keep }}"
 
+    # If host_lvs_to_keep is undefined from previous step, set it to empty list for next step,
+    # otherwise next step would fail.
+    - name: Set host_lvs_to_keep to default if undefined
+      set_fact:
+        host_lvs_to_keep=[]
+      when: host_lvs_to_keep is undefined
+
     - name: gather the extra lvs
       set_fact:
         host_extra_lvs: "{{ host_extra_lvs|default([]) + [ item ] }}"
