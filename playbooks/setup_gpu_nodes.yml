@@ -65,9 +65,9 @@
             name: "{{ item }}"
           spec:
             taints:
-            - effect: PreferNoSchedule
-              key: special
-              value: "true"
+              - effect: PreferNoSchedule
+                key: special
+                value: "true"
       with_items: "{{ groups['gpu']|default([]) }}"
 
     - name: update the restricted and priveleged SCC to allow GPU usage

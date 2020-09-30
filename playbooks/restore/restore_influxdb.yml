@@ -1,3 +1,4 @@
+---
 - name: Restore InfluxDB from backups
   hosts: masters
   run_once: true
@@ -32,4 +33,4 @@
       user: "admin"
       password: "{{ monitoring_access_token }}"
       status_code:
-      - 200
+        - 200

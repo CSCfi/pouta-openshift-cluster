@@ -22,7 +22,7 @@
       changed_when: False
 
     - name: check if monitoring project exists
-      shell: oc get project monitoring-infra
+      command: oc get project monitoring-infra
       register: existing_monitoring_project
       changed_when: false
       failed_when: false
@@ -39,7 +39,7 @@
       changed_when: no
 
     - name: create project monitoring-infra
-      shell: oc create -f "{{ mktemp.path }}/infra-project.yaml"
+      command: oc create -f "{{ mktemp.path }}/infra-project.yaml"
       when: existing_monitoring_project.stdout_lines | length == 0
 
     - name: create htpasswd access token file

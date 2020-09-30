@@ -120,7 +120,7 @@
     - when: openshift_hosted_registry_storage_kind == none
       block:
       - name: check if registry PVC exists
-        shell: oc get pvc -n default registry
+        command: oc get pvc -n default registry
         register: existing_registry_pv
         changed_when: false
         failed_when: false

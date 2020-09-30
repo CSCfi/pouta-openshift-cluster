@@ -1,3 +1,4 @@
+---
 - name: generate /etc/fstab for glusterfs volumes
   hosts: glusterfs
   gather_facts: true

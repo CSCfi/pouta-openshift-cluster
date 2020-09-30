@@ -17,7 +17,7 @@
   run_once: yes
   tasks:
     - name: Check if SSH works
-      shell: ssh -o ConnectTimeout=10 {{ cluster_name }}-master-1 'echo success'
+      command: ssh -o ConnectTimeout=10 {{ cluster_name }}-master-1 'echo success'
       register: ssh_result
       failed_when: false
       delegate_to: localhost
@@ -126,7 +126,7 @@
         wait: yes
 
     - name: Delete the integrated registry object storage container
-      shell: openstack container delete {{ openshift_hosted_registry_storage_swift_container }} --recursive
+      command: openstack container delete {{ openshift_hosted_registry_storage_swift_container }} --recursive
       register: swift_output
       changed_when: swift_output.rc == 0
       ignore_errors: yes

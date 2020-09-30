@@ -261,7 +261,7 @@
         timeout: 900
 
     - name: Wait for SSH to work
-      shell: ssh {{ bastion_public_ip }} 'echo success'
+      command: ssh {{ bastion_public_ip }} 'echo success'
       register: result
       until: ('success' in result.stdout)
       retries: 30
@@ -298,8 +298,9 @@
   become: yes
   gather_facts: no
   tasks:
-   - setup:
-       filter: 'ansible_*'
+    - name: setup
+      setup:
+        filter: 'ansible_*'
 
 - name: Configure cluster common parts on bastion
   hosts: bastion
@@ -323,6 +324,7 @@
           yum:
             name: '*'
             state: latest
+            lock_timeout: 120
           register: os_packages_updated
 
         - name: reboot hosts
@@ -348,7 +350,7 @@
           when: os_packages_updated.changed
 
         - name: wait for connectivity on port 22 on hosts
-          shell: ssh {{ ansible_ssh_host }} 'echo success'
+          command: ssh {{ ansible_ssh_host }} 'echo success'
           register: result
           until: ('success' in result.stdout)
           retries: 30
