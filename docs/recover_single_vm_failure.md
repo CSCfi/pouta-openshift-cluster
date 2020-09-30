@@ -73,6 +73,9 @@ create the VM or resurrect the resources in OpenStack using administrative acces
 Run pre-install playbook, limiting it to the host we are resurrecting.
 
 ```bash
+# Fetch bastion ssh key
+ansible bastion -m fetch -a "dest=/tmp/ansible/public_keys/bastion/ src='/home/cloud-user/.ssh/id_rsa.pub' flat=true"
+# Run pre_install playbook
 ansible-playbook -v -l [vm_to_replace],bastion pre_install.yml
 ```
 
@@ -104,6 +107,9 @@ $ shutdown -r now
 
 5. Run pre-install.yml:
 ```bash
+# Fetch bastion ssh key
+ansible bastion -m fetch -a "dest=/tmp/ansible/public_keys/bastion/ src='/home/cloud-user/.ssh/id_rsa.pub' flat=true"
+# Run pre_install playbook
 ansible-playbook -v -l [server-name],bastion pre_install.yml
 ``` 
 6. Run site.yml:
