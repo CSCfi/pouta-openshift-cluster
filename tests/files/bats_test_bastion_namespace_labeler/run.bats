@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-oc_login() {
+setup() {
 
     # read api end point and credentials from a pre populated files
     IFS='|' read -r api_url username password < /dev/shm/secret/testuser_credentials
@@ -10,10 +10,10 @@ oc_login() {
 
     # login using the test user
     oc login $api_url --username $username --password $password
-
+    sleep 2
 }
 
-oc_logout() {
+teardown() {
 
     # remove the temporary KUBECONFIG
     rm -f $KUBECONFIG
@@ -33,27 +33,21 @@ create_project() {
 
 @test "test creating a namespace using the default CSC project" {
 
-    oc_login
     create_project "This is just a normal description"
-    oc_logout
     [ $status -eq 0 ]
 
 }
 
 @test "test creating a namespace using a set and correct CSC project" {
 
-    oc_login
     create_project "csc_project: $CSC_PROJECT_CODE"
-    oc_logout
     [ $status -eq 0 ]
 
 }
 
 @test "test creating a namespace using a wrong CSC project" {
 
-    oc_login
     create_project "csc_project: 2000xxx"
-    oc_logout
     [ $status -eq 1 ]
 
 }
