@@ -1,0 +1,22 @@
+---
+- name: Create CSR for new certs 
+  hosts: masters
+  run_once: true
+
+
+  tasks:
+    - name: Copy the OpenSSL config
+      template:
+        src: "openssl_csr_template.cnf.j2"
+        dest: "/tmp/openssl_csr.cnf"
+
+    - name: Generate CSR
+      shell: "openssl req -new -key /etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key -subj '/C=FI/ST=Uusimaa/L=Espoo/O=CSC - Tieteen tietotekniikan keskus Oy/CN=*.{{ openshift_public_hostname }}' -out /tmp/{{ openshift_public_hostname }}.req -config /tmp/openssl_csr.cnf"
+
+    - name: copy the generated CSR to localhost
+      fetch:
+         src: "/tmp/{{ openshift_public_hostname }}.req"
+         dest: "/tmp/{{ openshift_public_hostname }}.req"
+         flat: true
+ 
+
