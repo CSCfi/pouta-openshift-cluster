@@ -95,6 +95,16 @@
         gluster_shell: ""
       when: not openshift_storage_glusterfs_is_native
 
+    - name: get glusterfs pool size
+      shell: "{{ gluster_shell }} gluster pool list | grep Connected | wc -l"
+      register: gluster_pool_count
+
+    - name: verify glusterfs pool size matches inventory
+      assert:
+        that:
+          - gluster_pool_count.stdout == "{{ glusterfs_vm_group_size }}"
+        fail_msg: "Glusterfs pool size does not match ansible inventory"
+
     - name: get all the existing gluster volumes
       shell: "{{ gluster_shell }} gluster volume list"
       register: gluster_volume_ids
