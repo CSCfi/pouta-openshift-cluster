@@ -4,7 +4,8 @@
   hosts: masters
   run_once: true
   tasks:
-
+  - name: Block 1
+    block:
     - name: scale down the heketi pods to 0
       k8s:
         state: present
@@ -53,10 +54,32 @@
       delegate_facts: true
       with_items: "{{ groups.glusterfs }}"
 
+    # If playbook fails while running block, fail gracefully.
+    rescue:
+      - meta: flush_handlers
+      - meta: end_play
+
+  # Failure handler for this block.
+  handlers:
+    - name: Scale heketi back up in case of failure
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: DeploymentConfig
+          metadata:
+            name: heketi-storage
+            namespace: glusterfs
+          spec:
+            replicas: 1
+      when: not noop|default(True)
+
 - name: Clean the logical volumes fron GlusterFS nodes
   hosts: glusterfs
   gather_facts: true
   tasks:
+  - name: Block 2
+    block:
     - name: get the glusterfs container ID (native)
       shell: docker ps --filter name=k8s_glusterfs_glusterfs-storage --format \{\{.ID\}\}
       register: gluster_container_id
@@ -71,6 +94,16 @@
       set_fact:
         gluster_shell: ""
       when: not openshift_storage_glusterfs_is_native
+
+    - name: get glusterfs pool size
+      shell: "{{ gluster_shell }} gluster pool list | grep Connected | wc -l"
+      register: gluster_pool_count
+
+    - name: verify glusterfs pool size matches inventory
+      assert:
+        that:
+          - gluster_pool_count.stdout == "{{ glusterfs_vm_group_size }}"
+        fail_msg: "Glusterfs pool size does not match ansible inventory"
 
     - name: get all the existing gluster volumes
       shell: "{{ gluster_shell }} gluster volume list"
@@ -216,13 +249,21 @@
         - not openshift_storage_glusterfs_is_native
         - not noop|default(True)
 
+    # If playbook fails while running block, fail gracefully.
+    # The last task will always be run after this block.
+    # Why different rescues? Blocks are targeted for different hosts.
+    rescue:
+      - name: Catch playbook failure
+        run_once: true
+        debug:
+          msg: 'Playbook failed. Make sure heketi gets scaled back up.'
 
 - name: Scale heketi back up
   hosts: masters
   run_once: true
   tasks:
 
-    - name: scale down the heketi pod to 1
+    - name: scale up the heketi pod to 1
       k8s:
         state: present
         definition:
