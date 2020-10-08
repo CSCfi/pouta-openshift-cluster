@@ -3,17 +3,38 @@
   run_once: true
   tasks:
   - name: login using nagios account
-    shell: oc login https://{{ openshift_public_hostname }}:8443 --username "{{ testuser_username }}" --password {{ testuser_password }}
+    command: oc login https://{{ openshift_public_hostname }}:8443 --username "{{ testuser_username }}" --password {{ testuser_password }}
 
 - name: give role to the nagios account
   hosts: masters
   run_once: true
   tasks:
+  - name: create heketi reader cluster role for the nagios account
+    oc_clusterrole:
+      name: "heketi-reader"
+      state: present
+      rules:
+        - apiGroups:
+           - ""
+          verbs:
+           - "create"
+           - "get"
+          resources:
+           - "*"
+
   - name: set cluster roles to the nagios account {{ testuser_username }}
     oc_adm_policy_user:
       state: present
       resource_kind: cluster-role
       resource_name: "cluster-reader"
       user: "{{ testuser_username }}"
+
+  - name: set heketi-reader role to the nagios account {{ testuser_username }}
+    oc_adm_policy_user:
+      state: present
+      resource_kind: cluster-role
+      resource_name: "heketi-reader"
+      user: "{{ testuser_username }}"
+      namespace: "glusterfs"
 
 
