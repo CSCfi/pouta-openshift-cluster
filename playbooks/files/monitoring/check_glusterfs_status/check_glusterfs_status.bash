@@ -28,8 +28,6 @@ fi
 IFS='|' read -r api_url username password < /dev/shm/secret/testuser_credentials
 oc login $api_url --username $username --password $password &> /dev/null
 
-CLUSTER_NAME="$(hostname | sed -e 's/-bastion//')"
-
 # First get the list of volumes from openshift and gluster
 OPENSHIFT_VOLUME_FILE=$TMPDIR/volumes.openshift
 GLUSTERFS_VOLUME_FILE=$TMPDIR/volumes.glusterfs
@@ -52,9 +50,6 @@ sort $GLUSTERFS_VOLUME_FILE > $GLUSTERFS_VOLUME_FILE.sorted
 # Get diff on volume listings
 EXTRA_VOLUMES_ON_OPENSHIFT="$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%<' --unchanged-group-format='')"
 EXTRA_VOLUMES_ON_GLUSTERFS="$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%>' --unchanged-group-format='')"
-
-OPENSHIFT_EXCLUSIVE=$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%<' --unchanged-group-format='' | wc -l)
-GLUSTERFS_EXCLUSIVE=$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%>' --unchanged-group-format='' | wc -l)
 
 if [ "${EXTRA_VOLUMES_ON_OPENSHIFT}" = "${EXTRA_VOLUMES_ON_GLUSTERFS}" ]; then
   echo "OK"
