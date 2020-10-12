@@ -17,6 +17,8 @@ NAGIOS_STATE_WARNING = 1
 NAGIOS_STATE_CRITICAL = 2
 NAGIOS_STATE_UNKNOWN = 3
 
+pv_total_list = []
+pvc_total_list = []
 pv_failed_list = []
 pvc_failed_list = []
 
@@ -38,7 +40,7 @@ def get_pvc_states():
     pvcs_list = pvcs.get()
 
     for pvc in pvcs_list.items:
-
+        pvc_total_list.append(pvc.metadata.uid)
         if pvc.status.phase == "Failed":
             pvc_failed_list.append(pvc.metadata.uid)
 
@@ -48,7 +50,7 @@ def get_pv_states():
     pv_list = pvs.get()
 
     for pv in pv_list.items:
-
+        pv_total_list.append(pv.metadata.uid)
         if pv.status.phase == "Failed":
             pv_failed_list.append(pv.metadata.uid)
 
@@ -79,15 +81,17 @@ def main():
         sys.exit(NAGIOS_STATE_CRITICAL)
 
     if pv_failed_list or pvc_failed_list:
-        print("Failed PVs: %s Failed PVCs: %s | failed_pv_count=%s, failed_pvc_count=%s"
+        print("Failed PVs: %s Failed PVCs: %s | total_pv_count=%s, total_pvc_count=%s, failed_pv_count=%s, failed_pvc_count=%s"
             % (
                 str(pv_failed_list), str(pvc_failed_list),
+                str(len(pv_total_list)), str(len(pvc_total_list)),
                 str(len(pv_failed_list)), str(len(pvc_failed_list))
             ))
         sys.exit(NAGIOS_STATE_CRITICAL)
     else:
-        print("Ok | failed_pv_count=%s, failed_pvc_count=%s"
+        print("Ok | total_pv_count=%s, total_pvc_count=%s, failed_pv_count=%s, failed_pvc_count=%s"
             % (
+                str(len(pv_total_list)), str(len(pvc_total_list)),
                 str(len(pv_failed_list)), str(len(pvc_failed_list))
             ))
         sys.exit(NAGIOS_STATE_OK)

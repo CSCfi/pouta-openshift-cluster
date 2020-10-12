@@ -57,10 +57,12 @@ if [ "${EXTRA_VOLUMES_ON_OPENSHIFT}" = "${EXTRA_VOLUMES_ON_GLUSTERFS}" ]; then
 else
   CHECK_STATUS=$NAGIOS_STATE_WARNING
   # report volume counts as performance metrics
+  PERF_OPENSHIFT_TOTAL=$(cat $OPENSHIFT_VOLUME_FILE | wc -l)
+  PERF_GLUSTERFS_TOTAL=$(cat $GLUSTERFS_VOLUME_FILE | wc -l)
   PERF_OPENSHIFT_COUNT=$(echo -n "$EXTRA_VOLUMES_ON_OPENSHIFT" | grep -c '^')
   PERF_GLUSTERFS_COUNT=$(echo -n "$EXTRA_VOLUMES_ON_GLUSTERFS" | grep -c '^')
   # -z requires gnu sed v4.2.2. It's used here to format output nicely.
-  echo "list of exclusive volumes in openshift: [$EXTRA_VOLUMES_ON_OPENSHIFT] list of exclusive volumes in glusterfs: [$EXTRA_VOLUMES_ON_GLUSTERFS] | extra_volumes_openshift=$PERF_OPENSHIFT_COUNT, extra_volumes_gluster=$PERF_GLUSTERFS_COUNT" | sed -z 's/\n/, /g'
+  echo "list of exclusive volumes in openshift: [$EXTRA_VOLUMES_ON_OPENSHIFT] list of exclusive volumes in glusterfs: [$EXTRA_VOLUMES_ON_GLUSTERFS] | openshift_volumes=$PERF_OPENSHIFT_TOTAL, gluster_volumes=$PERF_GLUSTERFS_TOTAL, extra_volumes_openshift=$PERF_OPENSHIFT_COUNT, extra_volumes_gluster=$PERF_GLUSTERFS_COUNT" | sed -z 's/\n/, /g'
 fi
 
 ret=$CHECK_STATUS
