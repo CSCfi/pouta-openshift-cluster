@@ -79,10 +79,17 @@ def main():
         sys.exit(NAGIOS_STATE_CRITICAL)
 
     if pv_failed_list or pvc_failed_list:
-        print("Failed PVs: ",pv_failed_list , " Failed PVCs:", pvc_failed_list)
+        print("Failed PVs: %s Failed PVCs: %s | failed_pv_count=%s, failed_pvc_count=%s"
+            % (
+                str(pv_failed_list), str(pvc_failed_list),
+                str(len(pv_failed_list)), str(len(pvc_failed_list))
+            ))
         sys.exit(NAGIOS_STATE_CRITICAL)
     else:
-        print("Ok")
+        print("Ok | failed_pv_count=%s, failed_pvc_count=%s"
+            % (
+                str(len(pv_failed_list)), str(len(pvc_failed_list))
+            ))
         sys.exit(NAGIOS_STATE_OK)
 
 if __name__ == '__main__':
