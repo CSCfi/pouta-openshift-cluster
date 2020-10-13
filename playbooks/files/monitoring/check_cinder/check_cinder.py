@@ -86,14 +86,24 @@ def main(argv=None):
             missing_from_nova.extend(all_volumes_per_cinder[key])
 
     if len(missing_from_nova) == 0 and len(missing_from_cinder) == 0 and len(volume_errors) == 0:
-        print("Volumes OK")
+        print("Volumes OK | nova_volumes=%s, cinder_volumes=%s, missing_from_nova=%s, missing_from_cinder=%s, error_volumes=%s"
+            % (
+                str(len(all_volumes_per_nova)), str(len(all_volumes_per_cinder)),
+                str(len(missing_from_nova)), str(len(missing_from_cinder)), str(len(volume_errors))
+            ))
     elif len(missing_from_nova) == 0 and len(missing_from_cinder) == 0:
         # ERROR volumes are a warning
         print("Volumes in error state %s:"  % str(volume_errors))
         retcode = 1
     else:
         # inconsistent mount info is critical
-        print("Missing from nova: %s Missing from cinder: %s Volumes in error state %s:"  % (str(missing_from_nova), str(missing_from_cinder), str(volume_errors)))
+        # report inconsistency counts as performance metrics
+        print("Missing from nova: %s Missing from cinder: %s Volumes in error state: %s | nova_volumes=%s, cinder_volumes=%s, missing_from_nova=%s, missing_from_cinder=%s, error_volumes=%s"
+            % (
+                str(missing_from_nova), str(missing_from_cinder), str(volume_errors),
+                str(len(all_volumes_per_nova)), str(len(all_volumes_per_cinder)),
+                str(len(missing_from_nova)), str(len(missing_from_cinder)), str(len(volume_errors))
+            ))
         retcode = 2
 
     exit(retcode)
