@@ -62,7 +62,13 @@ else
   PERF_OPENSHIFT_COUNT=$(echo -n "$EXTRA_VOLUMES_ON_OPENSHIFT" | grep -c '^')
   PERF_GLUSTERFS_COUNT=$(echo -n "$EXTRA_VOLUMES_ON_GLUSTERFS" | grep -c '^')
   # -z requires gnu sed v4.2.2. It's used here to format output nicely.
-  echo "list of exclusive volumes in openshift: [$EXTRA_VOLUMES_ON_OPENSHIFT] list of exclusive volumes in glusterfs: [$EXTRA_VOLUMES_ON_GLUSTERFS] | openshift_volumes=$PERF_OPENSHIFT_TOTAL, gluster_volumes=$PERF_GLUSTERFS_TOTAL, extra_volumes_openshift=$PERF_OPENSHIFT_COUNT, extra_volumes_gluster=$PERF_GLUSTERFS_COUNT" | sed -z 's/\n/, /g'
+  #
+  # Opsview truncates the output to 1024 characters, which means we can print
+  # only about 20 volumes without truncating performance data. To ensure perf
+  # data gets delivered even if gluster list is long (more likely than other
+  # way around), truncate gluster list to 700 characters.
+  EXTRA_VOLUMES_ON_GLUSTERFS_CUT="${EXTRA_VOLUMES_ON_GLUSTERFS::700}, <truncated>"
+  echo "volumes unique to openshift: [$EXTRA_VOLUMES_ON_OPENSHIFT] volumes unique to heketi: [$EXTRA_VOLUMES_ON_GLUSTERFS_CUT] | openshift_volumes=$PERF_OPENSHIFT_TOTAL, gluster_volumes=$PERF_GLUSTERFS_TOTAL, extra_volumes_openshift=$PERF_OPENSHIFT_COUNT, extra_volumes_gluster=$PERF_GLUSTERFS_COUNT" | sed -z 's/\n/, /g'
 fi
 
 ret=$CHECK_STATUS
