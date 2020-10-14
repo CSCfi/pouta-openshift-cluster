@@ -68,7 +68,7 @@ else
   # data gets delivered even if gluster list is long (more likely than other
   # way around), truncate gluster list to 700 characters.
   EXTRA_VOLUMES_ON_GLUSTERFS_CUT="${EXTRA_VOLUMES_ON_GLUSTERFS::700}, <truncated>"
-  echo "list of exclusive volumes in openshift: [$EXTRA_VOLUMES_ON_OPENSHIFT] list of exclusive volumes in glusterfs: [$EXTRA_VOLUMES_ON_GLUSTERFS_CUT] | openshift_volumes=$PERF_OPENSHIFT_TOTAL, gluster_volumes=$PERF_GLUSTERFS_TOTAL, extra_volumes_openshift=$PERF_OPENSHIFT_COUNT, extra_volumes_gluster=$PERF_GLUSTERFS_COUNT" | sed -z 's/\n/, /g'
+  echo "volumes unique to openshift: [$EXTRA_VOLUMES_ON_OPENSHIFT] volumes unique to heketi: [$EXTRA_VOLUMES_ON_GLUSTERFS_CUT] | openshift_volumes=$PERF_OPENSHIFT_TOTAL, gluster_volumes=$PERF_GLUSTERFS_TOTAL, extra_volumes_openshift=$PERF_OPENSHIFT_COUNT, extra_volumes_gluster=$PERF_GLUSTERFS_COUNT" | sed -z 's/\n/, /g'
 fi
 
 ret=$CHECK_STATUS
