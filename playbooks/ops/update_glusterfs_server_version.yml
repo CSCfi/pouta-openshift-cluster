@@ -1,0 +1,68 @@
+---
+- name: Update GlusterFS server version
+  hosts: glusterfs
+  vars:
+    yum_gluster_old_pkg: centos-release-gluster41
+    yum_gluster_new_pkg: centos-release-gluster7
+
+  tasks:
+  - name: Get old gluster version
+    shell: gluster --version | grep -e 'glusterfs\s[0-9\.]*'
+    changed_when: false
+    register: gluster_old_version_check
+
+  - debug:
+      msg: Gluster version is {{ gluster_old_version_check.stdout|default(gluster_old_version_check) }}
+
+  - name: Stop glusterd on gluster nodes
+    service:
+      name: glusterd
+      enabled: false
+      state: stopped
+
+  - name: Install new centos-release-gluster version
+    yum:
+      name: "{{ yum_gluster_new_pkg }}"
+      state: present
+
+  - name: Remove old centos-release-gluster version
+    yum:
+      name: "{{ yum_gluster_old_pkg }}"
+      state: absent
+
+  - name: Install glusterfs-server
+    yum:
+      name: glusterfs-server
+      state: latest
+
+  - name: Get gluster version
+    shell: gluster --version | grep -e 'glusterfs\s[0-9\.]*'
+    changed_when: false
+    register: gluster_new_version_check
+
+  - debug:
+      msg: Gluster version is {{ gluster_new_version_check.stdout|default(gluster_new_version_check) }}
+
+  - name: Enable and start glusterfs
+    service:
+      name: glusterd
+      enabled: true
+      state: started
+
+  - name: Update installed yum packages
+    yum:
+      name: '*'
+      state: latest
+
+  - name: Restart glusterfs nodes
+    reboot:
+      reboot_timeout: 300
+
+  - name: Make sure glusterd is enabled and started
+    service:
+      name: glusterd
+      enabled: true
+      state: started
+
+- import_playbook: update_glusterfs_client_version.yml
+

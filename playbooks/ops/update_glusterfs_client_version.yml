@@ -1,0 +1,39 @@
+---
+- name: Update GlusterFS client version
+  hosts: masters,ssd,influxdb
+  vars:
+    yum_gluster_old_pkg: centos-release-gluster41
+    yum_gluster_new_pkg: centos-release-gluster7
+
+  tasks:
+  - name: Get old gluster version
+    shell: glusterfs --version | grep -e 'glusterfs\s[0-9\.]*'
+    changed_when: false
+    register: gluster_old_version_check
+
+  - debug:
+      msg: Gluster version is {{ gluster_old_version_check.stdout|default(gluster_old_version_check) }}
+
+  - name: Install new centos-release-gluster version
+    yum:
+      name: "{{ yum_gluster_new_pkg }}"
+      state: latest
+
+  - name: Remove old centos-release-gluster version
+    yum:
+      name: "{{ yum_gluster_old_pkg }}"
+      state: absent
+
+  - name: Install glusterfs
+    yum:
+      name: glusterfs
+      state: latest
+
+  - name: Get gluster version
+    shell: glusterfs --version | grep -e 'glusterfs\s[0-9\.]*'
+    changed_when: false
+    register: gluster_new_version_check
+
+  - debug:
+      msg: Gluster version is {{ gluster_new_version_check.stdout|default(gluster_new_version_check) }}
+

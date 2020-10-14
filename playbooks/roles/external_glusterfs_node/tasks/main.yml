@@ -4,7 +4,7 @@
   register: yumresult
   until: yumresult.failed is false
   yum:
-    pkg: centos-release-gluster41
+    pkg: centos-release-gluster7
     state: present
   when: "not poc_installed|default(False)"
 
