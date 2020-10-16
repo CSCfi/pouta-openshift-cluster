@@ -9,9 +9,9 @@
         state: directory
         owner: "{{ ansible_ssh_user }}"
         group: "{{ ansible_ssh_user }}"
-        mode: 0755
+        mode: '0755'
       with_items:
-        - "{{ groups['masters'] }}"
+        - "{{ groups['masters'] }}"
         - "{{ groups['etcd'] }}"
         - "{{ groups['glusterfs'] }}"
 
@@ -19,7 +19,7 @@
       file:
         path: "{{ backup_bastion_base_dir }}/.."
         state: directory
-        mode: 0701
+        mode: '0701'
 
 - name: Backup etcd
   hosts: etcd
@@ -45,7 +45,7 @@
     - name: archive /etc/etcd
       archive:
         path: "/etc/etcd"
-        dest: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
+        dest: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
 
     - name: sync etcd backup to bastion
       synchronize:
@@ -56,7 +56,7 @@
 
     - name: sync /etc/etcd archive to bastion
       synchronize:
-        src: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
+        src: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
         dest: "{{ backup_bastion_base_dir }}/{{ inventory_hostname }}/etc-etcd-{{ inventory_hostname }}-{{ backup_time }}.tar.gz"
         mode: pull
       delegate_to: "{{ hostvars[groups['bastion'][0]]['inventory_hostname'] }}"
@@ -73,7 +73,7 @@
 
     - name: remove /etc/etcd backup from etcd host
       file:
-        path: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
+        path: "/etc/etcd/etc-etcd-{{ inventory_hostname }}.tar.gz"
         state: absent
 
 
@@ -126,7 +126,7 @@
       shell: >
         ~/backup/venv/bin/python ~/backup/heketi_backup.py
         --user admin
-        --key {{ heketi_secret.results.decoded.key }}
+        --key {{ heketi_secret.module_results.decoded.key }}
         --host https://heketi-storage-glusterfs.{{ openshift_public_hostname }}
         --file /tmp/heketi.db
       run_once: true
@@ -148,7 +148,7 @@
     - name: get topology information from Heketi
       shell: >
         oc rsh -n glusterfs dc/heketi-storage
-        heketi-cli --user admin --secret {{ heketi_secret.results.decoded.key }}
+        heketi-cli --user admin --secret {{ heketi_secret.module_results.decoded.key }}
         topology info --json
       run_once: true
       register: heketi_topology

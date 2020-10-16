@@ -8,6 +8,10 @@
   notify: restart iptables
 
 - name: install NFS server packages
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     name: nfs-utils
     state: present
@@ -25,7 +29,7 @@
 - name: enable rpcbind
   command: "systemctl enable rpcbind"
   register: systemctl_result
-  changed_when: systemctl_result.stderr != ''
+  changed_when: systemctl_result.stderr
 
 - name: create exports
   lineinfile:

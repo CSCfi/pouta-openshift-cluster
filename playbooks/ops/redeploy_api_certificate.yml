@@ -1,0 +1,225 @@
+---
+
+- name: Create temporary files on a RAM disk for TLS certs, ssh keys, OpenStack credentials
+  hosts: localhost
+  gather_facts: no
+  connection: local
+  roles:
+    - poc_facts
+    - poc_deployer
+
+
+- name: Copy OpenShift certificates for master hosts
+  hosts: masters
+  roles:
+  - role: openshift_master_facts
+  - role: openshift_named_certificates
+
+
+- name: Remove old configs so they get recreated
+  hosts: "{{ groups.masters.0 }}"
+
+  tasks:
+    - name: Remove old config bundes so they get recreated
+      file:
+          path: "/etc/origin/generated-configs/master-{{ item }}.tgz"
+          state: absent
+      with_items:
+          - "{{ groups.masters }}"
+
+# CA info needs to be updated in the kubeconfigs
+- name: Copy the new certificates, restart the master API, controllers and kubelet one master node at a time
+  hosts: masters
+  serial: 1
+  vars:
+    openshift_master_config_dir: "/etc/origin/master"
+    openshift_node_config_dir: "/etc/origin/node"
+
+  tasks:
+    - name: get CA data from openshift master
+      slurp:
+          src: "{{ openshift_master_config_dir }}/ca.crt"
+      register: os_ca_data
+      run_once: true
+
+    - name: update ca-bundle
+      copy:
+          dest: "{{ openshift_master_config_dir }}/ca-bundle.crt"
+          content: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) }}"
+
+    - name: update admin client kubeconfig CA data
+      kubeclient_ca:
+        client_path: "{{ openshift_master_config_dir }}/admin.kubeconfig"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+
+    - name: check for existence of proxy-client.kubeconfig
+      stat:
+        path: "{{ openshift_master_config_dir }}/master.proxy-client.kubeconfig"
+      register: proxy_client_kubeconfig
+
+    - name: update proxyclient kubeconfig CA data
+      kubeclient_ca:
+        client_path: "{{ openshift_master_config_dir }}/master.proxy-client.kubeconfig"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+      when: proxy_client_kubeconfig.stat.exists
+
+    - name: check for existence of system node user kubeconfig
+      stat:
+        path: "{{ openshift_node_config_dir }}/system:node:{{ ansible_hostname }}.kubeconfig"
+      register: system_node_kubeconfig
+
+    - name: update system node user kubeconfig CA data
+      kubeclient_ca:
+        client_path: "{{ openshift_node_config_dir }}/system:node:{{ ansible_hostname }}.kubeconfig"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+      when: system_node_kubeconfig.stat.exists
+
+    - name: copy the admin client config(s)
+      copy:
+        src: "{{ openshift_master_config_dir }}/admin.kubeconfig"
+        dest: "{{ item }}/.kube/config"
+        remote_src: yes
+        mode: 0700
+        owner: "{{ item | basename }}"
+        group: "{{ item | basename }}"
+      with_items:
+        - /root
+        - /home/cloud-user
+
+    - name: copy admin.kubeconfig in order to bootstrap the master node kubelet with fresh certificates
+      copy:
+        src: "{{ openshift_master_config_dir }}/admin.kubeconfig"
+        dest: "{{ openshift_node_config_dir }}/{{ item }}"
+        remote_src: true
+      with_items:
+       - "node.kubeconfig"
+       - "bootstrap.kubeconfig"
+
+    - name: restart master API and controllers
+      command: /usr/local/bin/master-restart "{{ item }}"
+      with_items:
+        - api
+        - controllers
+
+    - name: restart origin-node
+      systemd:
+        state: restarted
+        name: "{{ item }}"
+      with_items:
+        - origin-node
+
+# CA info needs to be updated in bootstrap configs of the nodes 
+- name: Fix bootstrap config for other nodes
+  hosts: ssd,lb,glusterfs,influxdb,infra
+  serial: 1
+  vars:
+    openshift_master_config_dir: "/etc/origin/master"
+    openshift_node_config_dir: "/etc/origin/node"
+
+  tasks:
+    - name: get CA data from openshift master
+      slurp:
+          src: "{{ openshift_master_config_dir }}/ca.crt"
+      register: os_ca_data
+      run_once: true
+      delegate_to: "{{ groups.masters.0 }}"
+      
+    - name: update admin client kubeconfig CA data
+      kubeclient_ca:
+        client_path: "{{ openshift_node_config_dir }}/bootstrap.kubeconfig"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+
+
+    - name: update admin client kubeconfig CA data
+      kubeclient_ca:
+        client_path: "{{ openshift_node_config_dir }}/node.kubeconfig"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+
+    - name: restart origin-node
+      systemd:
+        state: restarted
+        name: "{{ item }}"
+      with_items:
+        - origin-node
+
+- name: Fix default-www-app
+  hosts: masters
+  run_once: true
+
+  tasks:
+    - name: delete default-www app routes
+      oc_route:
+        state: absent
+        name: "default-www-{{ item.name }}"
+        namespace: default-www
+      with_items:
+      - name: default
+        hostname: "{{ openshift_public_hostname }}"
+      - name: www
+      - name: admin
+      when: deploy_default_www_app
+
+    - name: create default www app routes
+      oc_route:
+        state: present
+        name: "default-www-{{ item.name }}"
+        namespace: default-www
+        service_name: default-www-app
+        cert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
+        key_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key"
+        cacert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}_ext_ca.crt"
+        host: "{{ item.hostname|default(item.name + '.' + openshift_public_hostname) }}"
+        tls_termination: edge
+      with_items:
+      - name: default
+        hostname: "{{ openshift_public_hostname }}"
+      - name: www
+      - name: admin
+      when: deploy_default_www_app
+
+
+#These are created differently than the default-www routes as they are created the same way the are created during provisioning
+# create a unified set of common and extra ip address data
+    - set_fact:
+        ip_address_data: "{{ common_ip_address_data|default([]) + extra_ip_address_data|default([]) }}"
+    
+    # pre-filter all entries that have whitelist data
+    - set_fact:
+        ip_address_data_for_whitelists: >
+          {{ ip_address_data | json_query("[?allow_access_to]") }}
+    
+    # extract heketi storage administration whitelist
+    - set_fact:
+        ip_whitelist_heketi: >
+          {{ ip_address_data_for_whitelists | json_query("[?contains(allow_access_to, 'heketi')].address") }}
+
+
+    - name: upsert heketi-metrics-exporter  router
+      include: ../tasks/upsert_k8s_object.yml
+      vars:
+        namespace: glusterfs
+        template_base_name: heketi-metrics-route.yaml.j2
+        name: heketi-metrics-exporter
+        upsert_replace: true
+
+    - name: replace default route for Heketi with a more secure one (TLS+whitelist)
+      include: ../tasks/upsert_k8s_object.yml
+      vars:
+        namespace: glusterfs
+        template_base_name: heketi-storage-route.yaml.j2
+        name: heketi-storage
+        upsert_replace: true
+
+# CA info needs to be updated in bootstrap configs of the nodes 
+- name: Fix bootstrap config for other nodes
+  hosts: lb,influxdb,infra,masters,ssd,glusterfs
+  serial: 1
+  tasks:
+
+    - name: restart docker
+      systemd:
+        state: restarted
+        name: "{{ item }}"
+      with_items:
+        - docker
+

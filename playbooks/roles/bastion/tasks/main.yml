@@ -1,9 +1,4 @@
 ---
-- name: Install nmap-ncat
-  yum:
-    name: nmap-ncat
-    state: present
-
 - name: allow connections from the monitoring server to monitoring daemons
   lineinfile:
     line: "-A INPUT -p tcp -m tcp -s {{ monitoring_server_ip }} --dport {{ item }} -j ACCEPT"
@@ -15,17 +10,34 @@
   notify: restart iptables
 
 - name: install CentOS PaaS repo
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     name: centos-release-openshift-origin36
     state: present
 
 - name: install required packages
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
-    name: "{{ item }}"
+    pkg: ['nmap', 'nmap-ncat', 'origin-clients', 'gcc', 'python-devel', 'python3-devel']
     state: present
-  with_items:
-    - nmap
-    - origin-clients
+
+- name: update pip and virtualenv from repo versions
+  retries: 3
+  delay: 20
+  register: pipresult
+  until: pipresult.failed is false
+  pip:
+    name:
+      - virtualenv==20.0.17
+      - pip==20.0.2
+      - zipp==1.2.0
+      - configparser==4.0.2
 
 - name: create /dev/shm/secret directory for secrets
   file:
@@ -47,3 +59,17 @@
       https://{{ openshift_public_hostname }}:8443|{{ testuser_username }}|{{ testuser_password }}
   when:
     - testuser_username is defined
+
+- name: create openstack openrc
+  copy:
+    dest: "/dev/shm/secret/openrc.sh"
+    mode: 0440
+    owner: cloud-user
+    group: nrpe
+    content: |
+      export OS_AUTH_URL="{{ openshift_cloudprovider_openstack_auth_url }}"
+      export OS_IDENTITY_API_VERSION=3
+      export OS_USERNAME="{{ openshift_cloudprovider_openstack_username }}"
+      export OS_USER_DOMAIN_NAME="{{ openshift_cloudprovider_openstack_domain_name }}"
+      export OS_PASSWORD="{{ openshift_cloudprovider_openstack_password }}"
+      export OS_TENANT_ID="{{ openshift_cloudprovider_openstack_tenant_id }}"

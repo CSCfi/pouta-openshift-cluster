@@ -15,4 +15,4 @@
         template_base_name: "{{ item | basename }}"
         template_sub_dir: "registry-image-pruner/"
       with_fileglob:
-      - templates/registry-image-pruner/*
+        - templates/registry-image-pruner/*

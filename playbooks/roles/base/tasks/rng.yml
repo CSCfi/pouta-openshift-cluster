@@ -1,6 +1,10 @@
 ---
 
 - name: install rng-tools
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     name: rng-tools
     state: present

@@ -1,15 +1,18 @@
+---
 - name: Get id for the network with public IPs
   command: openstack network show  -f value -c id {{ poc_public_ip_network }}
   register: cmd_public_ip_network
 
-- set_fact:
+- name: Set facts
+  set_fact:
     public_ip_network_id: "{{ cmd_public_ip_network.stdout }}"
 
 - name: Get id for the public IP subnet
   command: openstack subnet show  -f value -c id {{ poc_public_ip_subnet }}
   register: cmd_public_ip_subnet
 
-- set_fact:
+- name: Set facts
+  set_fact:
     public_ip_subnet_id: "{{ cmd_public_ip_subnet.stdout }}"
 
 - name: Build/update the OpenShift Heat stack with public IP network (base)
@@ -52,7 +55,7 @@
       etcd_vm_flavor: "{{ etcd_vm_flavor }}"
       secgroup_id_common: "{{ base_stack_outputs.secgroup_id_common }}"
       secgroup_id_infra: "{{ base_stack_outputs.secgroup_id_infra }}"
-      network_id: "{{ base_stack_outputs.network_id}}"
+      network_id: "{{ base_stack_outputs.network_id }}"
       network_prefix: "{{ openshift_network_prefix }}"
       resource_group_identifier: "{{ etcd_resource_group_identifier }}"
       public_ip_network_id: "{{ public_ip_network_id }}"

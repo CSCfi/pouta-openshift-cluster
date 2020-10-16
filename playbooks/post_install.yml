@@ -1,3 +1,4 @@
+---
 - name: Additional master configuration
   import_playbook: extra_master_config.yml
 
@@ -33,6 +34,9 @@
 - name: Create poc service accounts
   import_playbook: create_poc_service_accounts.yml
 
+- name: Map monitoring account
+  import_playbook: map_monitoring_account.yml
+
 - name: Deploy the registry image pruner
   import_playbook: deploy_image_pruner.yml
 
@@ -43,7 +47,8 @@
 - name: Set service broker feature flags based on inventory
   hosts: all
   tasks:
-    - set_fact:
+    - name: Set facts
+      set_fact:
         ansible_service_broker_install: "{{ inv_ansible_service_broker_install }}"
         template_service_broker_install: "{{ inv_template_service_broker_install }}"
       when:

@@ -18,6 +18,6 @@
     path: /tmp/poc
     state: absent
   when:
-    - test_cleanup|default(true)|bool == true
+    - test_cleanup|default(true)|bool
   tags:
     - always

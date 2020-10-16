@@ -1,0 +1,6 @@
+exclude_paths:
+  - /opt/deployment/galaxy-roles
+  - /opt/deployment/openshift-ansible
+parseable: true
+use_default_rules: true
+verbosity: 1

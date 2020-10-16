@@ -20,6 +20,10 @@
       description: "nvidia-container-runtime repo"
 
 - name: install the nvidia-container-runtime package
+  retries: 3
+  delay: 20
+  register: yumresult
+  until: yumresult.failed is false
   yum:
     name: nvidia-container-runtime-hook
     state: present

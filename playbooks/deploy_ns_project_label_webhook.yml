@@ -1,3 +1,4 @@
+---
 - name: check if webhook project, secret and mutating config already exist
   hosts: masters[0]
   tasks:
@@ -14,47 +15,48 @@
     register: existing_webhooks_secret
 
   - name: check if ns webhook deployment exists
-    shell: oc get dc -n webhooks ns-project-label-webhook
+    command: oc get dc -n webhooks ns-project-label-webhook
     register: existing_ns_webhook_deployment
     ignore_errors: yes
 
 - name: create CA bundle on the deployment container
   hosts: localhost
   tasks:
-  - when: not hostvars[groups['masters'][0]]['existing_webhooks_secret'].results.exists or
+  - when: not hostvars[groups['masters'][0]]['existing_webhooks_secret'].module_results.exists or
           generate_new_ns_webhook_certs|default(false)|bool
     block:
     - name: create temp directory for templating
-      command: mktemp -d
+      tempfile:
+        state: directory
       register: mktemp
       changed_when: False
 
     - name: generate OpenSSL private key
       openssl_privatekey:
-        path: "{{ mktemp.stdout }}/webhookCA.key"
+        path: "{{ mktemp.path }}/webhookCA.key"
         size: 4096
       register: key
 
     - name: generate OpenSSL certificate signing request
       openssl_csr:
-        path: "{{ mktemp.stdout }}/webhookCA.csr"
-        privatekey_path: "{{ mktemp.stdout }}/webhookCA.key"
+        path: "{{ mktemp.path }}/webhookCA.csr"
+        privatekey_path: "{{ mktemp.path }}/webhookCA.key"
         common_name: ns-project-label-webhook.webhooks.svc
 
     - name: generate signed OpenSSL certificate
       openssl_certificate:
-        path: "{{ mktemp.stdout }}/webhook.crt"
-        privatekey_path: "{{ mktemp.stdout }}/webhookCA.key"
-        csr_path: "{{ mktemp.stdout }}/webhookCA.csr"
+        path: "{{ mktemp.path }}/webhook.crt"
+        privatekey_path: "{{ mktemp.path }}/webhookCA.key"
+        csr_path: "{{ mktemp.path }}/webhookCA.csr"
         provider: selfsigned
 
     - name: save the certificate file
-      shell: cat "{{ mktemp.stdout }}/webhook.crt"
+      command: cat "{{ mktemp.path }}/webhook.crt"
       register: crtfile
       changed_when: False
 
     - name: save the key file
-      shell: cat "{{ mktemp.stdout }}/webhookCA.key"
+      command: cat "{{ mktemp.path }}/webhookCA.key"
       register: keyfile
       changed_when: False
 
@@ -74,7 +76,7 @@
       - path: cert
         data: "{{ hostvars['localhost']['crtfile'].stdout }}"
     register: cabundle
-    when: not existing_webhooks_secret.results.exists or
+    when: not existing_webhooks_secret.module_results.exists or
           generate_new_ns_webhook_certs|default(false)|bool
 
   - name: upsert ldap secrets in webhooks project
@@ -103,7 +105,7 @@
       name: ns-webhook
 
   - name: restart the webhook if it already existed and secrets changed
-    shell: oc -n webhooks rollout latest ns-project-label-webhook
+    command: oc -n webhooks rollout latest ns-project-label-webhook
     when: ( ldap_upsert.changed or cabundle.changed ) and
           existing_ns_webhook_deployment.stdout_lines | length > 0
 
@@ -119,7 +121,7 @@
       namespace: webhooks
       ca_bundle: "{{ hostvars['localhost']['crtfile'].stdout | b64encode }}"
       template_base_name: ns_project_label_mutating_config.yaml.j2
-    when: not existing_webhooks_secret.results.exists or
+    when: not existing_webhooks_secret.module_results.exists or
           generate_new_ns_webhook_certs|default(false)|bool
 
   - name: wait for namespace label webhook to start

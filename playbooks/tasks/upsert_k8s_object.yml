@@ -1,12 +1,14 @@
 ---
 - block:
   - name: create temp directory for templating ({{ name }})
-    command: mktemp -d
+    tempfile:
+      state: directory
     register: upsert_mktemp
     changed_when: False
 
-  - set_fact:
-      l_object_yaml_path: "{{ upsert_mktemp.stdout }}/{{ (template_base_name | splitext)[0] }}"
+  - name: set facts
+    set_fact:
+      l_object_yaml_path: "{{ upsert_mktemp.path }}/{{ (template_base_name | splitext)[0] }}"
 
   - name: instantiate template to object definition ({{ name }})
     template:
@@ -15,26 +17,26 @@
     changed_when: no
 
   - name: check if object has been created already ({{ name }})
-    shell: oc get -n {{ namespace }} -f {{ l_object_yaml_path }}
+    command: oc get -n {{ namespace }} -f {{ l_object_yaml_path }}
     register: upsert_existing_object
     changed_when: false
     failed_when: false
 
   - name: create object ({{ name }})
-    shell: oc create -n {{ namespace }} -f {{ l_object_yaml_path }}
+    command: oc create -n {{ namespace }} -f {{ l_object_yaml_path }}
     when: upsert_existing_object.stdout_lines | length == 0
 
   - name: replace object ({{ name }})
-    shell: oc replace -n {{ namespace }} -f {{ l_object_yaml_path }}
+    command: oc replace -n {{ namespace }} -f {{ l_object_yaml_path }}
     when:
-    - upsert_existing_object.stdout_lines | length > 0
-    - upsert_replace|default(true)|bool
+      - upsert_existing_object.stdout_lines | length > 0
+      - upsert_replace|default(true)|bool
     failed_when: false
 
   always:
   - name: delete temp directory
     file:
-      path: "{{ upsert_mktemp.stdout }}"
+      path: "{{ upsert_mktemp.path }}"
       state: absent
     changed_when: False
     check_mode: no

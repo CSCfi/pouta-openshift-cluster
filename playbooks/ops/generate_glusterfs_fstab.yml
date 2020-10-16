@@ -1,0 +1,16 @@
+---
+- name: generate /etc/fstab for glusterfs volumes
+  hosts: glusterfs
+  gather_facts: true
+  tasks:
+    - name: gather a list of existing lvs
+      shell: lvs --noheadings -o lv_name,vg_name | grep brick | awk '{$1=$1};1'
+      register: host_lvs_list
+
+    - name: write the mount directories
+      lineinfile:
+        line: "/dev/mapper/{{ item.split(' ')[1] }}-{{ item.split(' ')[0] }} /var/lib/heketi/mounts/{{ item.split(' ')[1] }}/{{ item.split(' ')[0] }} xfs rw,inode64,noatime,nouuid 1 2"
+        dest: /etc/fstab.new
+        create: true
+      with_items:
+        - "{{ host_lvs_list.stdout_lines }}"

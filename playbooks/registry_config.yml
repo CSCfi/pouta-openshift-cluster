@@ -56,8 +56,8 @@
         /etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt
         /etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key
         > /etc/origin/master/registry-console.cert
-      when: registry_console_cert.stat.exists == False or
-            replace_registry_console_cert|default(False)|bool == True
+      when: not registry_console_cert.stat.exists or
+            replace_registry_console_cert|default(False)|bool
 
     - name: set access rights for registry-console.cert
       file:
@@ -90,7 +90,7 @@
 
     - name: redeploy registry console if needed
       command: oc rollout latest registry-console -n default
-      when: replace_registry_console_cert|default(False)|bool == True
+      when: replace_registry_console_cert|default(False)|bool
 
     - name: modify route to registry console to be in the API domain
       oc_route:
@@ -120,7 +120,7 @@
     - when: openshift_hosted_registry_storage_kind == none
       block:
       - name: check if registry PVC exists
-        shell: oc get pvc -n default registry
+        command: oc get pvc -n default registry
         register: existing_registry_pv
         changed_when: false
         failed_when: false
@@ -134,7 +134,7 @@
           -t pvc --claim-size={{ registry_claim_size|default('200Gi') }}
         when:
           - existing_registry_pv.stdout_lines | length == 0
-          - skip_pvc|default(false) == false
+          - not skip_pvc|default(false)
 
       - name: attach the existing persistent volume for registry
         shell: >
@@ -143,7 +143,7 @@
           --name=registry-storage --claim-name=registry
         when:
           - existing_registry_pv.stdout_lines | length > 0
-          - skip_pvc|default(false) == false
+          - not skip_pvc|default(false)
 
     - name: Deploy registry-console on infra nodes by adding a node selector
       oc_edit:

@@ -17,12 +17,12 @@
   run_once: yes
   tasks:
     - name: Check if SSH works
-      shell: ssh -o ConnectTimeout=10 {{ cluster_name }}-master-1 'echo success'
+      command: ssh -o ConnectTimeout=10 {{ cluster_name }}-master-1 'echo success'
       register: ssh_result
       failed_when: false
       delegate_to: localhost
 
-    - when: ssh_result.stdout.find('success') == 0
+    - when: ('success' in ssh_result.stdout)
       block:
       - name: get names of dynamically provisioned cinder volumes
         shell: oc get pv -o jsonpath='{.items[?(@.spec.csi.driver)].metadata.name}'
@@ -126,7 +126,7 @@
         wait: yes
 
     - name: Delete the integrated registry object storage container
-      shell: openstack container delete {{ openshift_hosted_registry_storage_swift_container }} --recursive
+      command: openstack container delete {{ openshift_hosted_registry_storage_swift_container }} --recursive
       register: swift_output
       changed_when: swift_output.rc == 0
       ignore_errors: yes
@@ -143,16 +143,16 @@
         state: absent
       with_items: "{{ hostvars[groups['masters'][0]]['cinder_volume_names']|default([]) }}"
       when:
-      - groups['masters']|length > 0
-      - hostvars[groups['masters'][0]]['ssh_result'].stdout.find('success') == 0
+      - groups['masters'] | length > 0
+      - ('success' in hostvars[groups['masters'][0]]['ssh_result'].stdout)
 
     - when:
-      - groups['masters']|length > 0
+      - groups['masters'] | length > 0
       block:
       - name: Assert that SSH connections to masters worked
         assert:
           that:
-            - hostvars[groups['masters'][0]]['ssh_result'].stdout.find('success') == 0
+            - ('success' in hostvars[groups['masters'][0]]['ssh_result'].stdout)
           msg: >
             SSH connection to master nodes failed during deprovisioning.
             There might be some leftover Cinder volumes which need to be deleted manually.

@@ -1,3 +1,4 @@
+---
 - name: Setup default www app
   hosts: masters[0]
   tasks:
@@ -10,7 +11,7 @@
           display_name: "The default OpenShift web application"
 
       - name: check if app has been deployed
-        shell: oc get dc -n default-www default-www-app
+        command: oc get dc -n default-www default-www-app
         register: existing_default_www_app
         changed_when: false
         failed_when: false
@@ -45,11 +46,11 @@
 
       # TODO: use oc_env when that works  for buildconfigs (at the time of this writing it does not)
       - name: set environment variables for the buildconfig
-        shell: oc set env -n default-www bc/default-www-app {{ item.key }}="{{ item.value }}"
+        command: oc set env -n default-www bc/default-www-app {{ item.key }}="{{ item.value }}"
         with_dict: "{{ default_www_app_environment }}"
 
       - name: build latest version
-        shell: oc start-build -n default-www default-www-app
+        command: oc start-build -n default-www default-www-app
 
       - name: create default www app routes
         oc_route:
