@@ -1,6 +1,7 @@
 ---
 - name: Deploy the monitoring stack
   hosts: masters
+  strategy: linear # disable mitogen, would fail on python module import
   run_once: true
   roles:
     - role: poc_facts
