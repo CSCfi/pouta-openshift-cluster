@@ -6,19 +6,6 @@
   tasks:
   - name: Block 1
     block:
-    - name: scale down the heketi pods to 0
-      k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: DeploymentConfig
-          metadata:
-            name: heketi-storage
-            namespace: glusterfs
-          spec:
-            replicas: 0
-      when: not noop|default(True)
-
     - name: get the GlusterFS PVs
       oc_obj:
         state: list
@@ -38,14 +25,14 @@
       set_fact:
         pv_gluster_volume_ids: "{{ pv_gluster_volume_ids + [ 'heketidbstorage' ] }}"
 
-    - name: show gluster volumes which need to be kept
-      debug:
-        var: pv_gluster_volume_ids
-
     - name: assert that pv_gluster_volume_ids is not empty
       assert:
         that:
-          - pv_gluster_volume_ids | length > 0
+          - pv_gluster_volume_ids | length > 1
+
+    - name: show gluster volumes which need to be kept
+      debug:
+        var: pv_gluster_volume_ids
 
     - name: set_facts on target hosts
       set_fact:
@@ -54,14 +41,40 @@
       delegate_facts: true
       with_items: "{{ groups.glusterfs }}"
 
-    # If playbook fails while running block, fail gracefully.
-    rescue:
-      - meta: flush_handlers
-      - meta: end_play
+- name: Clean the logical volumes fron heketi
+  hosts: masters
+  run_once: true
+  gather_facts: true
+  tasks:
+  - name: Block 2
+    block:
+    - name: get the heketi volumes
+      shell: oc rsh -n glusterfs deploymentconfig.apps.openshift.io/heketi-storage heketi-cli volume list | awk '{print $NF}' | cut -c 6- | grep -o vol_[a-z0-9]*
+      register: heketi_volume_list
 
-  # Failure handler for this block.
-  handlers:
-    - name: Scale heketi back up in case of failure
+    - name: assert that heketi_volume_list is not empty
+      assert:
+        that:
+          - heketi_volume_list.stdout_lines | length > 0
+
+    - name: show the list of heketi volumes to clean
+      debug:
+        var: item
+      with_items:
+        - "{{ heketi_volume_list.stdout_lines }}"
+      when:
+        - item not in pv_gluster_volume_ids
+
+    - name: delete the extra heketi volumes
+      shell: oc rsh -n glusterfs deploymentconfig.apps.openshift.io/heketi-storage heketi-cli volume delete {{ item | regex_replace('^vol_', '') }}
+      with_items:
+        - "{{ heketi_volume_list.stdout_lines }}"
+      when:
+        - item not in pv_gluster_volume_ids
+        - not noop|default(True)
+      register: heketi_volume_delete
+
+    - name: scale down the heketi pods to 0
       k8s:
         state: present
         definition:
@@ -71,14 +84,14 @@
             name: heketi-storage
             namespace: glusterfs
           spec:
-            replicas: 1
+            replicas: 0
       when: not noop|default(True)
 
 - name: Clean the logical volumes fron GlusterFS nodes
   hosts: glusterfs
   gather_facts: true
   tasks:
-  - name: Block 2
+  - name: Block 3
     block:
     - name: get the glusterfs container ID (native)
       shell: docker ps --filter name=k8s_glusterfs_glusterfs-storage --format \{\{.ID\}\}
@@ -275,3 +288,4 @@
           spec:
             replicas: 1
       when: not noop|default(True)
+
