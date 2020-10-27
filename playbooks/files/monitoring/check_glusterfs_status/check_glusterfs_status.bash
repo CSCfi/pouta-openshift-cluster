@@ -51,16 +51,17 @@ sort $GLUSTERFS_VOLUME_FILE > $GLUSTERFS_VOLUME_FILE.sorted
 EXTRA_VOLUMES_ON_OPENSHIFT="$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%<' --unchanged-group-format='')"
 EXTRA_VOLUMES_ON_GLUSTERFS="$(diff $OPENSHIFT_VOLUME_FILE.sorted $GLUSTERFS_VOLUME_FILE.sorted --changed-group-format='%>' --unchanged-group-format='')"
 
+# report volume counts as performance metrics
+PERF_OPENSHIFT_TOTAL=$(cat $OPENSHIFT_VOLUME_FILE | wc -l)
+PERF_GLUSTERFS_TOTAL=$(cat $GLUSTERFS_VOLUME_FILE | wc -l)
+PERF_OPENSHIFT_COUNT=$(echo -n "$EXTRA_VOLUMES_ON_OPENSHIFT" | grep -c '^')
+PERF_GLUSTERFS_COUNT=$(echo -n "$EXTRA_VOLUMES_ON_GLUSTERFS" | grep -c '^')
+
 if [ "${EXTRA_VOLUMES_ON_OPENSHIFT}" = "${EXTRA_VOLUMES_ON_GLUSTERFS}" ]; then
-  echo "OK"
+  echo "OK | openshift_volumes=$PERF_OPENSHIFT_TOTAL, gluster_volumes=$PERF_GLUSTERFS_TOTAL, extra_volumes_openshift=$PERF_OPENSHIFT_COUNT, extra_volumes_gluster=$PERF_GLUSTERFS_COUNT"
   CHECK_STATUS=$NAGIOS_STATE_OK
 else
   CHECK_STATUS=$NAGIOS_STATE_WARNING
-  # report volume counts as performance metrics
-  PERF_OPENSHIFT_TOTAL=$(cat $OPENSHIFT_VOLUME_FILE | wc -l)
-  PERF_GLUSTERFS_TOTAL=$(cat $GLUSTERFS_VOLUME_FILE | wc -l)
-  PERF_OPENSHIFT_COUNT=$(echo -n "$EXTRA_VOLUMES_ON_OPENSHIFT" | grep -c '^')
-  PERF_GLUSTERFS_COUNT=$(echo -n "$EXTRA_VOLUMES_ON_GLUSTERFS" | grep -c '^')
   # -z requires gnu sed v4.2.2. It's used here to format output nicely.
   #
   # Opsview truncates the output to 1024 characters, which means we can print
