@@ -113,17 +113,17 @@ objects:
           cpu: "{{ default_project_pod_cpu_max_limit | default('2') }}"
           memory: "{{ default_project_pod_mem_max_limit | default('8Gi') }}"
         min:
-          cpu: "{{ default_project_pod_cpu_min_limit | default('200m') }}"
+          cpu: "{{ default_project_pod_cpu_min_limit | default('50m') }}"
           memory: "{{ default_project_pod_mem_min_limit | default('6Mi') }}"
       - type: "Container"
         max:
           cpu: "{{ default_project_container_cpu_max_limit | default('2') }}"
           memory: "{{ default_project_container_mem_max_limit | default('8Gi') }}"
         min:
-          cpu: "{{ default_project_container_cpu_min_limit | default('100m') }}"
+          cpu: "{{ default_project_container_cpu_min_limit | default('50m') }}"
           memory: "{{ default_project_container_mem_min_limit | default('4Mi') }}"
         defaultRequest:
-          cpu: "{{ default_project_default_container_cpu_request | default('200m') }}"
+          cpu: "{{ default_project_default_container_cpu_request | default('50m') }}"
           memory: "{{ default_project_default_container_mem_request | default('200Mi') }}"
       - type: "openshift.io/Image"
         max:
