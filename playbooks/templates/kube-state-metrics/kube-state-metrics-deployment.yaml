@@ -18,7 +18,7 @@ spec:
         node-role.kubernetes.io/infra: 'true'
       containers:
       - name: kube-state-metrics
-        image: quay.io/coreos/kube-state-metrics:v1.7.1
+        image: quay.io/coreos/kube-state-metrics:v1.9.7
         ports:
           - name: http-metrics
             containerPort: 8080
