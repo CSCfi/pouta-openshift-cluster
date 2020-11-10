@@ -24,7 +24,7 @@ NAGIOS_STATE_UNKNOWN = 3
 
 CHECK_TEXT = 'Now witness the power of this fully armed and operational battle station.'
 
-IMAGE = 'bitnami/nginx:1.12'
+IMAGE = 'quay.io/bitnami/nginx:1.19'
 HTML_DIR_ON_IMAGE = '/opt/bitnami/nginx/html'
 
 
