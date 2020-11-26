@@ -151,7 +151,7 @@ def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_d
         init_container_data = [
             {
                 'name': 'init-web-content',
-                'image': 'alpine:latest',
+                'image': IMAGE,
                 'volumeMounts': [
                     {
                         'mountPath': '/mnt',
