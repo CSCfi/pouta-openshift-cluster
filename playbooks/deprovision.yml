@@ -2,6 +2,8 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  # Run this playbook without mitogen
+  strategy: linear
   roles:
     - poc_facts
   tasks:
@@ -13,6 +15,7 @@
 
 - name: Get info on volumes to delete
   gather_facts: no
+  strategy: linear
   hosts: masters
   run_once: yes
   tasks:
@@ -42,6 +45,7 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  strategy: linear
   roles:
     - poc_facts
   tasks:
