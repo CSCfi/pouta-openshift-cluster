@@ -40,3 +40,20 @@
       with_items:
         - '/root/.kube/config'
         - '/home/cloud-user/.kube/config'
+
+    # k8s module requires specific version of kubernetes python module
+    # Version 12 breaks default configuration handling
+    # https://github.com/openshift/openshift-restclient-python/issues/389
+    # This broke our site.yml and CI pipeline in November 2020
+    - name: fix kubernetes python library version for k8s ansible module
+      retries: 3
+      delay: 20
+      register: pipresult
+      until: pipresult.failed is false
+      pip:
+        name:
+          - kubernetes==10.1.0
+          # include pyyaml and ipaddress to avoid uninstall failures
+          - pyyaml
+          - ipaddress
+        state: present

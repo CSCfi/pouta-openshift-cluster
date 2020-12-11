@@ -37,10 +37,7 @@
       register: yumresult
       until: yumresult.failed is false
       yum:
-        # 10.12.2020: Install specific version, latest one is broken
-        # https://github.com/openshift/openshift-restclient-python/issues/389
-        # Please check if it's fixed later.
-        pkg: "python2-openshift-0.11.2"
+        pkg: "python2-openshift"
         state: present
         lock_timeout: 120
 
