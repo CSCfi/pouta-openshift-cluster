@@ -41,6 +41,13 @@
         - '/root/.kube/config'
         - '/home/cloud-user/.kube/config'
 
+    # Update python setuptools for kubernetes module
+    # https://github.com/kubernetes-client/python/issues/551
+    - name: update setuptools
+      pip:
+        name: setuptools
+        state: forcereinstall
+
     # k8s module requires specific version of kubernetes python module
     # Version 12 breaks default configuration handling
     # https://github.com/openshift/openshift-restclient-python/issues/389
