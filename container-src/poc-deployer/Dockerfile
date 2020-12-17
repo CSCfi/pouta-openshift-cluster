@@ -13,6 +13,8 @@ RUN dnf install -y \
         glibc-langpack-en \
         jq \
         tmux less git man bash-completion \
+        which \
+        java-1.8.0-openjdk-devel \
     && \
     dnf clean all
 
