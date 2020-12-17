@@ -8,5 +8,5 @@ csi_cinder_controller_replicas: 1
 # Container images
 csi_attacher_image: "registry.access.redhat.com/openshift3/csi-attacher:v3.11"
 csi_provisioner_image: "registry.access.redhat.com/openshift3/csi-provisioner:v3.11"
-csi_cinder_plugin_image: "docker.io/k8scloudprovider/cinder-csi-plugin:v0.3.0"
+csi_cinder_plugin_image: "docker-registry.rahti.csc.fi/rahti-docker-prod/cinder-csi-plugin:1.13.1"
 csi_driver_registrar_image: "registry.access.redhat.com/openshift3/csi-driver-registrar:v3.11"
