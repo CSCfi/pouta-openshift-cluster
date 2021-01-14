@@ -13,8 +13,13 @@ RUN dnf install -y \
         glibc-langpack-en \
         jq \
         tmux less git man bash-completion \
+        which java-1.8.0-openjdk-devel \
+        golang-bin gcc-c++ \
     && \
     dnf clean all
+
+# which and java required by updated centos8 and ansible 2.9
+# golang-bin etc required by okd4 installer
 
 COPY requirements.txt /root/requirements.txt
 
@@ -41,5 +46,10 @@ COPY run_backup.bash run_backup.bash
 COPY bashrc .bashrc
 
 ADD mitogen-0.2.9.tar.gz /opt/deployment
+
+# Compile OKD4 installer. This takes 10-20 minutes.
+RUN git clone https://github.com/openshift/installer.git /opt/deployment/okd4-installer \
+    && cd /opt/deployment/okd4-installer \
+    && sh hack/build.sh
 
 CMD /usr/bin/bash
