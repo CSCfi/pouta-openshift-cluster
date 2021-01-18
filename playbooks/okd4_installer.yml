@@ -3,4 +3,5 @@
   gather_facts: no
   connection: local
   roles:
+  - poc_facts
   - okd4_installer
