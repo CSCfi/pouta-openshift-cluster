@@ -2,19 +2,5 @@
 - hosts: localhost
   gather_facts: no
   connection: local
-  tasks:
-    - name: Download OpenShift 4 installer
-      get_url:
-        url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.9/openshift-install-linux-4.6.9.tar.gz
-        dest: /tmp/openshift-install-linux-4.6.9.tar.gz
-        checksum: sha256:https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.9/sha256sum.txt
-
-    - name: Make sure installer destination folder exists
-      file:
-        path: /opt/deployment/okd4/
-        state: directory
-
-    - name: Extract installer binary
-      unarchive:
-        src: /tmp/openshift-install-linux-4.6.9.tar.gz
-        dest: /opt/deployment/okd4/
+  roles:
+  - okd4_installer

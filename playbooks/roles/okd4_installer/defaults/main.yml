@@ -1,0 +1,13 @@
+---
+openshift_project_name: "okd4-devel"
+installer_dir: "/opt/deployment/okd4/"
+
+# TODO: read these from openshift-environments
+openshift_cluster_network_cidr: "192.168.24.0/24"
+openshift_machine_network_cidr: "192.168.25.0/24"
+openshift_service_network_cidr: "192.168.26.0/24"
+openshift_public_ip: "195.148.23.77"
+openshift_cloudprovider_openstack_auth_url: "https://pouta.csc.fi:5001/v3"
+openshift_cloudprovider_openstack_username_vault: "blaablaa"
+openshift_cloudprovider_openstack_password_vault: "hulahula"
+installer_pull_secret: "pullsecret"
