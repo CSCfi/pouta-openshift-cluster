@@ -1,9 +1,9 @@
 clouds:
-  {{ openshift_project_name }}:
-    auth:
-      auth_url: {{ openshift_cloudprovider_openstack_auth_url }}
-        project_name: {{ openshift_project_name }}
-        username: {{ openshift_cloudprovider_openstack_username_vault }}
-        password: {{ openshift_cloudprovider_openstack_password_vault }}
-        user_domain_name: Default
-        project_domain_name: Default
+    {{ openshift_project_name }}:
+        auth:
+            auth_url: {{ openshift_cloudprovider_openstack_auth_url }}
+            project_name: {{ openshift_project_name }}
+            username: {{ openshift_cloudprovider_openstack_username_vault }}
+            password: {{ openshift_cloudprovider_openstack_password_vault }}
+            user_domain_name: Default
+            project_domain_name: Default

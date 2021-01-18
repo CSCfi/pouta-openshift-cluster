@@ -1,36 +1,12 @@
 apiVersion: v1
 baseDomain: csc.fi
-compute:
-- architecture: amd64
-  hyperthreading: Enabled
-  name: worker
-  platform: {}
-  replicas: 3
-controlPlane:
-  architecture: amd64
-  hyperthreading: Enabled
-  name: master
-  platform: {}
-  replicas: 3
 metadata:
-  creationTimestamp: null
   name: {{ openshift_project_name }}
-networking:
-  clusterNetwork:
-  - cidr: {{ openshift_cluster_network_cidr }}
-    hostPrefix: 24
-  machineNetwork:
-  - cidr: {{ openshift_machine_network_cidr }}
-  networkType: OpenShiftSDN
-  serviceNetwork:
-  - {{ openshift_service_network_cidr }}
 platform:
   openstack:
     apiFloatingIP: {{ openshift_public_ip }}
     cloud: {{ openshift_project_name }}
-    defaultMachinePlatform:
-      type: standard.large
-    externalDNS: null
     externalNetwork: public
-publish: External
-pullSecret: {{ installer_pull_secret }}
+    externalDNS:
+      - "8.8.8.8"
+pullSecret: '{{ installer_pull_secret }}'
