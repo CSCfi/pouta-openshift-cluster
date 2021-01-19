@@ -20,7 +20,7 @@ metadata:
   name: {{ openshift_project_name }}
 platform:
   openstack:
-    lbFloatingIP: {{ openshift_public_ip }}
+    lbFloatingIP: {{ api_public_ip }}
     ingressFloatingIP: {{ openshift_public_ip }}
     cloud: {{ openshift_project_name }}
     computeFlavor: "standard.xlarge"
