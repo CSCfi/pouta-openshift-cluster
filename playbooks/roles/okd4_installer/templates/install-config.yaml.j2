@@ -1,12 +1,33 @@
 apiVersion: v1
 baseDomain: csc.fi
+compute:
+- architecture: amd64
+  hyperthreading: Enabled
+  name: worker
+  platform:
+    openstack:
+      type: standard.xlarge
+  replicas: 3
+controlPlane:
+  architecture: amd64
+  hyperthreading: Enabled
+  name: master
+  platform:
+    openstack:
+      type: standard.xlarge
+  replicas: 3
 metadata:
   name: {{ openshift_project_name }}
 platform:
   openstack:
-    apiFloatingIP: {{ openshift_public_ip }}
+    lbFloatingIP: {{ openshift_public_ip }}
+    ingressFloatingIP: {{ openshift_public_ip }}
     cloud: {{ openshift_project_name }}
+    computeFlavor: "standard.xlarge"
+    defaultMachinePlatform:
+      type: "standard.xlarge"
     externalNetwork: public
     externalDNS:
       - "8.8.8.8"
+    clusterOSImage: okd4-devel-b9psx-rhcos
 pullSecret: '{{ installer_pull_secret }}'
