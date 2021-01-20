@@ -7,6 +7,9 @@ compute:
   platform:
     openstack:
       type: standard.xlarge
+      rootVolume:
+        size: 30
+        type: standard
   replicas: 3
 controlPlane:
   architecture: amd64
@@ -15,6 +18,9 @@ controlPlane:
   platform:
     openstack:
       type: standard.xlarge
+      rootVolume:
+        size: 30
+        type: standard
   replicas: 3
 metadata:
   name: {{ openshift_project_name }}
