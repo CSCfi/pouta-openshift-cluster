@@ -23,17 +23,25 @@ controlPlane:
         type: standard
   replicas: 3
 metadata:
+  creationTimestamp: null
   name: {{ openshift_project_name }}
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineNetwork:
+  - cidr: {{ openshift_machine_network_cidr }}
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
 platform:
   openstack:
-    lbFloatingIP: {{ api_public_ip }}
-    ingressFloatingIP: {{ openshift_public_ip }}
     cloud: {{ openshift_project_name }}
-    computeFlavor: "standard.xlarge"
-    defaultMachinePlatform:
-      type: "standard.xlarge"
+    clusterOSImage: {{ openshift_base_image }}
     externalNetwork: public
     externalDNS:
-      - "8.8.8.8"
-    clusterOSImage: okd4-devel-b9psx-rhcos
+      - {{ openshift_external_dns_server }}
+    ingressFloatingIP: {{ openshift_public_ip }}
+    lbFloatingIP: {{ api_public_ip }}
+publish: External
 pullSecret: '{{ installer_pull_secret }}'

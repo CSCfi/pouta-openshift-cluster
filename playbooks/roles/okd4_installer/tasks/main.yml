@@ -1,25 +1,30 @@
 - name: Make sure installer destination folder exists
   file:
-    path: "{{ installer_dir }}"
+    path: "{{ openshift_installer_dir }}"
     state: directory
 
 - name: Download OpenShift 4 installer
   get_url:
-    url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.9/openshift-install-linux-4.6.9.tar.gz
-    dest: /tmp/openshift-install-linux-4.6.9.tar.gz
-    checksum: sha256:https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.9/sha256sum.txt
+    url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ openshift_installer_version }}/openshift-install-linux-{{ openshift_installer_version }}.tar.gz
+    dest: /tmp/openshift-install-linux-{{ openshift_installer_version }}.tar.gz
+    checksum: sha256:https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ openshift_installer_version }}/sha256sum.txt
 
 - name: Extract installer binary
   unarchive:
-    src: /tmp/openshift-install-linux-4.6.9.tar.gz
-    dest: "{{ installer_dir }}"
+    src: /tmp/openshift-install-linux-{{ openshift_installer_version }}.tar.gz
+    dest: "{{ openshift_installer_dir }}"
+
+- name: Make sure cluster config folder exists
+  file:
+    path: "{{ openshift_installer_dir }}/clusterconfig"
+    state: directory
 
 - name: create clouds.yaml configuration file
   template:
     src: clouds.yaml.j2
-    dest: "{{ installer_dir }}/clouds.yaml"
+    dest: "{{ openshift_installer_dir }}/clouds.yaml"
 
 - name: create install-config.yaml configuration file
   template:
     src: install-config.yaml.j2
-    dest: /opt/deployment/okd4/install-config.yaml
+    dest: "{{ openshift_installer_dir }}/clusterconfig/install-config.yaml"

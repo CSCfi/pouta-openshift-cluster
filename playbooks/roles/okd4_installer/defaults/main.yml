@@ -1,9 +1,10 @@
 ---
+openshift_installer_version: "4.6.12"
 openshift_project_name: "okd4-devel"
-installer_dir: "/opt/deployment/okd4/"
+openshift_installer_dir: "/opt/deployment/okd4/"
+openshift_installer_file: "/opt/deployment/okd4/openshift-install"
+openshift_base_image: "okd4-devel-2tkpx-rhcos"
 
 # TODO: set these in openshift-environments
-openshift_cluster_network_cidr: "192.168.24.0/24"
+# address pool for virtual machines
 openshift_machine_network_cidr: "192.168.25.0/24"
-openshift_service_network_cidr: "192.168.26.0/24"
-installer_pull_secret: "pullsecret"
