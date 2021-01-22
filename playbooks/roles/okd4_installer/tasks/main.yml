@@ -16,7 +16,7 @@
 
 - name: Make sure cluster config folder exists
   file:
-    path: "{{ openshift_installer_dir }}/clusterconfig"
+    path: "{{ openshift_installer_dir }}"
     state: directory
 
 - name: create clouds.yaml configuration file
@@ -27,4 +27,9 @@
 - name: create install-config.yaml configuration file
   template:
     src: install-config.yaml.j2
-    dest: "{{ openshift_installer_dir }}/clusterconfig/install-config.yaml"
+    dest: "{{ openshift_installer_dir }}/install-config.yaml"
+
+# User-Provisioned Infrastructure requires extra steps
+# They are included in separate playbook to keep things organized
+# https://github.com/openshift/installer/blob/master/docs/user/openstack/install_upi.md
+- include: upi-steps.yml

@@ -10,7 +10,7 @@ compute:
       rootVolume:
         size: 30
         type: standard
-  replicas: 3
+  replicas: 0
 controlPlane:
   architecture: amd64
   hyperthreading: Enabled
@@ -42,6 +42,8 @@ platform:
     externalDNS:
       - {{ openshift_external_dns_server }}
     ingressFloatingIP: {{ openshift_public_ip }}
+    ingressVIP: {{ openshift_machine_network_cidr | next_nth_usable(5) }}
     lbFloatingIP: {{ api_public_ip }}
+    apiVIP: {{ openshift_machine_network_cidr | next_nth_usable(7) }}
 publish: External
 pullSecret: '{{ installer_pull_secret }}'
