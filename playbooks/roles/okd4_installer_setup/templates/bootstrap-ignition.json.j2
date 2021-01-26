@@ -1,0 +1,18 @@
+{
+  "ignition": {
+    "config": {
+      "merge": [
+        {
+          "source": "{{ glance_base_url.stdout }}{{ glance_file_url.stdout }}",
+          "httpHeaders": [
+            {
+              "name": "X-Auth-Token",
+              "value": "{{ glance_download_token.stdout }}"
+            }
+          ]
+        }
+      ]
+    },
+    "version": "3.1.0"
+  }
+}

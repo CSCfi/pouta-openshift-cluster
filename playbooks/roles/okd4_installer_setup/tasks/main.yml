@@ -32,4 +32,5 @@
 # User-Provisioned Infrastructure requires extra steps
 # They are included in separate playbook to keep things organized
 # https://github.com/openshift/installer/blob/master/docs/user/openstack/install_upi.md
-- include: upi-steps.yml
+- include: upi-prepare-config.yml
+  when: openshift_installer_method == "upi"

@@ -1,5 +1,5 @@
 apiVersion: v1
-baseDomain: csc.fi
+baseDomain: {{ openshift_base_domain }}
 compute:
 - architecture: amd64
   hyperthreading: Enabled
@@ -42,8 +42,6 @@ platform:
     externalDNS:
       - {{ openshift_external_dns_server }}
     ingressFloatingIP: {{ openshift_public_ip }}
-    ingressVIP: {{ openshift_machine_network_cidr | next_nth_usable(5) }}
     lbFloatingIP: {{ api_public_ip }}
-    apiVIP: {{ openshift_machine_network_cidr | next_nth_usable(7) }}
 publish: External
 pullSecret: '{{ installer_pull_secret }}'
