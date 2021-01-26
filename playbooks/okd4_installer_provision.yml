@@ -1,0 +1,72 @@
+---
+- import_playbook: "/opt/deployment/okd4/security-groups.yaml"
+
+- import_playbook: "/opt/deployment/okd4/network.yaml"
+
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  vars:
+    openshift_installer_dir: "/opt/deployment/okd4"
+
+  tasks:
+  - name: get subnet dns ip
+    command: cat {{ openshift_installer_dir }}/subnet_dns_ip
+    register: dns_server_ip
+
+  - name: get infra ID
+    command:
+      cmd: jq -r .infraID {{ openshift_installer_dir }}/metadata.json
+    register: infra_id
+
+  # set dns server so we can download bootstrap ignition file
+  - name: configure dns for node subnet
+    command:
+      cmd: openstack subnet set --dns-nameserver {{ dns_server_ip.stdout }} "{{ infra_id.stdout }}-nodes"
+
+- import_playbook: "/opt/deployment/okd4/bootstrap.yaml"
+
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  tasks:
+  - name: pause and wait for bootstrap to finish
+    pause:
+      prompt: "Verify bootstrap is ready"
+
+# TODO: wait for API to respond
+
+- import_playbook: "/opt/deployment/okd4/control-plane.yaml"
+
+# TODO: wait for all control nodes to join cluster
+# You can see operator progress with commands
+# oc get clusteroperator
+# oc get clusterversion
+
+#- import_playbook: "/opt/deployment/okd4/down-bootstrap.yaml"
+
+# TODO: delete uploaded bootstrap.ign
+
+#- import_playbook: "/opt/deployment/okd4/compute-nodes.yaml"
+
+# wait until node csr requests appear on csr listing
+# oc get csr -A
+# and then approve them
+# oc adm certificate approve <csr>
+# nodes will appear on node listing after csr approval
+# NOTE: you have to use recent version of oc command for approval to work
+
+# Command to approve all pending csr. You should still review them before you do this.
+# /tmp/oc get csr -o go-template='{{range .items}}{{if not .status}}{{.metadata.name}}{{"\n"}}{{end}}{{end}}' | xargs /tmp/oc adm certificate approve
+
+# Cluster init will take some time and console is one of the last operators to start.
+# You can see operator progress with command
+# watch /tmp/oc get clusteroperators
+
+# Once console operator starts, you can get console url with command
+# /tmp/oc get route console -n openshift-console -o=jsonpath='{.spec.host}'
+
+# Console login name is 'kubeadmin' and password is saved to file
+# '/opt/deployment/okd4/auth/kubeadmin-password'
+
+# You should be able to login to cluster.

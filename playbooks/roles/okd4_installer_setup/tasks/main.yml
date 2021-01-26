@@ -9,10 +9,21 @@
     dest: /tmp/openshift-install-linux-{{ openshift_installer_version }}.tar.gz
     checksum: sha256:https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ openshift_installer_version }}/sha256sum.txt
 
+- name: Download matching oc client
+  get_url:
+    url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ openshift_installer_version }}/openshift-client-linux-{{ openshift_installer_version }}.tar.gz
+    dest: /tmp/openshift-client-linux-{{ openshift_installer_version }}.tar.gz
+    checksum: sha256:https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ openshift_installer_version }}/sha256sum.txt
+
 - name: Extract installer binary
   unarchive:
     src: /tmp/openshift-install-linux-{{ openshift_installer_version }}.tar.gz
     dest: "{{ openshift_installer_dir }}"
+
+- name: Extract client binary
+  unarchive:
+    src: /tmp/openshift-client-linux-{{ openshift_installer_version }}.tar.gz
+    dest: "/tmp/"
 
 - name: Make sure cluster config folder exists
   file:

@@ -1,0 +1,9 @@
+---
+# Cluster deprovisioning
+- import_playbook: "/opt/deployment/okd4/down-bootstrap.yaml"
+- import_playbook: "/opt/deployment/okd4/down-control-plane.yaml"
+- import_playbook: "/opt/deployment/okd4/down-compute-nodes.yaml"
+- import_playbook: "/opt/deployment/okd4/down-load-balancers.yaml"
+- import_playbook: "/opt/deployment/okd4/down-containers.yaml"
+- import_playbook: "/opt/deployment/okd4/down-network.yaml"
+- import_playbook: "/opt/deployment/okd4/down-security-groups.yaml"

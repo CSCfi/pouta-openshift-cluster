@@ -76,7 +76,7 @@
 - name: upload bootstrap.ign to glance
   command:
     chdir: "{{ openshift_installer_dir }}"
-    cmd: openstack image create --disk-format=raw --container-format=bare --private --file bootstrap.ign bootstrap.ign
+    cmd: openstack image create --disk-format=raw --container-format=bare --private --file bootstrap.ign "{{ infra_id.stdout }}-bootstrap.ign"
 
 - name: get glance base url
   shell:
@@ -85,7 +85,7 @@
 
 - name: get bootstrap file url
   shell:
-    cmd: openstack image show bootstrap.ign -f value -c file
+    cmd: openstack image show "{{ infra_id.stdout }}-bootstrap.ign" -f value -c file
   register: glance_file_url
 
 - name: get glance download token
@@ -110,3 +110,8 @@
   template:
     src: bootstrap-ignition.json.j2
     dest: "{{ openshift_installer_dir }}/{{ infra_id.stdout }}-bootstrap-ignition.json"
+
+# We need to set subnet dns server after network is created. Save ip to file.
+# Installer does not have access to ansible variables.
+- name: save dns server ip to file
+  local_action: copy content={{ openshift_external_dns_server }} dest="{{ openshift_installer_dir }}/subnet_dns_ip"
