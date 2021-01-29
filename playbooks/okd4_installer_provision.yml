@@ -26,17 +26,16 @@
 
 - import_playbook: "/opt/deployment/okd4/bootstrap.yaml"
 
+- import_playbook: "/opt/deployment/okd4/control-plane.yaml"
+
 - hosts: localhost
   gather_facts: no
   connection: local
   tasks:
-  - name: pause and wait for bootstrap to finish
-    pause:
-      prompt: "Verify bootstrap is ready"
-
-# TODO: wait for API to respond
-
-- import_playbook: "/opt/deployment/okd4/control-plane.yaml"
+  - name: wait until cluster bootstrapping has completed
+    command:
+      chdir: "/opt/deployment/okd4/"
+      cmd: ./openshift-install wait-for bootstrap-complete
 
 # TODO: wait for all control nodes to join cluster
 # You can see operator progress with commands
