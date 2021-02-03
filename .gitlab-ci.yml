@@ -3,7 +3,7 @@
 # Ansible. If you update the deployment container image, remember to update the
 # version number here.
 image:
-  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.6
+  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.7
 
 variables:
   DOCKER_DRIVER: overlay
