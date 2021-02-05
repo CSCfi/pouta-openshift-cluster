@@ -1,0 +1,64 @@
+---
+# https://github.com/kubernetes/cloud-provider-openstack/blob/master/docs/cinder-csi-plugin/using-cinder-csi-plugin.md
+
+- name: ensure namespace for Cinder CSI exists
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ csi_cinder_namespace }}"
+        annotations:
+          openshift.io/node-selector: ""
+          openshift.io/description: >
+            A system namespace that runs the CSI Cinder plugin
+            for managing dynamically created OpenStack Cinder
+            volumes.
+
+- name: generate cloud.conf from template
+  template:
+    src: cloud.config.j2
+    dest: /tmp/csi-cinder/cloud.conf
+
+- name: base64 encode cloud.conf
+  command:
+    cmd: base64 /tmp/csi-cinder/cloud.conf
+  register: encoded_cloud_config
+
+- name: remove cloud.conf temp file
+  file:
+    path: /tmp/csi-cinder/cloud.conf
+    state: absent
+
+- name: apply csi-secret-cinderplugin.yaml
+  k8s:
+    state: present
+    template: csi-secret-cinderplugin.yaml.j2
+  vars:
+    base64_encoded_cloud_config: {{ encoded_cloud_config.stdout }}
+
+- name: apply cinder-csi-controllerplugin-rbac.yaml
+  k8s:
+    state: present
+    template: cinder-csi-controllerplugin-rbac.yaml.j2
+
+- name: apply cinder-csi-nodeplugin-rbac.yaml
+  k8s:
+    state: present
+    template: cinder-csi-nodeplugin-rbac.yaml.j2
+
+- name: apply cinder-csi-controllerplugin.yaml
+  k8s:
+    state: present
+    template: cinder-csi-controllerplugin.yaml.j2
+
+- name: apply cinder-csi-nodeplugin.yaml
+  k8s:
+    state: present
+    template: cinder-csi-nodeplugin.yaml.j2
+
+- name: apply csi-cinder-driver.yaml
+  k8s:
+    state: present
+    template: csi-cinder-driver.yaml.j2
