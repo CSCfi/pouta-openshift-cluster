@@ -1,0 +1,30 @@
+---
+- name: Create CSR for new app domain certs
+  hosts: masters
+  run_once: true
+
+
+  tasks:
+    - name: Copy the OpenSSL config
+      template:
+        src: "openssl_app_domain_csr_template.cnf.j2"
+        dest: "/tmp/openssl_app_domain_csr.cnf"
+
+    - name: Create the key file temporarily
+      copy:
+        dest: "/tmp/{{ openshift_app_domain }}.key"
+        content: "{{ app_domain_cert.tls_secret_key }}"
+
+    - name: Generate CSR for app domain
+      shell: "openssl req -new -key /tmp/{{ openshift_app_domain }}.key -subj '/C=FI/ST=Uusimaa/L=Espoo/O=CSC - Tieteen tietotekniikan keskus Oy/CN=*.{{ openshift_app_domain }}' -out /tmp/{{ openshift_app_domain }}.req -config /tmp/openssl_app_domain_csr.cnf"
+
+    - name: copy the generated CSR to localhost
+      fetch:
+         src: "/tmp/{{ openshift_app_domain }}.req"
+         dest: "/tmp/{{ openshift_app_domain }}.req"
+         flat: true
+
+    - name: Remove the key file
+      file:
+         path: "/tmp/{{ openshift_app_domain }}.key"
+         state: absent
