@@ -1,4 +1,8 @@
 ---
+# This playbook must be run with -i flag pointing to currect inventory file
+# For example:
+# ansible-playbook -v okd4_installer_provision.yml -i /opt/deployment/okd4/inventory.yaml
+
 - import_playbook: "/opt/deployment/okd4/security-groups.yaml"
 
 - import_playbook: "/opt/deployment/okd4/network.yaml"
@@ -42,11 +46,11 @@
 # oc get clusteroperator
 # oc get clusterversion
 
-#- import_playbook: "/opt/deployment/okd4/down-bootstrap.yaml"
+- import_playbook: "/opt/deployment/okd4/down-bootstrap.yaml"
 
 # TODO: delete uploaded bootstrap.ign
 
-#- import_playbook: "/opt/deployment/okd4/compute-nodes.yaml"
+- import_playbook: "/opt/deployment/okd4/compute-nodes.yaml"
 
 # wait until node csr requests appear on csr listing
 # oc get csr -A

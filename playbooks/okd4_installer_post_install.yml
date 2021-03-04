@@ -1,0 +1,10 @@
+# Configure cluster after initial install
+
+---
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  strategy: linear
+  roles:
+  - poc_facts
+  - csi_cinder_v2
