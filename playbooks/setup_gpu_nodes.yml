@@ -6,6 +6,7 @@
 
 - name: Create the nvidia-device-plugin daemonset
   hosts: masters
+  strategy: linear
   run_once: true
   tasks:
     - name: create the nvidia-device-plugin daemonset
