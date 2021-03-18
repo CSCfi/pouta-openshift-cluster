@@ -312,6 +312,18 @@ items:
         - targets:
           - heketi-metrics-exporter.{{ openshift_public_hostname }}
 
+{% if extra_prometheus_jobs %}
+{% for item in extra_prometheus_jobs %}
+      
+      - job_name: {{ item.name }}
+        scrape_interval: {{ item.scrape_interval }}
+        scheme: https
+        static_configs:
+        - targets:
+          - {{ item.target }}
+{% endfor %}
+{% endif %}
+
       remote_write:
         - url: "http://influxdb:9201/write"
 {% if prometheus_metrics_to_archive is defined %}
