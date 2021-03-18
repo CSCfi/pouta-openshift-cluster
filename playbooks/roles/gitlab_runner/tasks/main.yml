@@ -26,6 +26,16 @@
         state: mounted
         fstype: xfs
 
+# If you need to create extra config files to runner
+- when: runner_extra_config_files is defined
+  become: True
+  block:
+    - name: Apply extra config files
+      copy:
+        dest: "{{ item.path }}"
+        content: "{{ item.content }}"
+      with_items: "{{ runner_extra_config_files }}"
+
 - name: install docker
   yum:
     name:
