@@ -89,6 +89,16 @@
   roles:
     - keepalived
 
+- name: reboot nodes before configuring storage
+  # This should ensure we could mount specific mount point
+  hosts:
+    - glusterfs
+    - masters
+  tasks:
+    - name: reboot
+      reboot:
+        reboot_timeout: 300
+
 - name: Configure openshift VMs
   hosts:
     - masters
