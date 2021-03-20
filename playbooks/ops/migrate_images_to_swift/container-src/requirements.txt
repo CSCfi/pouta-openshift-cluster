@@ -12,7 +12,7 @@ google-auth==1.6.3
 idna==2.8
 ipaddress==1.0.22
 iso8601==0.1.12
-Jinja2==2.10.1
+Jinja2==2.11.3
 keystoneauth1==3.14.0
 kubernetes==8.0.1
 MarkupSafe==1.1.1
