@@ -309,6 +309,8 @@ def main():
         print('Unexpected error: ', sys.exc_info()[0])
         exit_with_stats(NAGIOS_STATE_CRITICAL)
     finally:
+        # Cleanup is more reliable if we sleep few seconds here (with openshift 3.11)
+        time.sleep(5)
         cleanup(oso_api, namespace)
 
     exit_with_stats(NAGIOS_STATE_OK)
