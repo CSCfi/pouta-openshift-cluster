@@ -6,8 +6,8 @@ all:
 
       # User-provided values
       os_subnet_range: '{{ openshift_machine_network_cidr }}'
-      os_flavor_master: 'standard.xlarge'
-      os_flavor_worker: 'standard.xlarge'
+      os_flavor_master: '{{ master_vm_flavor }}'
+      os_flavor_worker: '{{ compute_vm_flavor }}'
       os_image_rhcos: '{{ openshift_base_image }}'
       # Service subnet cidr
       svc_subnet_range: '172.30.0.0/16'

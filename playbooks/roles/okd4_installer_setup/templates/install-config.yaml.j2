@@ -6,7 +6,7 @@ compute:
   name: worker
   platform:
     openstack:
-      type: standard.xlarge
+      type: {{ compute_vm_flavor }}
       rootVolume:
         size: 30
         type: standard
@@ -17,7 +17,7 @@ controlPlane:
   name: master
   platform:
     openstack:
-      type: standard.xlarge
+      type: {{ master_vm_flavor }}
       rootVolume:
         size: 30
         type: standard
