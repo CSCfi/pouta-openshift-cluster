@@ -1,5 +1,5 @@
 # Ansible version used in container
-ansible==2.9.17
+ansible==2.10.0
 ansible-lint
 
 # Newer versions require rust compiler. Let's stick to this one for a while.
