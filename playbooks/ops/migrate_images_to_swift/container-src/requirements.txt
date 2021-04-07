@@ -30,7 +30,7 @@ python-swiftclient==3.7.0
 PyYAML==5.4
 requests==2.22.0
 requests-oauthlib==1.2.0
-rsa>=4.1
+rsa==4.5
 ruamel.ordereddict==0.4.13
 ruamel.yaml==0.16.0
 ruamel.yaml.clib==0.1.0

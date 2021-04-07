@@ -27,6 +27,12 @@
     pkg: ['nmap', 'nmap-ncat', 'origin-clients', 'gcc', 'python-devel', 'python3-devel']
     state: present
 
+# Update python setuptools
+- name: update setuptools
+  pip:
+    name: setuptools
+    state: forcereinstall
+
 - name: update pip and virtualenv from repo versions
   retries: 3
   delay: 20
