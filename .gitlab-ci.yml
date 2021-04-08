@@ -57,6 +57,7 @@ deploy_ci_openshift_job:
     - ./run_playbook.bash site.yml -e @/tmp/gitlab_pipeline_context.yml
   environment:
     name: oso-ci
+  resource_group: ci
 
 run_ci_dedicated_egress_ips_job:
   stage: ci_setup_dedicated_egress_ips
@@ -67,6 +68,9 @@ run_ci_dedicated_egress_ips_job:
   script:
     - ./run_playbook.bash dedicated_ip_namespaces_create.yml -e @/tmp/gitlab_pipeline_context.yml
     - ./run_playbook.bash dedicated_ip_namespaces_setup.yml -e @/tmp/gitlab_pipeline_context.yml
+  environment:
+    name: oso-ci
+  resource_group: ci
 
 run_ci_tests_openshift_job:
   stage: ci_run_tests
@@ -76,6 +80,9 @@ run_ci_tests_openshift_job:
     - schedules
   script:
     - ./run_playbook.bash ../tests/site.yml -e @/tmp/gitlab_pipeline_context.yml
+  environment:
+    name: oso-ci
+  resource_group: ci
 
 backup_ci_openshift_job:
   stage: ci_backups
@@ -85,6 +92,9 @@ backup_ci_openshift_job:
     - schedules
   script:
     - ./run_backup.bash
+  environment:
+    name: oso-ci
+  resource_group: ci
 
 deprovision_ci_openshift_job:
   stage: cleanup
@@ -95,6 +105,9 @@ deprovision_ci_openshift_job:
   script:
     - ./run_playbook.bash deprovision.yml
   when: always
+  environment:
+    name: oso-ci
+  resource_group: ci
 
 deploy_qa_openshift_job:
   stage: qa_env_deploy
@@ -110,6 +123,7 @@ deploy_qa_openshift_job:
     - master
   tags:
     - oso-qa
+  resource_group: qa
 
 run_qa_dedicated_egress_ips_job:
   stage: qa_setup_dedicated_egress_ips
@@ -125,6 +139,7 @@ run_qa_dedicated_egress_ips_job:
     - master
   tags:
     - oso-qa
+  resource_group: qa
 
 run_qa_tests_openshift_job:
   stage: qa_run_tests
@@ -134,10 +149,13 @@ run_qa_tests_openshift_job:
     - schedules
   script:
     - ./run_playbook.bash ../tests/site.yml -e @/tmp/gitlab_pipeline_context.yml
+  environment:
+    name: oso-qa
   only:
     - master
   tags:
     - oso-qa
+  resource_group: qa
 
 mirror_to_github:
   stage: mirroring
@@ -165,6 +183,7 @@ deploy_rahti_int_job:
     - master
   tags:
     - rahti-int
+  resource_group: rahti-int
 
 deploy_rahti_job:
   stage: prod_deploy
@@ -182,6 +201,7 @@ deploy_rahti_job:
     - master
   tags:
     - rahti
+  resource_group: rahti
 
 deploy_valinor_job:
   stage: prod_deploy
@@ -199,6 +219,7 @@ deploy_valinor_job:
     - master
   tags:
     - valinor
+  resource_group: valinor
 
 scheduled_backups_oso_qa_job:
   stage: scheduled_backups
@@ -210,6 +231,7 @@ scheduled_backups_oso_qa_job:
     - schedules
   tags:
     - oso-qa
+  resource_group: qa
 
 scheduled_backups_rahti_int_job:
   stage: scheduled_backups
@@ -221,6 +243,7 @@ scheduled_backups_rahti_int_job:
     - schedules
   tags:
     - rahti-int
+  resource_group: rahti-int
 
 scheduled_backups_rahti_job:
   stage: scheduled_backups
@@ -232,6 +255,7 @@ scheduled_backups_rahti_job:
     - schedules
   tags:
     - rahti
+  resource_group: rahti
 
 scheduled_backups_valinor_job:
   stage: scheduled_backups
@@ -243,3 +267,4 @@ scheduled_backups_valinor_job:
     - schedules
   tags:
     - valinor
+  resource_group: valinor
