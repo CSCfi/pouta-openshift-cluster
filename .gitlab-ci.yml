@@ -29,7 +29,6 @@ before_script:
   # Pass some data about the pipeline over to Ansible so it can be used there
   # Built-in GitLab variables are documented here:
   # https://docs.gitlab.com/ee/ci/variables/
-  - 'echo "flowdock_api_token: \"$FLOWDOCK_API_TOKEN\"" >> /tmp/gitlab_pipeline_context.yml'
   - 'echo "gitlab_ci_commit_ref_name: \"$CI_COMMIT_REF_NAME\"" >> /tmp/gitlab_pipeline_context.yml'
   - 'echo "gitlab_ci_commit_sha: \"$CI_COMMIT_SHA\"" >> /tmp/gitlab_pipeline_context.yml'
   - 'echo "gitlab_ci_pipeline_id: \"$CI_PIPELINE_ID\"" >> /tmp/gitlab_pipeline_context.yml'
