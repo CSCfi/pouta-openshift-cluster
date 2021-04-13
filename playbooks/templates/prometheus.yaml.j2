@@ -123,6 +123,9 @@ items:
               path: /status
               port: 8080
               scheme: HTTP
+              initialDelaySeconds: 300
+              periodSeconds: 60
+              timeoutSeconds: 10
         restartPolicy: Always
         volumes:
         - name: config-volume
