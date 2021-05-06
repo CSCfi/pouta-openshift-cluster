@@ -45,7 +45,7 @@ stages:
   - mirroring
   - prod_deploy
   - scheduled_backups
-  - cinder_csi_restarts_rahti_job
+  - cinder_csi_restarts
 
 deploy_ci_openshift_job:
   stage: ci_env_deploy
