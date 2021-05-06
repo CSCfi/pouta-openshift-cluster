@@ -1,0 +1,29 @@
+---
+- name: Restart cinder-csi controller pod
+  hosts: masters
+  run_once: true
+  gather_facts: no
+  tasks:
+    - name: scale down cinder-csi controller pods to 0
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Deployment
+          metadata:
+            name: cinder-csi-controller
+            namespace: csi-cinder
+          spec:
+            replicas: 0
+
+    - name: scale up cinder-csi controller pods to 1
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Deployment
+          metadata:
+            name: cinder-csi-controller
+            namespace: csi-cinder
+          spec:
+            replicas: 1

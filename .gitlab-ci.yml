@@ -3,7 +3,7 @@
 # Ansible. If you update the deployment container image, remember to update the
 # version number here.
 image:
-  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.8
+  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.9
 
 variables:
   DOCKER_DRIVER: overlay
@@ -262,6 +262,54 @@ scheduled_backups_valinor_job:
     ENV_NAME: varda
   script:
     - ./run_backup.bash
+  only:
+    - schedules
+  tags:
+    - valinor
+  resource_group: valinor
+
+cinder_csi_restarts_oso_qa_job:
+  stage: cinder_csi_restarts
+  variables:
+    ENV_NAME: oso-qa
+  script:
+    - ./cinder_csi_restart.bash
+  only:
+    - schedules
+  tags:
+    - oso-qa
+  resource_group: qa
+
+cinder_csi_restarts_rahti_int_job:
+  stage: cinder_csi_restarts
+  variables:
+    ENV_NAME: rahti-int
+  script:
+    - ./cinder_csi_restart.bash
+  only:
+    - schedules
+  tags:
+    - rahti-int
+  resource_group: rahti-int
+
+cinder_csi_restarts_rahti_job:
+  stage: cinder_csi_restarts
+  variables:
+    ENV_NAME: rahti
+  script:
+    - ./cinder_csi_restart.bash
+  only:
+    - schedules
+  tags:
+    - rahti
+  resource_group: rahti
+
+cinder_csi_restarts_valinor_job:
+  stage: cinder_csi_restarts
+  variables:
+    ENV_NAME: varda
+  script:
+    - ./cinder_csi_restart.bash
   only:
     - schedules
   tags:
