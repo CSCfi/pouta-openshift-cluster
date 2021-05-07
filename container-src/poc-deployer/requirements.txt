@@ -1,6 +1,9 @@
 # Ansible version used in container
-ansible==2.9.17
+ansible==2.9.21
 ansible-lint
+
+# Dynamic inventory script
+decorator==4.4.2
 
 # Newer versions require rust compiler. Let's stick to this one for a while.
 # https://cryptography.io/en/latest/faq.html#installing-cryptography-fails-with-error-can-not-find-rust-compiler
