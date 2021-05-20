@@ -228,7 +228,7 @@ scheduled_backups_oso_qa_job:
   script:
     - ./run_backup.bash
   rules:
-    - if: 'SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
+    - if: '$SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
     - when: always
   tags:
     - oso-qa
@@ -241,7 +241,7 @@ scheduled_backups_rahti_int_job:
   script:
     - ./run_backup.bash
   rules:
-    - if: 'SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
+    - if: '$SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
     - when: always
   tags:
     - rahti-int
@@ -254,7 +254,7 @@ scheduled_backups_rahti_job:
   script:
     - ./run_backup.bash
   rules:
-    - if: 'SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
+    - if: '$SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
     - when: always
   tags:
     - rahti
@@ -267,7 +267,7 @@ scheduled_backups_valinor_job:
   script:
     - ./run_backup.bash
   rules:
-    - if: 'SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
+    - if: '$SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
     - when: always
   tags:
     - valinor
@@ -280,7 +280,7 @@ cinder_csi_restarts_oso_qa_job:
   script:
     - ./cinder_csi_restart.bash
   rules:
-    - if: 'SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
+    - if: '$SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
     - when: always
   tags:
     - oso-qa
@@ -293,7 +293,7 @@ cinder_csi_restarts_rahti_int_job:
   script:
     - ./cinder_csi_restart.bash
   rules:
-    - if: 'SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
+    - if: '$SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
     - when: always
   tags:
     - rahti-int
@@ -306,7 +306,7 @@ cinder_csi_restarts_rahti_job:
   script:
     - ./cinder_csi_restart.bash
   rules:
-    - if: 'SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
+    - if: '$SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
     - when: always
   tags:
     - rahti
@@ -319,7 +319,7 @@ cinder_csi_restarts_valinor_job:
   script:
     - ./cinder_csi_restart.bash
   rules:
-    - if: 'SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
+    - if: '$SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
     - when: always
   tags:
     - valinor
