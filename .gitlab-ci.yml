@@ -227,9 +227,10 @@ scheduled_backups_oso_qa_job:
     ENV_NAME: oso-qa
   script:
     - ./run_backup.bash
-  rules:
-    - if: '$SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
-    - when: always
+  only:
+    variables:
+      - '$SCHEDULED_JOB_NAME == "backup"'
+      - '$CI_PIPELINE_SOURCE == "schedule"'
   tags:
     - oso-qa
   resource_group: qa
@@ -240,9 +241,10 @@ scheduled_backups_rahti_int_job:
     ENV_NAME: rahti-int
   script:
     - ./run_backup.bash
-  rules:
-    - if: '$SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
-    - when: always
+  only:
+    variables:
+      - '$SCHEDULED_JOB_NAME == "backup"'
+      - '$CI_PIPELINE_SOURCE == "schedule"'
   tags:
     - rahti-int
   resource_group: rahti-int
@@ -253,9 +255,10 @@ scheduled_backups_rahti_job:
     ENV_NAME: rahti
   script:
     - ./run_backup.bash
-  rules:
-    - if: '$SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
-    - when: always
+  only:
+    variables:
+      - '$SCHEDULED_JOB_NAME == "backup"'
+      - '$CI_PIPELINE_SOURCE == "schedule"'
   tags:
     - rahti
   resource_group: rahti
@@ -266,9 +269,10 @@ scheduled_backups_valinor_job:
     ENV_NAME: varda
   script:
     - ./run_backup.bash
-  rules:
-    - if: '$SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "scheduled"'
-    - when: always
+  only:
+    variables:
+      - '$SCHEDULED_JOB_NAME == "backup"'
+      - '$CI_PIPELINE_SOURCE == "schedule"'
   tags:
     - valinor
   resource_group: valinor
@@ -279,9 +283,10 @@ cinder_csi_restarts_oso_qa_job:
     ENV_NAME: oso-qa
   script:
     - ./cinder_csi_restart.bash
-  rules:
-    - if: '$SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
-    - when: always
+  only:
+    variables:
+      - '$SCHEDULED_JOB_NAME == "csi_restart"'
+      - '$CI_PIPELINE_SOURCE == "schedule"'
   tags:
     - oso-qa
   resource_group: qa
@@ -292,9 +297,10 @@ cinder_csi_restarts_rahti_int_job:
     ENV_NAME: rahti-int
   script:
     - ./cinder_csi_restart.bash
-  rules:
-    - if: '$SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
-    - when: always
+  only:
+    variables:
+      - '$SCHEDULED_JOB_NAME == "csi_restart"'
+      - '$CI_PIPELINE_SOURCE == "schedule"'
   tags:
     - rahti-int
   resource_group: rahti-int
@@ -305,9 +311,10 @@ cinder_csi_restarts_rahti_job:
     ENV_NAME: rahti
   script:
     - ./cinder_csi_restart.bash
-  rules:
-    - if: '$SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
-    - when: always
+  only:
+    variables:
+      - '$SCHEDULED_JOB_NAME == "csi_restart"'
+      - '$CI_PIPELINE_SOURCE == "schedule"'
   tags:
     - rahti
   resource_group: rahti
@@ -318,9 +325,10 @@ cinder_csi_restarts_valinor_job:
     ENV_NAME: varda
   script:
     - ./cinder_csi_restart.bash
-  rules:
-    - if: '$SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "scheduled"'
-    - when: always
+  only:
+    variables:
+      - '$SCHEDULED_JOB_NAME == "csi_restart"'
+      - '$CI_PIPELINE_SOURCE == "schedule"'
   tags:
     - valinor
   resource_group: valinor
