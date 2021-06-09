@@ -8,6 +8,16 @@
   ignore_errors: yes
   failed_when: false
   changed_when: false
+  
+# Make sure we don't configure disks in Rahti compute, if we have customer vols attached
+# Rahti compute uses the iSCSI disk driver insead of virtio, so disks are /dev/sd* not /dev/vd*
+# All other systems use /dev/vd* 
+
+- name: Check if production compute nodes have customer vols attached
+  assert: 
+    that: 
+      - ansible_device_links["ids"]["sdc"] is undefined
+  when: test_vg.rc==5
 
 # in case the volumes were there, activate them in case they are reused from a previous incarnation
 # TODO: replace with lvol based activation available in ansible 2.2

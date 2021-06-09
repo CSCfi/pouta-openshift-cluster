@@ -1,15 +1,6 @@
 - set_fact: volume_specs={{ vars[vm_group_name].volumes|default([]) }}
 - set_fact: filesystem_specs={{ vars[vm_group_name].filesystems|default([]) }}
 
-# Make sure we don't configure disks in Rahti compute, if we have customer vols attached
-# Rahti compute uses the iSCSI disk driver insead of virtio, so disks are /dev/sd* not /dev/vd*
-# All other systems use /dev/vd* 
-
-- name: Check if production compute nodes hav customoer vols attached
-  assert: 
-    that: 
-      - ansible_device_links["ids"]["sdc"] is undefined
-
 - name: configure volume
   include: configure_volume.yml
   with_items: "{{ volume_specs }}"
