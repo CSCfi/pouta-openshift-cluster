@@ -35,11 +35,22 @@
         dest: "{{ item.path }}"
         content: "{{ item.content }}"
       with_items: "{{ runner_extra_config_files }}"
+      no_log: true
 
+# https://docs.docker.com/engine/install/centos/
 - name: add docker-ce repository
   yum_repository:
     name: docker-ce
-    baseurl: https://download.docker.com/linux/centos/docker-ce.repo
+    description: Docker CE Stable - $basearch
+    baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+    enabled: 1
+    gpgcheck: 1
+    gpgkey: https://download.docker.com/linux/centos/gpg
+
+- name: Upgrade all packages
+  yum:
+    name: '*'
+    state: latest
 
 - name: install docker packages
   yum:
@@ -47,6 +58,7 @@
       - docker-ce
       - docker-ce-cli
       - containerd.io
+      - python-docker
     state: present
 
 - name: start and enable docker
@@ -126,7 +138,7 @@
 - name: minimal minio container for caching
   docker_container:
     name: minio
-    image: minio/minio:RELEASE.2020-07-02T00-15-09Z
+    image: minio/minio:RELEASE.2021-06-17T00-10-46Z
     command: ["server", "/data"]
     state: started
     restart_policy: always
