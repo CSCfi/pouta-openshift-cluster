@@ -36,20 +36,17 @@
         content: "{{ item.content }}"
       with_items: "{{ runner_extra_config_files }}"
 
-- name: update system packages
-  yum:
-    name: '*'
-    state: latest
+- name: add docker-ce repository
+  yum_repository:
+    name: docker-ce
+    baseurl: https://download.docker.com/linux/centos/docker-ce.repo
 
-# Install docker from external repository as centos7 does not include them
-# If you need to update docker version, please update these links
-- name: install docker
+- name: install docker packages
   yum:
     name:
-      - https://download.docker.com/linux/centos/7/x86_64/stable/Packages/docker-ce-19.03.9-3.el7.x86_64.rpm
-      - https://download.docker.com/linux/centos/7/x86_64/stable/Packages/docker-ce-cli-19.03.9-3.el7.x86_64.rpm
-      - https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.4.6-3.1.el7.x86_64.rpm
-      - python-docker-py
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
     state: present
 
 - name: start and enable docker
