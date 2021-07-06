@@ -2,6 +2,14 @@
   set_fact:
     os_env_path: "{{ os_env_path|default('/opt/deployment/openshift-environments') }}"
 
+- name: Debug os_env_path
+  debug:
+    var: os_env_path
+
+- name: Debug cluster_name
+  debug:
+    var: cluster_name
+
 - name: Get context for current environment
   include_vars:
     dir: "{{ os_env_path }}/group_vars/{{ cluster_name }}"
