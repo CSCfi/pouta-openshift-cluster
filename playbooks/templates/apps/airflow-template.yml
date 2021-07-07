@@ -74,7 +74,7 @@ objects:
             value: '5555'
           - name: FLOWER_HOST
             value: flower
-          - name : AIRFLOW__CORE__EXECUTOR
+          - name: AIRFLOW__CORE__EXECUTOR
             value: CeleryExecutor
           - name: FLOWER_BASIC_AUTH
             valueFrom:
@@ -342,7 +342,7 @@ objects:
         containers:
         - name: webserver
           env:
-          - name : AIRFLOW__CORE__EXECUTOR
+          - name: AIRFLOW__CORE__EXECUTOR
             value: CeleryExecutor
           - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
             valueFrom:
@@ -471,7 +471,7 @@ objects:
         containers:
         - name: scheduler
           env:
-          - name : AIRFLOW__CORE__EXECUTOR
+          - name: AIRFLOW__CORE__EXECUTOR
             value: CeleryExecutor
           - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
             valueFrom:
@@ -580,7 +580,7 @@ objects:
                 mountPath: /tmp/fernet_key
         containers:
         - env:
-          - name : AIRFLOW__CORE__EXECUTOR
+          - name: AIRFLOW__CORE__EXECUTOR
             value: CeleryExecutor
           - name: AIRFLOW__CELERY__BROKER_URL
             valueFrom:
