@@ -1,0 +1,478 @@
+---
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: prometheus-grafana
+  annotations:
+    openshift.io/display-name: Prometheus + Grafana
+    iconClass: fa fa-area-chart
+    openshift.io/documentation-url: https://github.com/CSCfi/grafana-prometheus-template
+    description: |-
+
+      Deploys Prometheus and Grafana for monitoring pods running in the same namespace. For more information on the use of this template, see https://github.com/CSCfi/grafana-prometheus-template.
+
+      Prometheus is configured by default to scrape metrics from applications running in pods in the same namespace. Grafana is configured by default with Prometheus as a datasource.
+
+      You need to add the following annotations to the pods you want to monitor:
+        * prometheus.io/scrape: 'true'
+        * prometheus.io/path: <path> if you need to scrape metrics from a path other than '/metrics'
+        * prometheus.io/port: <port> if you need to use a port other than the pod's declared ports
+
+message: |-
+  
+  You should soon be able to access Prometheus and Grafana through the project overview page.
+
+  Your Grafana admin credentials are:
+    username: ${GRAFANA_ADMIN_USERNAME}
+    password: ${GRAFANA_ADMIN_PASSWORD}
+
+  Your Prometheus basic auth credentials are:
+    username: ${BASIC_AUTH_USERNAME}
+    password: ${BASIC_AUTH_PASSWORD}
+
+parameters:
+  - description: The namespace Prometheus and Grafana are being deployed to
+    name: NAMESPACE
+    displayName: Namespace
+    required: true
+  #Prometheus
+  - description: The location of the Prometheus image
+    name: PROMETHEUS_IMAGE
+    displayName: Prometheus image
+    required: true
+    value: prom/prometheus:v2.27.1
+  - description: Storage retention time for Prometheus
+    name: PROMETHEUS_RETENTION_TIME
+    displayName: Storage retention time
+    required: true
+    value: 15d
+  - description: Size of the persistent volume for prometheus
+    name: PROMETHEUS_VOLUMESIZE
+    displayName: Prometheus volume size
+    required: true
+    value: 10Gi
+  - description: Memory limit for Prometheus
+    name: PROMETHEUS_LIMITMEMORY
+    displayName: Prometheus memory limit
+    required: true
+    value: 4G
+  - description: Requested memory for Prometheus
+    name: PROMETHEUS_REQMEMORY
+    displayName: Prometheus requested memory
+    required: true
+    value: 4G
+  - description: Username for prometheus basic authentication
+    name: BASIC_AUTH_USERNAME
+    displayName: Prometheus basic auth username
+    required: true
+    value: admin
+  - description: Password for prometheus basic auth
+    name: BASIC_AUTH_PASSWORD
+    displayName: Prometheus basic auth password
+    from: '[a-zA-Z0-9]{30}'
+    generate: expression
+    required: true
+  #Grafana
+  - description: The location of the Grafana image
+    name: GRAFANA_IMAGE
+    displayName: Grafana image
+    required: true
+    value: grafana/grafana:7.5.7
+  - description: Username for the Grafana admin user
+    name: GRAFANA_ADMIN_USERNAME
+    displayName: Grafana admin username
+    required: true
+    value: admin
+  - description: Password for the Grafana admin user
+    name: GRAFANA_ADMIN_PASSWORD
+    displayName: Grafana admin password
+    required: true
+    from: '[a-zA-Z0-9]{30}'
+    generate: expression
+  - description: Size of the persistent volume for Grafana
+    name: GRAFANA_VOLUMESIZE
+    displayName: Grafana volume size
+    required: true
+    value: 100Mi
+  - description: Memory limit for Grafana
+    name: GRAFANA_LIMITMEMORY
+    displayName: Grafana memory limit
+    required: true
+    value: 1Gi
+  - description: Requested memory for Grafana
+    name: GRAFANA_REQMEMORY
+    displayName: Grafana requested memory
+    required: true
+    value: 512Mi
+
+objects:
+# Prometheus
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: prometheus-sa
+
+- apiVersion: authorization.openshift.io/v1
+  kind: RoleBinding
+  metadata:
+    name: prometheus-role
+  roleRef:
+    name: view
+  subjects:
+  - kind: ServiceAccount
+    name: prometheus-sa
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: prometheus
+    labels:
+      app: prometheus
+  spec:
+    replicas: 1
+    strategy:
+      type: Recreate #redeployment of Prometheus fails if strategy is rolling
+    template:
+      metadata:
+        labels:
+          app: prometheus
+      spec:
+        serviceAccount: prometheus-sa
+        serviceAccountName: prometheus-sa
+        initContainers:
+        - image: docker-registry.rahti.csc.fi/da-images/alpine-htpasswd:latest
+          env:
+          - name: USER
+            valueFrom:
+              secretKeyRef:
+                key: user
+                name: prometheus-nginx-secret
+          - name: PASS
+            valueFrom:
+              secretKeyRef:
+                key: pass
+                name: prometheus-nginx-secret
+          command: ["/bin/sh","-c","htpasswd -bc /tmp/secret-file/passwd $USER $PASS"]
+          name: htpasswd-generator
+          volumeMounts:
+            - name: prometheus-htpasswd-tmp
+              mountPath: "/tmp/secret-file"
+            - name: prometheus-nginx-secret
+              mountPath: "/tmp/secret-env"
+        containers:
+        - name: prometheus
+          args:
+          - '--storage.tsdb.path=/data'
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME}'
+          image: ${PROMETHEUS_IMAGE}
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 9090
+          resources:
+            limits:
+              memory: ${PROMETHEUS_LIMITMEMORY}
+              cpu: 1
+            requests:
+              memory: ${PROMETHEUS_REQMEMORY}
+              cpu: 1
+          volumeMounts:
+          - mountPath: /etc/prometheus
+            name: prometheus-config
+          - mountPath: /data
+            name: prometheus-data
+        - name: nginx
+          image: lvarin/nginx-okd
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+          ports:
+            - containerPort: 9091
+          volumeMounts:
+            - name: prometheus-nginx-config
+              mountPath: /etc/nginx
+            - name: prometheus-htpasswd-tmp
+              mountPath: /etc/nginx/secrets
+        restartPolicy: Always
+        volumes:
+        - name: prometheus-config
+          configMap:
+            defaultMode: 420
+            name: prometheus-config
+        - name: prometheus-data
+          persistentVolumeClaim:
+            claimName: prometheus-data
+        - name: prometheus-nginx-secret
+          secret:
+            secretName: prometheus-nginx-secret
+        - name: prometheus-htpasswd-tmp
+          emptyDir: {}
+        - name: prometheus-nginx-config
+          configMap:
+            name: prometheus-nginx-config
+
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: prometheus-nginx-secret
+  type: Opaque
+  stringData:
+    user: ${BASIC_AUTH_USERNAME}
+    pass: ${BASIC_AUTH_PASSWORD}
+
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: prometheus-nginx-config
+  data:
+    nginx.conf: |-
+      http {
+          server {
+              listen 9091;
+
+              location / {
+                  auth_basic           "Prometheus";
+                  auth_basic_user_file /etc/nginx/secrets/passwd;
+
+                  proxy_pass           http://localhost:9090/;
+              }
+          }
+      }
+
+      events {}
+
+
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: prometheus-config
+  data:
+    prometheus.yml: |
+      global:
+        external_labels:
+          monitor: prometheus
+      scrape_configs:
+        - job_name: 'prometheus'
+          static_configs:
+            - targets: ['localhost:9090']
+              labels:
+                group: 'prometheus'
+        - job_name: 'openshift-pods'
+          kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+              - ${NAMESPACE}
+          relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: (.+):(?:\d+);(\d+)
+            replacement: ${1}:${2}
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    labels:
+      app: prometheus
+    name: prometheus-data
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${PROMETHEUS_VOLUMESIZE}
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: prometheus-service
+  spec:
+    ports:
+      - port: 9091
+        targetPort: 9091
+    selector:
+      app: prometheus
+
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: prometheus-route
+  spec:
+    port:
+      targetPort: 9091
+    to:
+      kind: Service
+      name: prometheus-service
+    tls:
+      termination: edge
+
+# Grafana
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: grafana
+    labels:
+      app: grafana
+  spec:
+    replicas: 1
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: grafana
+      spec:
+        containers:
+        - name: grafana
+          image: ${GRAFANA_IMAGE}
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 3000
+          env:
+          - name: ADMIN_USER
+            valueFrom:
+              secretKeyRef:
+                key: admin-username
+                name: grafana-secret
+          - name: ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: admin-password
+                name: grafana-secret
+          - name: BASIC_AUTH_USER
+            valueFrom:
+              secretKeyRef:
+                key: user
+                name: prometheus-nginx-secret
+          - name: BASIC_AUTH_PASS
+            valueFrom:
+              secretKeyRef:
+                key: pass
+                name: prometheus-nginx-secret
+          args:
+          - '--homepath=/usr/share/grafana'
+          - '--config=/etc/grafana/grafana.ini'
+          resources:
+            limits:
+              memory: ${GRAFANA_LIMITMEMORY}
+            requests:
+              memory: ${GRAFANA_REQMEMORY}
+          volumeMounts:
+          - mountPath: /etc/grafana
+            name: grafana-config
+          - mountPath: /var/lib/grafana
+            name: grafana-data
+        restartPolicy: Always
+        volumes:
+        - name: grafana-config
+          configMap:
+            defaultMode: 420
+            name: grafana-config
+            items:
+            - key: grafana.ini
+              path: grafana.ini
+            - key: datasource.yaml
+              path: provisioning/datasources/datasource.yaml
+        - name: grafana-data
+          persistentVolumeClaim:
+            claimName: grafana-data
+
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-secret
+  type: Opaque
+  stringData:
+    admin-username: ${GRAFANA_ADMIN_USERNAME}
+    admin-password: ${GRAFANA_ADMIN_PASSWORD}
+
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: grafana-config
+  data:
+    grafana.ini: |
+      [paths]
+      data = /var/lib/grafana
+      plugins = /var/lib/grafana/plugins
+      provisioning = /etc/grafana/provisioning
+
+      [log]
+      mode = console
+
+      [security]
+      admin_user = ${ADMIN_USER}
+      admin_password = ${ADMIN_PASSWORD}
+
+    datasource.yaml: |
+      apiVersion: 1
+      datasources:
+      - name: prometheus
+        type: prometheus
+        access: proxy
+        org_id: 1
+        url: http://prometheus-service:9091
+        is_default: true
+        version: 1
+        editable: true
+        basicAuth: true
+        basicAuthUser: ${BASIC_AUTH_USER}
+        secureJsonData:
+          basicAuthPassword: ${BASIC_AUTH_PASS}
+
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: grafana-data
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${GRAFANA_VOLUMESIZE}
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: grafana-service
+  spec:
+    ports:
+    - name: grafana
+      port: 3000
+      targetPort: 3000
+    selector:
+      app: grafana
+
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    name: grafana-route
+  spec:
+    port:
+      targetPort: 3000
+    tls:
+      termination: edge
+    to:
+      kind: Service
+      name: grafana-service

@@ -3,7 +3,7 @@
 # Ansible. If you update the deployment container image, remember to update the
 # version number here.
 image:
-  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.8
+  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.9
 
 variables:
   DOCKER_DRIVER: overlay
@@ -29,7 +29,6 @@ before_script:
   # Pass some data about the pipeline over to Ansible so it can be used there
   # Built-in GitLab variables are documented here:
   # https://docs.gitlab.com/ee/ci/variables/
-  - 'echo "flowdock_api_token: \"$FLOWDOCK_API_TOKEN\"" >> /tmp/gitlab_pipeline_context.yml'
   - 'echo "gitlab_ci_commit_ref_name: \"$CI_COMMIT_REF_NAME\"" >> /tmp/gitlab_pipeline_context.yml'
   - 'echo "gitlab_ci_commit_sha: \"$CI_COMMIT_SHA\"" >> /tmp/gitlab_pipeline_context.yml'
   - 'echo "gitlab_ci_pipeline_id: \"$CI_PIPELINE_ID\"" >> /tmp/gitlab_pipeline_context.yml'
@@ -46,6 +45,7 @@ stages:
   - mirroring
   - prod_deploy
   - scheduled_backups
+  - cinder_csi_restarts
 
 deploy_ci_openshift_job:
   stage: ci_env_deploy
@@ -57,6 +57,9 @@ deploy_ci_openshift_job:
     - ./run_playbook.bash site.yml -e @/tmp/gitlab_pipeline_context.yml
   environment:
     name: oso-ci
+  tags:
+    - oso-ci
+  resource_group: ci
 
 run_ci_dedicated_egress_ips_job:
   stage: ci_setup_dedicated_egress_ips
@@ -67,6 +70,11 @@ run_ci_dedicated_egress_ips_job:
   script:
     - ./run_playbook.bash dedicated_ip_namespaces_create.yml -e @/tmp/gitlab_pipeline_context.yml
     - ./run_playbook.bash dedicated_ip_namespaces_setup.yml -e @/tmp/gitlab_pipeline_context.yml
+  environment:
+    name: oso-ci
+  tags:
+    - oso-ci
+  resource_group: ci
 
 run_ci_tests_openshift_job:
   stage: ci_run_tests
@@ -76,6 +84,11 @@ run_ci_tests_openshift_job:
     - schedules
   script:
     - ./run_playbook.bash ../tests/site.yml -e @/tmp/gitlab_pipeline_context.yml
+  environment:
+    name: oso-ci
+  tags:
+    - oso-ci
+  resource_group: ci
 
 backup_ci_openshift_job:
   stage: ci_backups
@@ -85,6 +98,11 @@ backup_ci_openshift_job:
     - schedules
   script:
     - ./run_backup.bash
+  environment:
+    name: oso-ci
+  tags:
+    - oso-ci
+  resource_group: ci
 
 deprovision_ci_openshift_job:
   stage: cleanup
@@ -95,6 +113,11 @@ deprovision_ci_openshift_job:
   script:
     - ./run_playbook.bash deprovision.yml
   when: always
+  environment:
+    name: oso-ci
+  tags:
+    - oso-ci
+  resource_group: ci
 
 deploy_qa_openshift_job:
   stage: qa_env_deploy
@@ -110,6 +133,7 @@ deploy_qa_openshift_job:
     - master
   tags:
     - oso-qa
+  resource_group: qa
 
 run_qa_dedicated_egress_ips_job:
   stage: qa_setup_dedicated_egress_ips
@@ -125,6 +149,7 @@ run_qa_dedicated_egress_ips_job:
     - master
   tags:
     - oso-qa
+  resource_group: qa
 
 run_qa_tests_openshift_job:
   stage: qa_run_tests
@@ -134,10 +159,13 @@ run_qa_tests_openshift_job:
     - schedules
   script:
     - ./run_playbook.bash ../tests/site.yml -e @/tmp/gitlab_pipeline_context.yml
+  environment:
+    name: oso-qa
   only:
     - master
   tags:
     - oso-qa
+  resource_group: qa
 
 mirror_to_github:
   stage: mirroring
@@ -165,6 +193,7 @@ deploy_rahti_int_job:
     - master
   tags:
     - rahti-int
+  resource_group: rahti-int
 
 deploy_rahti_job:
   stage: prod_deploy
@@ -182,6 +211,7 @@ deploy_rahti_job:
     - master
   tags:
     - rahti
+  resource_group: rahti
 
 deploy_valinor_job:
   stage: prod_deploy
@@ -199,6 +229,7 @@ deploy_valinor_job:
     - master
   tags:
     - valinor
+  resource_group: valinor
 
 scheduled_backups_oso_qa_job:
   stage: scheduled_backups
@@ -207,9 +238,11 @@ scheduled_backups_oso_qa_job:
   script:
     - ./run_backup.bash
   only:
-    - schedules
+    variables:
+      - $SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "schedule"
   tags:
     - oso-qa
+  resource_group: qa
 
 scheduled_backups_rahti_int_job:
   stage: scheduled_backups
@@ -218,9 +251,11 @@ scheduled_backups_rahti_int_job:
   script:
     - ./run_backup.bash
   only:
-    - schedules
+    variables:
+      - $SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "schedule"
   tags:
     - rahti-int
+  resource_group: rahti-int
 
 scheduled_backups_rahti_job:
   stage: scheduled_backups
@@ -229,9 +264,11 @@ scheduled_backups_rahti_job:
   script:
     - ./run_backup.bash
   only:
-    - schedules
+    variables:
+      - $SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "schedule"
   tags:
     - rahti
+  resource_group: rahti
 
 scheduled_backups_valinor_job:
   stage: scheduled_backups
@@ -240,6 +277,60 @@ scheduled_backups_valinor_job:
   script:
     - ./run_backup.bash
   only:
-    - schedules
+    variables:
+      - $SCHEDULED_JOB_NAME == "backup" && $CI_PIPELINE_SOURCE == "schedule"
   tags:
     - valinor
+  resource_group: valinor
+
+cinder_csi_restarts_oso_qa_job:
+  stage: cinder_csi_restarts
+  variables:
+    ENV_NAME: oso-qa
+  script:
+    - ./cinder_csi_restart.bash
+  only:
+    variables:
+      - $SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "schedule"
+  tags:
+    - oso-qa
+  resource_group: qa
+
+cinder_csi_restarts_rahti_int_job:
+  stage: cinder_csi_restarts
+  variables:
+    ENV_NAME: rahti-int
+  script:
+    - ./cinder_csi_restart.bash
+  only:
+    variables:
+      - $SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "schedule"
+  tags:
+    - rahti-int
+  resource_group: rahti-int
+
+cinder_csi_restarts_rahti_job:
+  stage: cinder_csi_restarts
+  variables:
+    ENV_NAME: rahti
+  script:
+    - ./cinder_csi_restart.bash
+  only:
+    variables:
+      - $SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "schedule"
+  tags:
+    - rahti
+  resource_group: rahti
+
+cinder_csi_restarts_valinor_job:
+  stage: cinder_csi_restarts
+  variables:
+    ENV_NAME: varda
+  script:
+    - ./cinder_csi_restart.bash
+  only:
+    variables:
+      - $SCHEDULED_JOB_NAME == "csi_restart" && $CI_PIPELINE_SOURCE == "schedule"
+  tags:
+    - valinor
+  resource_group: valinor
