@@ -18,12 +18,6 @@
       baseurl: "https://nvidia.github.io/nvidia-container-runtime/centos7/$basearch"
       gpgkey: "https://nvidia.github.io/nvidia-container-runtime/gpgkey"
       description: "nvidia-container-runtime repo"
-    - name: "cuda-drivers"
-      baseurl: "https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64"
-      gpgkey: "https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/7fa2af80.pub"
-      description: "nvidia-cuda-drivers repo"      
-
-
 
 
 - name: install the nvidia-container-runtime package
@@ -33,15 +27,6 @@
   until: yumresult.failed is false
   yum:
     name: nvidia-container-runtime-hook
-    state: present
-
-- name: install the nvidia-cuda-drivers package
-  retries: 3
-  delay: 20
-  register: yumresult
-  until: yumresult.failed is false
-  yum:
-    name: cuda-drivers
     state: present
 
 

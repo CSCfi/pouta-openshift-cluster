@@ -1,0 +1,7 @@
+- name: install a cuda environment with a specific version
+  hosts: gpu
+#  vars:
+#    - cuda_packages:
+#        - 11.4.0
+  roles:
+    - ansible-role-cuda
