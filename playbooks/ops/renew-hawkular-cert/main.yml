@@ -155,6 +155,8 @@
 #     when: name not in metrics_secrets
       changed_when: no
 
+    - name: fix metrics route
+      include_tasks: install_hawkular.yaml
 
     - find:
         paths: "{{ mktemp.stdout }}/templates"
