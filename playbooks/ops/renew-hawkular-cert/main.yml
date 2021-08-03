@@ -1,0 +1,249 @@
+---
+- name: Renew hawkular metrics certs
+  hosts: masters
+  run_once: true
+  gather_facts: no
+  tasks:
+    - name: generate temp dir
+      include_tasks: create_temp_dirs.yaml
+      vars:
+        metrics_create_template_dir: true
+
+    - name: generate ca certificate chain
+      command: >
+        oc adm ca create-signer-cert
+        --config={{ mktemp.stdout }}/admin.kubeconfig
+        --key='{{ mktemp.stdout }}/ca.key'
+        --cert='{{ mktemp.stdout }}/ca.crt'
+        --serial='{{ mktemp.stdout }}/ca.serial.txt'
+        --name="metrics-signer@{{lookup('pipe','date +%s')}}"       
+
+    - name: generate hawkular-metrics certificates
+      include_tasks: setup_certificate.yaml
+      vars:
+        component: hawkular-metrics
+        hostnames: "hawkular-metrics,hawkular-metrics.openshift-infra.svc.cluster.local,hawkular-metrics.{{openshift_master_default_subdomain}}"
+    
+    - name: generate hawkular-cassandra certificates
+      include_tasks: setup_certificate.yaml
+      vars:
+        component: hawkular-cassandra
+        hostnames: hawkular-cassandra
+    
+
+    - name: generate random data
+      shell: 'dd if=/dev/urandom of={{ mktemp.stdout }}/rand_data bs=1 count=15'
+
+    - name: read random data
+      slurp: 
+        src: "{{ mktemp.stdout }}/rand_data"
+      register: rand_data
+
+    - name: generate password for hawkular metrics
+      local_action: copy dest="{{ local_tmp.stdout }}/{{ item }}.pwd" content="{{ rand_data }}"
+      with_items:
+      - hawkular-metrics
+      become: false
+    
+    - local_action: slurp src="{{ local_tmp.stdout }}/hawkular-metrics.pwd"
+      register: hawkular_metrics_pwd
+      no_log: true
+      become: false
+    
+    - name: generate htpasswd file for hawkular metrics
+      local_action: htpasswd path="{{ local_tmp.stdout }}/hawkular-metrics.htpasswd" name=hawkular password="{{ hawkular_metrics_pwd.content | b64decode }}"
+      become: false
+      when: not openshift_metrics_hawkular_fips | default(False) | bool
+    
+    - name: generate htpasswd file for hawkular metrics
+      command: docker run "{{ openshift_metrics_hawkular_metrics_image }}" java -Dhtpasswd.username=hawkular -Dhtpasswd.password="{{ hawkular_metrics_pwd.content | b64decode }}" -jar /opt/hawkular/scripts/hawkular-htpasswd.jar
+      register: htpasswd_output
+      when: openshift_metrics_hawkular_fips | default(False) | bool
+    
+    - copy:
+        content: "{{ htpasswd_output.stdout_lines | join('') }}"
+        dest: "{{ local_tmp.stdout }}/hawkular-metrics.htpasswd"
+      when: openshift_metrics_hawkular_fips | default(False) | bool
+    
+    - name: copy local generated passwords to target
+      copy:
+        src: "{{ local_tmp.stdout }}/{{ item }}"
+        dest: "{{ mktemp.stdout }}/{{ item }}"
+      with_items:
+      - hawkular-metrics.pwd
+      - hawkular-metrics.htpasswd
+    
+    - name: read files for the hawkular-metrics secret
+      shell: >
+        printf '%s: ' '{{ item }}'
+        && base64 --wrap 0 '{{ mktemp.stdout }}/{{ item }}'
+      register: hawkular_secrets
+      with_items:
+      - ca.crt
+      - hawkular-metrics.pwd
+      - hawkular-metrics.htpasswd
+      - hawkular-metrics.crt
+      - hawkular-metrics.key
+      - hawkular-metrics.pem
+      - hawkular-cassandra.crt
+      - hawkular-cassandra.key
+      - hawkular-cassandra.pem
+      changed_when: false
+    
+    - set_fact:
+        hawkular_secrets: |
+          {{ hawkular_secrets.results|map(attribute='stdout')|join('
+          ')|from_yaml }}
+    
+    - name: generate hawkular-metrics-certs secret template
+      template:
+        src: secret.j2
+        dest: "{{ mktemp.stdout }}/templates/hawkular-metrics-certs.yaml"
+      vars:
+        name: hawkular-metrics-certs
+        labels:
+          metrics-infra: hawkular-metrics-certs
+        annotations:
+          service.alpha.openshift.io/originating-service-name: hawkular-metrics
+        data:
+          tls.crt: >
+            {{ hawkular_secrets['hawkular-metrics.crt'] }}
+          tls.key: >
+            {{ hawkular_secrets['hawkular-metrics.key'] }}
+          tls.truststore.crt: >
+            {{ hawkular_secrets['hawkular-cassandra.crt'] }}
+          ca.crt: >
+            {{ hawkular_secrets['ca.crt'] }}
+#      when: name not in metrics_secrets.stdout_lines
+      changed_when: no
+    
+    - name: generate hawkular-metrics-account secret template
+      template:
+        src: secret.j2
+        dest: "{{ mktemp.stdout }}/templates/hawkular_metrics_account.yaml"
+      vars:
+        name: hawkular-metrics-account
+        labels:
+          metrics-infra: hawkular-metrics
+        data:
+          hawkular-metrics.username: "{{ 'hawkular'|b64encode }}"
+          hawkular-metrics.htpasswd: "{{ hawkular_secrets['hawkular-metrics.htpasswd'] }}"
+          hawkular-metrics.password: >
+            {{ hawkular_secrets['hawkular-metrics.pwd'] }}
+#     when: name not in metrics_secrets.stdout_lines
+      changed_when: no
+    
+    - name: generate cassandra secret template
+      template:
+        src: secret.j2
+        dest: "{{ mktemp.stdout }}/templates/hawkular-cassandra-certs.yaml"
+      vars:
+        name: hawkular-cassandra-certs
+        labels:
+          metrics-infra: hawkular-cassandra-certs
+        annotations:
+          service.alpha.openshift.io/originating-service-name: hawkular-cassandra
+        data:
+          tls.crt: >
+            {{ hawkular_secrets['hawkular-cassandra.crt'] }}
+          tls.key: >
+            {{ hawkular_secrets['hawkular-cassandra.key'] }}
+          tls.peer.truststore.crt: >
+            {{ hawkular_secrets['hawkular-cassandra.crt'] }}
+          tls.client.truststore.crt: >
+            {{ hawkular_secrets['hawkular-metrics.crt'] }}
+#     when: name not in metrics_secrets
+      changed_when: no
+
+    - name: fix metrics route
+      include_tasks: install_hawkular.yaml
+
+    - find:
+        paths: "{{ mktemp.stdout }}/templates"
+        patterns: "^(?!metrics-hawkular-openshift-agent).*.yaml"
+        use_regex: true
+      register: object_def_files
+      changed_when: no
+    
+    - slurp:
+        src: "{{item.path}}"
+      register: object_defs
+      with_items: "{{object_def_files.files}}"
+      changed_when: no
+    
+    - name: Create objects
+      include_tasks: oc_apply.yaml
+      vars:
+        kubeconfig: "{{ mktemp.stdout }}/admin.kubeconfig"
+        namespace: "openshift-infra"
+        file_name: "{{ item.source }}"
+        file_content: "{{ item.content | b64decode | from_yaml }}"
+      with_items: "{{ object_defs.results }}"
+
+
+    - name: Delete temp directory
+      local_action: file path=local_tmp.stdout state=absent
+      tags: metrics_cleanup
+      changed_when: False
+      check_mode: no
+      vars:
+        ansible_become: false
+
+
+    - name: scale down hawkular metrics pods to 0
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ReplicationController
+          metadata:
+            name: hawkular-metrics
+            namespace: openshift-infra
+          spec:
+            replicas: 0
+            selector:
+              name: hawkular-metrics
+
+
+    - name: scale up hawkular metrics pods to 1
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ReplicationController
+          metadata:
+            name: hawkular-metrics
+            namespace: openshift-infra
+          spec:
+            replicas: 1
+            selector:
+              name: hawkular-metrics
+
+    - name: scale down hawkular cassandra pods to 0
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ReplicationController
+          metadata:
+            name: hawkular-cassandra-1
+            namespace: openshift-infra
+          spec:
+            replicas: 0
+            selector:
+                name: hawkular-cassandra-1
+
+    - name: scale up hawkular cassandra pods to 1
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ReplicationController
+          metadata:
+            name: hawkular-cassandra-1
+            namespace: openshift-infra
+          spec:
+            replicas: 1
+            selector:
+                name: hawkular-cassandra-1
+

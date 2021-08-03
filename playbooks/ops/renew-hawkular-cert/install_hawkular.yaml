@@ -1,0 +1,27 @@
+---
+- name: read hawkular-metrics route destination ca certificate
+  slurp: src={{ mktemp.stdout }}/ca.crt
+  register: metrics_route_dest_ca_cert
+  changed_when: false
+
+- block:
+  - name: generate the hawkular-metrics route
+    template:
+      src: route.j2
+      dest: "{{ mktemp.stdout }}/templates/hawkular-metrics-route.yaml"
+    vars:
+      name: hawkular-metrics
+      annotations: {}
+      labels:
+        metrics-infra: hawkular-metrics
+      host: "hawkular-metrics.{{openshift_master_default_subdomain}}"
+      to:
+        kind: Service
+        name: hawkular-metrics
+      tls:
+        termination: reencrypt
+        key: "{{ hawkular_key | default('') }}"
+        certificate: "{{ hawkular_cert | default('') }}"
+        ca_certificate: "{{ hawkular_ca | default('') }}"
+        destination_ca_certificate: "{{ metrics_route_dest_ca_cert.content | b64decode }}"
+    changed_when: false
