@@ -310,7 +310,8 @@ def main():
         exit_with_stats(NAGIOS_STATE_CRITICAL)
     finally:
         # Cleanup is more reliable if we sleep few seconds here (with openshift 3.11)
-        time.sleep(5)
+        # Increased sleep time from 5 to 15 for avoiding nrpe namespace stuck
+        time.sleep(15)
         cleanup(oso_api, namespace)
 
     exit_with_stats(NAGIOS_STATE_OK)
