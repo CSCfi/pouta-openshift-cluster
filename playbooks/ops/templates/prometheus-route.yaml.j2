@@ -1,0 +1,25 @@
+# Copied the route part from prometheus setup to update certs in routes
+kind: List
+apiVersion: v1
+items:
+# Create an edge terminated route for Prometheus
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: prometheus
+    namespace: monitoring-infra
+    annotations:
+      haproxy.router.openshift.io/ip_whitelist: "{{ ip_whitelist_monitoring|join(' ') }}"
+  spec:
+    host: "prometheus.{{ openshift_public_hostname }}"
+    to:
+      name: prometheus
+    tls:
+      termination: Edge
+      insecureEdgeTerminationPolicy: Redirect
+      caCertificate: |
+        {{ api_domain_cert.tls_ca_certificate|indent(width=8) }}
+      certificate: |
+        {{ api_domain_cert.tls_certificate|indent(width=8) }}
+      key: |
+        {{ api_domain_cert.tls_secret_key|indent(width=8) }}

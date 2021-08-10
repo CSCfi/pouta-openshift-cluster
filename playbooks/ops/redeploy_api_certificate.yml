@@ -34,6 +34,7 @@
   vars:
     openshift_master_config_dir: "/etc/origin/master"
     openshift_node_config_dir: "/etc/origin/node"
+    run_renew_ca_certs: "{{ renew_ca_certs | default(false) }}"
 
   tasks:
     - name: get CA data from openshift master
@@ -46,11 +47,13 @@
       copy:
           dest: "{{ openshift_master_config_dir }}/ca-bundle.crt"
           content: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) }}"
+      when: run_renew_ca_certs
 
     - name: update admin client kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_master_config_dir }}/admin.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+      when: run_renew_ca_certs
 
     - name: check for existence of proxy-client.kubeconfig
       stat:
@@ -61,7 +64,18 @@
       kubeclient_ca:
         client_path: "{{ openshift_master_config_dir }}/master.proxy-client.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
-      when: proxy_client_kubeconfig.stat.exists
+      when: proxy_client_kubeconfig.stat.exists and run_renew_ca_certs
+
+    - name: check for existence of bootstrap.kubeconfig
+      stat:
+        path: "{{ openshift_master_config_dir }}/bootstrap.kubeconfig"
+      register: master_bootstrap_kubeconfig
+
+    - name: update bootstrap kubeconfig CA data
+      kubeclient_ca:
+        client_path: "{{ openshift_master_config_dir }}/bootstrap.kubeconfig"
+        ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+      when: master_bootstrap_kubeconfig.stat.exists and run_renew_ca_certs
 
     - name: check for existence of system node user kubeconfig
       stat:
@@ -72,7 +86,7 @@
       kubeclient_ca:
         client_path: "{{ openshift_node_config_dir }}/system:node:{{ ansible_hostname }}.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
-      when: system_node_kubeconfig.stat.exists
+      when: system_node_kubeconfig.stat.exists and run_renew_ca_certs
 
     - name: copy the admin client config(s)
       copy:
@@ -85,6 +99,7 @@
       with_items:
         - /root
         - /home/cloud-user
+      when: run_renew_ca_certs
 
     - name: copy admin.kubeconfig in order to bootstrap the master node kubelet with fresh certificates
       copy:
@@ -94,6 +109,7 @@
       with_items:
        - "node.kubeconfig"
        - "bootstrap.kubeconfig"
+      when: run_renew_ca_certs
 
     - name: restart master API and controllers
       command: /usr/local/bin/master-restart "{{ item }}"
@@ -115,6 +131,7 @@
   vars:
     openshift_master_config_dir: "/etc/origin/master"
     openshift_node_config_dir: "/etc/origin/node"
+    run_renew_ca_certs: "{{ renew_ca_certs | default(false) }}"
 
   tasks:
     - name: get CA data from openshift master
@@ -123,17 +140,20 @@
       register: os_ca_data
       run_once: true
       delegate_to: "{{ groups.masters.0 }}"
+      when: run_renew_ca_certs
       
     - name: update admin client kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_node_config_dir }}/bootstrap.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+      when: run_renew_ca_certs
 
 
     - name: update admin client kubeconfig CA data
       kubeclient_ca:
         client_path: "{{ openshift_node_config_dir }}/node.kubeconfig"
         ca_data: "{{ (os_ca_data.content | b64decode +  api_domain_cert.tls_ca_certificate) |b64encode }}"
+      when: run_renew_ca_certs
 
     - name: restart origin-node
       systemd:
@@ -141,6 +161,7 @@
         name: "{{ item }}"
       with_items:
         - origin-node
+      when: run_renew_ca_certs
 
 - name: Fix other places the API cert is deployed
   hosts: "{{ groups.masters.0 }}"
@@ -177,7 +198,7 @@
       - name: admin
       when: deploy_default_www_app
 
-#Set registry console certificate
+#Set registry console certificate and route cert
 # Copied from the playbook (registry_config.yml) that originally does this
     - name: create registry console cert file with a proper cert+key
       shell: >
@@ -201,6 +222,29 @@
         files:
           - name: registry-console.cert
             path: '/etc/origin/master/registry-console.cert'
+
+    - name: get certificate for registry
+      slurp:
+        src: '/etc/origin/master/registry.crt'
+      register: registry_cert_file
+
+    - name: put registry certificate content into variable
+      set_fact:
+        registry_dest_cert: "{{ registry_cert_file['content'] | b64decode }}"
+
+    - name: create a re-encrypt route with a proper cert for the registry
+      oc_route:
+        name: docker-registry-reencrypt
+        namespace: default
+        cert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.crt"
+        key_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}.key"
+        cacert_path: "/etc/origin/master/named_certificates/{{ openshift_public_hostname }}_ext_ca.crt"
+        dest_cacert_content: "{{ registry_dest_cert }}"
+        service_name: "docker-registry"
+        port: "5000"
+        host: "docker-registry.{{ openshift_public_hostname }}"
+        tls_termination: "reencrypt"
+
 
     - name: redeploy registry console if needed
       command: oc rollout latest registry-console -n default
@@ -237,10 +281,31 @@
         name: heketi-storage
         upsert_replace: true
 
+# Create an edge terminated route for Prometheus
+# copied from deploy_monitoring.yml
+
+    # extract monitoring access whitelist
+    - set_fact:
+        ip_whitelist_monitoring: >
+          {{ ip_address_data_for_whitelists | json_query("[?contains(allow_access_to, 'monitoring')].address") }}
+
+    - set_fact:
+        ip_whitelist_monitoring: "{{ ip_whitelist_monitoring + [openshift_public_ip] }}"
+
+    - name: upsert prometheus deployment
+      include: ../tasks/upsert_k8s_object.yml
+      vars:
+        namespace: monitoring-infra
+        template_base_name: prometheus-route.yaml.j2
+        name: prometheus
+
 # CA info needs to be updated in bootstrap configs of the nodes 
 - name: Fix bootstrap config for other nodes
   hosts: lb,influxdb,infra,masters,ssd,glusterfs
   serial: 1
+  vars:
+    run_renew_ca_certs: "{{ renew_ca_certs | default(false) }}"
+
   tasks:
 
     - name: restart docker
@@ -249,4 +314,5 @@
         name: "{{ item }}"
       with_items:
         - docker
+      when: run_renew_ca_certs
 
