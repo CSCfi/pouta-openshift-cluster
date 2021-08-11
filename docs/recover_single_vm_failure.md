@@ -117,7 +117,7 @@ ansible-playbook -v -l [server-name],bastion pre_install.yml
 ansible-playbook -v site.yml
 ```
 
-7. (Hack - temporary) Disable the node
+7. (Hack - temporary. Run steps 7-9 on rahti only) Disable the node
 
 ```bash
 oc adm  manage-node [server-name] --schedulable=false
