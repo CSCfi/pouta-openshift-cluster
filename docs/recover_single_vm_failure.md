@@ -117,6 +117,30 @@ ansible-playbook -v -l [server-name],bastion pre_install.yml
 ansible-playbook -v site.yml
 ```
 
+7. (Hack - temporary) Disable the node
+
+```bash
+oc adm  manage-node [server-name] --schedulable=false
+```
+
+8. Write a large file to the disk
+
+This allocates the undelying LVM. If this is not done, disk performance will be bad.
+
+```bash
+ssh [nodename]
+mkdir /var/lib/origin/openshift.local.volumes/rahti_admin_tmp
+cd /var/lib/origin/openshift.local.volumes/rahti_admin_tmp
+# This takes overnight
+dd if=/dev/zero of=bigfile bs=1024000 count=3000000
+rm bigfile
+ ```
+9. Enable the node
+
+```bash
+oc adm  manage-node [server-name] --schedulable=true
+```
+
 ## Masters
 
 Rebuilding master nodes will require slighty different steps, depending on their being the first (primary), or second and third master (secondary masters). Rebuilding a primary master requires that /etc/origin is restored from backup before running site.yml, whereas rebuilding secondary masters requires running site.yml only.
