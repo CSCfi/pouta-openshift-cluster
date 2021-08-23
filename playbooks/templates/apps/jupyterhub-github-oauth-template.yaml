@@ -1,0 +1,679 @@
+---
+kind: Template
+apiVersion: template.openshift.io/v1
+metadata:
+  name: jupyterhub-github-oauth
+  annotations:
+    openshift.io/display-name: JupyterHub (GitHub OAuth)
+    iconClass: icon-python
+    tags: python,jupyter,jupyterhub
+    description: |-
+
+      Deploys JupyterHub with GitHub OAuth as the authentication method. For more information on the use of this template, see https://github.com/CSCfi/jupyterhub-template.
+
+      The default notebook image only allows using Python in notebooks.
+
+      Using the template requires an existing GitHub OAuth application. Set the homepage URL of the OAuth application as https://<app-name>-<namespace>.rahtiapp.fi and authorization callback URL as https://<app-name>-<namespace>.rahtiapp.fi/hub/oauth_callback. (The app name in the template is 'jupyterhub' by default). Details needed in the template from the OAuth application are client ID, client secret and authorization callback URL. Make sure to have these when deploying the template. More about creating GitHub OAuth applications can be found at https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app. 
+
+message: You should soon be able to access JupyterHub through the project overview page.
+
+parameters:
+- name: APPLICATION_NAME
+  displayName: Application name
+  description: Name of the JupyterHub application
+  value: jupyterhub
+  required: true
+- name: JUPYTERHUB_IMAGE
+  displayName: JupyterHub image
+  description: Name of the JupyterHub image
+  value: cscfi/jupyterhub-quickstart:20210713
+  required: true
+- name: NOTEBOOK_IMAGE
+  displayName: Nothebook image
+  description: Name of the Notebook image
+  value: quay.io/jupyteronopenshift/s2i-minimal-notebook-py36:2.5.1
+  required: true
+- name: OAUTH_CLIENT_ID
+  displayName: GitHub OAuth client ID
+  description: Client ID of your GitHub OAuth application
+  required: true
+- name: OAUTH_CLIENT_SECRET
+  displayName: GitHub OAuth client secret
+  description: Client secret of your GitHub OAuth application
+  required: true
+- name: OAUTH_CALLBACK_URL
+  displayName: GitHub OAuth callback URL
+  description: Callback URL of your GitHub OAuth application (in the form https://<app-name>-<namespace>.rahtiapp.fi/hub/oauth_callback)
+  required: true
+- name: JUPYTERHUB_ADMIN_USER
+  displayName: JupyterHub admin user
+  description: GitHub username of default admin user on JupyterHub
+  required: true
+- name: JUPYTERHUB_API_TOKEN
+  displayName: JupyterHub API token
+  description: API token for JupyterHub admin user
+  from: '[a-z0-9]{32}'
+  generate: expression
+  required: true
+- name: JUPYTERHUB_ALLOWED_ORGANIZATION
+  displayName: JupyterHub whitelisted organization
+  description: Name of GitHub organization to whitelist
+- name: JUPYTERHUB_CULL_IDLE_TIMEOUT
+  displayName: JupyterHub culling timeout
+  description: Time (in seconds) after which idle servers are culled (leave empty if no culling is desired)
+  value: '3600'
+- name: COOKIE_SECRET
+  displayName: JupyterHub cookie secret
+  description: Encryption key used to encrypt JupyterHub browser cookies
+  generate: expression
+  from: '[a-f0-9]{32}'
+  required: true
+- name: DATABASE_PASSWORD
+  displayName: Database password
+  description: Password for JupyterHub database
+  generate: expression
+  from: '[a-zA-Z0-9]{30}'
+  required: true
+- name: JUPYTERHUB_MEMORY
+  displayName: JupyterHub memory
+  description: Amount of memory available to JupyterHub
+  value: 512Mi
+  required: true
+- name: DATABASE_MEMORY
+  displayName: Database memory
+  description: Amount of memory available to PostgreSQL
+  value: 512Mi
+  required: true
+- name: NOTEBOOK_MEMORY
+  displayName: Notebook memory
+  description: Amount of memory available to each notebook
+  value: 512Mi
+  required: true
+- name: NOTEBOOK_VOLUME_SIZE
+  displayName: Notebook volume size
+  description: Amount of storage available to each notebook
+  value: 1Gi
+  required: true
+- name: DATABASE_VOLUME_SIZE
+  displayName: Database volume size
+  description: Amount of storage available to database
+  value: 1Gi
+  required: true
+
+objects:
+- kind: ServiceAccount
+  apiVersion: v1
+  metadata:
+    name: ${APPLICATION_NAME}-hub
+    labels:
+      app: ${APPLICATION_NAME}
+
+- kind: RoleBinding
+  apiVersion: authorization.openshift.io/v1
+  metadata:
+    name: ${APPLICATION_NAME}-edit
+    labels:
+      app: ${APPLICATION_NAME}
+  subjects:
+  - kind: ServiceAccount
+    name: ${APPLICATION_NAME}-hub
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: edit
+
+- kind: DeploymentConfig
+  apiVersion: apps.openshift.io/v1
+  metadata:
+    name: ${APPLICATION_NAME}
+    labels:
+      app: ${APPLICATION_NAME}
+  spec:
+    strategy:
+      type: Recreate
+    triggers:
+    - type: ConfigChange
+    replicas: 1
+    selector:
+      app: ${APPLICATION_NAME}
+      deploymentconfig: ${APPLICATION_NAME}
+    template:
+      metadata:
+        annotations:
+          alpha.image.policy.openshift.io/resolve-names: '*'
+        labels:
+          app: ${APPLICATION_NAME}
+          deploymentconfig: ${APPLICATION_NAME}
+      spec:
+        serviceAccountName: ${APPLICATION_NAME}-hub
+        initContainers:
+        - name: wait-for-database
+          image: ${JUPYTERHUB_IMAGE}
+          command:
+          - wait-for-database
+          resources:
+            limits:
+              memory: ${JUPYTERHUB_MEMORY}
+          env:
+          - name: JUPYTERHUB_DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: database
+          - name: JUPYTERHUB_DATABASE_HOST
+            value: ${APPLICATION_NAME}-db
+          - name: JUPYTERHUB_DATABASE_NAME
+            value: postgres
+        containers:
+        - name: jupyterhub
+          image: ${JUPYTERHUB_IMAGE}
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources:
+            limits:
+              memory: ${JUPYTERHUB_MEMORY}
+          env:
+          - name: APPLICATION_NAME
+            value: ${APPLICATION_NAME}
+          - name: JUPYTERHUB_NOTEBOOK_IMAGE
+            value: ${NOTEBOOK_IMAGE}
+          - name: JUPYTERHUB_NOTEBOOK_MEMORY
+            value: ${NOTEBOOK_MEMORY}
+          - name: JUPYTERHUB_DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: database
+          - name: JUPYTERHUB_DATABASE_HOST
+            value: ${APPLICATION_NAME}-db
+          - name: JUPYTERHUB_DATABASE_NAME
+            value: postgres
+          - name: JUPYTERHUB_COOKIE_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: cookie
+                name: jupyterhub
+          - name: OAUTH_CLIENT_ID
+            value: ${OAUTH_CLIENT_ID}
+          - name: OAUTH_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: oauth-client
+                name: jupyterhub
+          - name: OAUTH_CALLBACK_URL
+            value: ${OAUTH_CALLBACK_URL}
+          - name: JUPYTERHUB_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                key: api-token
+                name: jupyterhub
+          - name: JUPYTERHUB_ADMIN_USER
+            value: ${JUPYTERHUB_ADMIN_USER}
+          - name: JUPYTERHUB_CULL_IDLE_TIMEOUT
+            value: ${JUPYTERHUB_CULL_IDLE_TIMEOUT}
+          - name: JUPYTERHUB_ALLOWED_ORGANIZATION
+            value: ${JUPYTERHUB_ALLOWED_ORGANIZATION}
+          - name: NOTEBOOK_VOLUME_SIZE
+            value: ${NOTEBOOK_VOLUME_SIZE}
+          volumeMounts:
+          - name: config
+            mountPath: "/opt/app-root/configs"
+        volumes:
+        - name: config
+          configMap:
+            name: ${APPLICATION_NAME}-cfg
+            defaultMode: 420
+
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: database
+    labels:
+      app: ${APPLICATION_NAME}
+  type: Opaque
+  stringData:
+    password: ${DATABASE_PASSWORD}
+
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: jupyterhub
+    labels:
+      app: ${APPLICATION_NAME}
+  type: Opaque
+  stringData:
+    cookie: ${COOKIE_SECRET}
+    oauth-client: ${OAUTH_CLIENT_SECRET}
+    api-token: ${JUPYTERHUB_API_TOKEN}
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: ${APPLICATION_NAME}
+    labels:
+      app: ${APPLICATION_NAME}
+  spec:
+    ports:
+    - name: 8080-tcp
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+    - name: 8081-tcp
+      protocol: TCP
+      port: 8081
+      targetPort: 8081
+    selector:
+      app: ${APPLICATION_NAME}
+      deploymentconfig: ${APPLICATION_NAME}
+
+- kind: Route
+  apiVersion: route.openshift.io/v1
+  metadata:
+    name: ${APPLICATION_NAME}
+    labels:
+      app: ${APPLICATION_NAME}
+  spec:
+    host: ''
+    to:
+      kind: Service
+      name: ${APPLICATION_NAME}
+      weight: 100
+    port:
+      targetPort: 8080-tcp
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+
+- kind: PersistentVolumeClaim
+  apiVersion: v1
+  metadata:
+    name: ${APPLICATION_NAME}-db
+    labels:
+      app: ${APPLICATION_NAME}
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${DATABASE_VOLUME_SIZE}
+
+- kind: DeploymentConfig
+  apiVersion: apps.openshift.io/v1
+  metadata:
+    name: ${APPLICATION_NAME}-db
+    labels:
+      app: ${APPLICATION_NAME}
+  spec:
+    replicas: 1
+    selector:
+      app: ${APPLICATION_NAME}
+      deploymentconfig: ${APPLICATION_NAME}-db
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          app: ${APPLICATION_NAME}
+          deploymentconfig: ${APPLICATION_NAME}-db
+      spec:
+        containers:
+        - name: postgresql
+          env:
+          - name: POSTGRESQL_USER
+            value: jupyterhub
+          - name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: database
+          - name: POSTGRESQL_DATABASE
+            value: postgres
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+          ports:
+          - containerPort: 5432
+            protocol: TCP
+          resources:
+            limits:
+              memory: ${DATABASE_MEMORY}
+          readinessProbe:
+            exec:
+              command:
+              - "/bin/sh"
+              - "-i"
+              - "-c"
+              - psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c
+                'SELECT 1'
+          volumeMounts:
+          - mountPath: "/var/lib/pgsql/data"
+            name: data
+        volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: ${APPLICATION_NAME}-db
+        - name: config
+          configMap:
+            name: ${APPLICATION_NAME}-cfg
+            defaultMode: 420
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - postgresql
+        from:
+          kind: ImageStreamTag
+          name: postgresql:9.6
+          namespace: openshift
+      type: ImageChange
+    - type: ConfigChange
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: ${APPLICATION_NAME}-db
+    labels:
+      app: ${APPLICATION_NAME}
+  spec:
+    ports:
+    - name: 5432-tcp
+      protocol: TCP
+      port: 5432
+      targetPort: 5432
+    selector:
+      app: ${APPLICATION_NAME}
+      deploymentconfig: ${APPLICATION_NAME}-db
+
+- kind: ConfigMap
+  apiVersion: v1
+  metadata:
+    name: ${APPLICATION_NAME}-req
+    labels:
+      app: ${APPLICATION_NAME}
+  data:
+    requirements.txt : "#add requirements here"
+
+- kind: ConfigMap
+  apiVersion: v1
+  metadata:
+    name: ${APPLICATION_NAME}-cfg
+    labels:
+      app: ${APPLICATION_NAME}
+  data:
+    jupyterhub_config.py: |
+      import os
+
+      import wrapt
+
+      from kubernetes.client.configuration import Configuration
+      from kubernetes.config.incluster_config import load_incluster_config
+      from kubernetes.client.api_client import ApiClient
+      from kubernetes.client.rest import ApiException
+      from openshift.dynamic import DynamicClient
+      from oauthenticator.github import GitHubOAuthenticator
+
+      # Helper function for doing unit conversions or translations if needed.
+
+      def convert_size_to_bytes(size):
+          multipliers = {
+              'k': 1000,
+              'm': 1000**2,
+              'g': 1000**3,
+              't': 1000**4,
+              'ki': 1024,
+              'mi': 1024**2,
+              'gi': 1024**3,
+              'ti': 1024**4,
+          }
+
+          size = str(size)
+
+          for suffix in multipliers:
+              if size.lower().endswith(suffix):
+                  return int(size[0:-len(suffix)]) * multipliers[suffix]
+          else:
+              if size.lower().endswith('b'):
+                  return int(size[0:-1])
+
+          try:
+              return int(size)
+          except ValueError:
+              raise RuntimeError('"%s" is not a valid memory specification. Must be an integer or a string with suffix K, M, G, T, Ki, Mi, Gi or Ti.' % size)
+
+      # Initialise client for the REST API used doing configuration.
+      #
+      # XXX Currently have a workaround here for OpenShift 4.0 beta versions
+      # which disables verification of the certificate. If don't use this the
+      # Python openshift/kubernetes clients will fail. We also disable any
+      # warnings from urllib3 to get rid of the noise in the logs this creates.
+
+      load_incluster_config()
+
+      import urllib3
+      urllib3.disable_warnings()
+      instance = Configuration()
+      instance.verify_ssl = False
+      Configuration.set_default(instance)
+
+      api_client = DynamicClient(ApiClient())
+
+      image_stream_resource = api_client.resources.get(
+           api_version='image.openshift.io/v1', kind='ImageStream')
+
+      route_resource = api_client.resources.get(
+           api_version='route.openshift.io/v1', kind='Route')
+
+      # Work out the name of the JupyterHub deployment passed in environment.
+
+      application_name = os.environ.get('APPLICATION_NAME', 'jupyterhub')
+
+      # Work out the name of the namespace in which we are being deployed.
+
+      service_account_path = '/var/run/secrets/kubernetes.io/serviceaccount'
+
+      with open(os.path.join(service_account_path, 'namespace')) as fp:
+          namespace = fp.read().strip()
+
+      # Work out hostname for the exposed route of the JupyterHub server.
+
+      routes = route_resource.get(namespace=namespace)
+
+      def extract_hostname(routes, name):
+          for route in routes.items:
+              if route.metadata.name == name:
+                  return route.spec.host
+
+      public_hostname = extract_hostname(routes, application_name)
+
+      if not public_hostname:
+          raise RuntimeError('Cannot calculate external host name for JupyterHub.')
+
+      # Helper function for determining the correct name for the image. We
+      # need to do this for references to image streams because of the image
+      # lookup policy often not being correctly setup on OpenShift clusters.
+
+      def resolve_image_name(name):
+          # If the image name contains a slash, we assume it is already
+          # referring to an image on some image registry. Even if it does
+          # not contain a slash, it may still be hosted on docker.io.
+
+          if name.find('/') != -1:
+              return name
+
+          # Separate actual source image name and tag for the image from the
+          # name. If the tag is not supplied, default to 'latest'.
+
+          parts = name.split(':', 1)
+
+          if len(parts) == 1:
+              source_image, tag = parts, 'latest'
+          else:
+              source_image, tag = parts
+
+          # See if there is an image stream in the current project with the
+          # target name.
+
+          try:
+              image_stream = image_stream_resource.get(namespace=namespace,
+                      name=source_image)
+
+          except ApiException as e:
+              if e.status not in (403, 404):
+                  raise
+
+              return name
+
+          # If we get here then the image stream exists with the target name.
+          # We need to determine if the tag exists. If it does exist, we
+          # extract out the full name of the image including the reference
+          # to the image registry it is hosted on.
+
+          if image_stream.status.tags:
+              for entry in image_stream.status.tags:
+                  if entry.tag == tag:
+                      registry_image = image_stream.status.dockerImageRepository
+                      if registry_image:
+                          return '%s:%s' % (registry_image, tag)
+
+          # Use original value if can't find a matching tag.
+
+          return name
+
+      # Define the default configuration for JupyterHub application.
+
+      c.Spawner.environment = dict()
+
+      c.JupyterHub.services = []
+
+      c.KubeSpawner.init_containers = []
+
+      c.KubeSpawner.extra_containers = []
+
+      c.KubeSpawner.lifecycle_hooks = {
+          "postStart": {
+              "exec": {
+                  "command": ["/bin/sh", "-c", "pip install -r /opt/app-root/req/requirements.txt"]
+              }
+          }
+      }
+
+      c.JupyterHub.extra_handlers = []
+
+      c.JupyterHub.port = 8080
+
+      c.JupyterHub.hub_ip = '0.0.0.0'
+      c.JupyterHub.hub_port = 8081
+
+      c.JupyterHub.hub_connect_ip = application_name
+
+      c.ConfigurableHTTPProxy.api_url = 'http://127.0.0.1:8082'
+
+      c.Spawner.start_timeout = 120
+      c.Spawner.http_timeout = 60
+
+      c.KubeSpawner.port = 8080
+
+      c.KubeSpawner.common_labels = { 'app': application_name }
+
+      c.KubeSpawner.uid = os.getuid()
+      c.KubeSpawner.fs_gid = os.getuid()
+
+      c.KubeSpawner.extra_annotations = {
+          "alpha.image.policy.openshift.io/resolve-names": "*"
+      }
+
+      c.KubeSpawner.cmd = ['start-singleuser.sh']
+
+      c.KubeSpawner.pod_name_template = '%s-nb-{username}' % application_name
+
+      c.JupyterHub.admin_access = True
+
+      if os.environ.get('JUPYTERHUB_COOKIE_SECRET'):
+          c.JupyterHub.cookie_secret = os.environ[
+                  'JUPYTERHUB_COOKIE_SECRET'].encode('UTF-8')
+      else:
+          c.JupyterHub.cookie_secret_file = '/opt/app-root/data/cookie_secret'
+
+      if os.environ.get('JUPYTERHUB_DATABASE_PASSWORD'):
+          c.JupyterHub.db_url = 'postgresql://jupyterhub:%s@%s:5432/%s' % (
+                  os.environ['JUPYTERHUB_DATABASE_PASSWORD'],
+                  os.environ['JUPYTERHUB_DATABASE_HOST'],
+                  os.environ.get('JUPYTERHUB_DATABASE_NAME', 'jupyterhub'))
+      else:
+          c.JupyterHub.db_url = '/opt/app-root/data/database.sqlite'
+
+
+      # Notebook volumes
+
+      if os.environ.get('NOTEBOOK_VOLUME_SIZE'):
+          c.KubeSpawner.user_storage_pvc_ensure = True
+
+          c.KubeSpawner.user_storage_capacity = os.environ['NOTEBOOK_VOLUME_SIZE']
+
+          c.KubeSpawner.pvc_name_template = '%s-nb-{username}-volume' % application_name
+
+          c.KubeSpawner.volumes = [
+              {
+                  'name': '%s-nb-{username}-volume' % application_name,
+                  'persistentVolumeClaim': {
+                      'claimName': '%s-nb-{username}-volume' % application_name
+                  }
+              },
+              {
+                  'name': '%s-req' % application_name,
+                  'configMap': {
+                      'name': '%s-req' % application_name
+                  }
+              }
+          ]
+
+          c.KubeSpawner.volume_mounts = [
+              {
+                  'mountPath': '/opt/app-root/src',
+                  'name': '%s-nb-{username}-volume' % application_name
+              },
+              {
+                  'mountPath': '/opt/app-root/req',
+                  'name': '%s-req' % application_name
+              }
+          ]
+
+      # Authentication
+
+      c.JupyterHub.authenticator_class = GitHubOAuthenticator
+
+      c.Authenticator.admin_users = { os.environ['JUPYTERHUB_ADMIN_USER'] }
+
+      if os.environ.get('JUPYTERHUB_ALLOWED_ORGANIZATION'):
+          c.Authenticator.allowed_organizations = { os.environ['JUPYTERHUB_ALLOWED_ORGANIZATION'] }
+
+      c.JupyterHub.api_tokens = {
+          os.environ['JUPYTERHUB_API_TOKEN']: os.environ['JUPYTERHUB_ADMIN_USER'],
+      }
+
+      # Idle server culling
+
+      if os.environ.get('JUPYTERHUB_CULL_IDLE_TIMEOUT'):
+          c.JupyterHub.services = [
+              {
+                  'name': 'cull-idle',
+                  'admin': True,
+                  'command': ('cull-idle-servers --timeout=%d --url=http://127.0.0.1:8081/hub/api' %int(os.environ['JUPYTERHUB_CULL_IDLE_TIMEOUT'])).split(),
+              }
+          ]
+
+      c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
+
+      c.KubeSpawner.image_spec = resolve_image_name(
+              os.environ.get('JUPYTERHUB_NOTEBOOK_IMAGE',
+              'quay.io/jupyteronopenshift/s2i-minimal-notebook-py36:2.5.1'))
+
+      if os.environ.get('JUPYTERHUB_NOTEBOOK_MEMORY'):
+          c.Spawner.mem_limit = convert_size_to_bytes(os.environ['JUPYTERHUB_NOTEBOOK_MEMORY'])
+
+      notebook_interface = os.environ.get('JUPYTERHUB_NOTEBOOK_INTERFACE')
+
+      if notebook_interface:
+          c.Spawner.environment['JUPYTER_NOTEBOOK_INTERFACE'] = notebook_interface
+
