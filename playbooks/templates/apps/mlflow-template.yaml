@@ -667,6 +667,8 @@ parameters:
   displayName: Password
   name: PASSWORD
   required: true
+  from: '[a-zA-Z0-9]{30}'
+  generate: expression
 
 - description: Persistent application storage size
   displayName: Storage Size
