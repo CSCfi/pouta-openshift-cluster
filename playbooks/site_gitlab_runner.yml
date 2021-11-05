@@ -85,6 +85,7 @@
 
 # Host is up, install docker and gitlab-runner
 - hosts: runner
+  strategy: linear
   become: yes
   roles:
     - poc_facts
