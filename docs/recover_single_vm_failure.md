@@ -141,8 +141,7 @@ This allocates the undelying LVM. If this is not done, disk performance will be 
 ssh [nodename]
 sudo -i 
 # This takes overnight
-nohup   mkdir -p /var/lib/origin/openshift.local.volumes/rahti_admin_tmp &&   cd /var/lib/origin/openshift.local.volumes/rahti_admin_tmp && dd if=/dev/zero of=bigfile bs=1024000 count=3000000  && rm -f bigfile &
-nohup dd if=/dev/zero of=bigfile bs=1024000 count=3000000  && rm -f bigfile & 
+nohup  sh -c 'mkdir -p /var/lib/origin/openshift.local.volumes/rahti_admin_tmp &&   cd /var/lib/origin/openshift.local.volumes/rahti_admin_tmp && dd if=/dev/zero of=bigfile bs=1024000 count=3000000  && rm -f bigfile' &
  ```
 
 On varda and rahti-int run (smaller disks)
@@ -151,7 +150,7 @@ On varda and rahti-int run (smaller disks)
 ssh [nodename]
 sudo -i
 # This takes a few hours
-nohup   mkdir -p /var/lib/origin/openshift.local.volumes/rahti_admin_tmp &&   cd /var/lib/origin/openshift.local.volumes/rahti_admin_tmp && dd if=/dev/zero of=bigfile bs=1024000 count=300000  && rm -f bigfile &
+nohup  sh -c 'mkdir -p /var/lib/origin/openshift.local.volumes/rahti_admin_tmp &&   cd /var/lib/origin/openshift.local.volumes/rahti_admin_tmp && dd if=/dev/zero of=bigfile bs=1024000 count=300000  && rm -f bigfile' &
  ```
 
 
