@@ -34,6 +34,7 @@ before_script:
   - 'echo "gitlab_ci_pipeline_id: \"$CI_PIPELINE_ID\"" >> /tmp/gitlab_pipeline_context.yml'
 
 stages:
+  - cleanup
   - ci_env_deploy
   - ci_setup_dedicated_egress_ips
   - ci_run_tests
