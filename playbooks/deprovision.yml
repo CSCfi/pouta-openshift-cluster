@@ -167,3 +167,7 @@
         file:
           path: "{{ lookup('env', 'HOME') }}/.cache/openstack/ansible-inventory.cache"
           state: absent
+ 
+    - name: Pause for 1 minute to ensure everything is cleaned up
+      pause:
+         minutes: 1
