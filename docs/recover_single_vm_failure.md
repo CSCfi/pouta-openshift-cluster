@@ -89,10 +89,20 @@ A failed node can be rebuilt by following these steps:
 $ lsblk
 ```
 
+There should be only vda and vdb (with partitions) but no vdc or further.
+
+
 ```bash
 $ openstack server show [server-name]
 ```
 
+If there are attached volumes, please evacuate the pods from the node once more, and then run
+
+```
+openstack server remove volume [server-id] [volume-id]
+```
+
+to detach the volumes. 
 
 2. Rebuild the node in question:
 ```bash
@@ -117,7 +127,7 @@ ansible-playbook -v -l [server-name],bastion pre_install.yml
 ansible-playbook -v site.yml
 ```
 
-7. (Hack - temporary. Run steps 7-9 on rahti only) Disable the node
+7. (Hack - temporary. Run steps 7-9 on rahti, rahti-nt and varda only) Disable the node
 
 ```bash
 oc adm  manage-node [server-name] --schedulable=false
@@ -125,16 +135,25 @@ oc adm  manage-node [server-name] --schedulable=false
 
 8. Write a large file to the disk
 
-This allocates the undelying LVM. If this is not done, disk performance will be bad.
+This allocates the undelying LVM. If this is not done, disk performance will be bad. On rahti run:
 
 ```bash
 ssh [nodename]
-mkdir /var/lib/origin/openshift.local.volumes/rahti_admin_tmp
-cd /var/lib/origin/openshift.local.volumes/rahti_admin_tmp
+sudo -i 
 # This takes overnight
-dd if=/dev/zero of=bigfile bs=1024000 count=3000000
-rm bigfile
+nohup  sh -c 'mkdir -p /var/lib/origin/openshift.local.volumes/rahti_admin_tmp &&   cd /var/lib/origin/openshift.local.volumes/rahti_admin_tmp && dd if=/dev/zero of=bigfile bs=1024000 count=3000000  && rm -f bigfile' &
  ```
+
+On varda and rahti-int run (smaller disks)
+
+```bash
+ssh [nodename]
+sudo -i
+# This takes a few hours
+nohup  sh -c 'mkdir -p /var/lib/origin/openshift.local.volumes/rahti_admin_tmp &&   cd /var/lib/origin/openshift.local.volumes/rahti_admin_tmp && dd if=/dev/zero of=bigfile bs=1024000 count=300000  && rm -f bigfile' &
+ ```
+
+
 9. Enable the node
 
 ```bash

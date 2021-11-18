@@ -34,11 +34,11 @@ before_script:
   - 'echo "gitlab_ci_pipeline_id: \"$CI_PIPELINE_ID\"" >> /tmp/gitlab_pipeline_context.yml'
 
 stages:
+  - cleanup_pre
   - ci_env_deploy
   - ci_setup_dedicated_egress_ips
   - ci_run_tests
-  - ci_backups
-  - cleanup
+  - cleanup_post
   - qa_env_deploy
   - qa_setup_dedicated_egress_ips
   - qa_run_tests
@@ -90,22 +90,23 @@ run_ci_tests_openshift_job:
     - oso-ci
   resource_group: ci
 
-backup_ci_openshift_job:
-  stage: ci_backups
+deprovision_ci_openshift_pre_job:
+  stage: cleanup_pre
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:
     - schedules
   script:
-    - ./run_backup.bash
+    - ./run_playbook.bash deprovision.yml
+  when: always
   environment:
     name: oso-ci
   tags:
     - oso-ci
   resource_group: ci
 
-deprovision_ci_openshift_job:
-  stage: cleanup
+deprovision_ci_openshift_post_job:
+  stage: cleanup_post
   variables:
     ENV_NAME: oso-ci-singlemaster
   except:
