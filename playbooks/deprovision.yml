@@ -2,6 +2,7 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  strategy: linear
   roles:
     - poc_facts
   tasks:
@@ -14,6 +15,7 @@
 - name: Get info on volumes to delete
   gather_facts: no
   hosts: masters
+  strategy: linear
   run_once: yes
   tasks:
     - name: Check if SSH works
@@ -42,6 +44,7 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  strategy: linear
   roles:
     - poc_facts
   tasks:
