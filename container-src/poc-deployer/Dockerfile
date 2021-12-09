@@ -15,8 +15,12 @@ RUN dnf install -y \
         tmux less git man bash-completion \
         which \
         java-1.8.0-openjdk-devel \
+        gcc \
+        python3-devel \
     && \
     dnf clean all
+
+RUN pip3 install --upgrade pip
 
 COPY requirements.txt /root/requirements.txt
 
