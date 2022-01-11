@@ -80,13 +80,17 @@
 'sysstat', 'logrotate', 'python-pip', 'python-passlib', 'python2-openshift']
     state: present
 
+# Virtualenv dependency filelock dropped python2 support.
+# Pin their versions to known combo. This is very legacy.
 - name: install virtualenv for Python
   retries: 3
   delay: 20
   register: pipresult
   until: pipresult.failed is false
   pip:
-    name: virtualenv
+    name:
+      - filelock==3.2.1
+      - virtualenv==20.0.17
     state: present
 
 - name: disable kdump
