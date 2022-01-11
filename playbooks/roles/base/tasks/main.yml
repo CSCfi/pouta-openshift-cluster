@@ -90,6 +90,8 @@
   pip:
     name:
       - filelock==3.2.1
+      - configparser==4.0.2
+      - zipp==1.2.0
       - virtualenv==20.0.17
     state: present
 
