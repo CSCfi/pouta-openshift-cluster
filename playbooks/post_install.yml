@@ -19,6 +19,10 @@
   import_playbook: setup_gpu_nodes.yml
   when: groups['gpu']|default([])|length > 0
 
+- name: Install and configure CUDA on GPU nodes
+  import_playbook: setup_cuda_environment.yml
+  when: groups['gpu']|default([])|length > 0
+
 - name: Setup InfluxDB nodes
   import_playbook: setup_influxdb_nodes.yml
 

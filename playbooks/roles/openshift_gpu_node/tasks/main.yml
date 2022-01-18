@@ -19,6 +19,7 @@
       gpgkey: "https://nvidia.github.io/nvidia-container-runtime/gpgkey"
       description: "nvidia-container-runtime repo"
 
+
 - name: install the nvidia-container-runtime package
   retries: 3
   delay: 20
@@ -27,6 +28,7 @@
   yum:
     name: nvidia-container-runtime-hook
     state: present
+
 
 - name: ensure that selinux-policy-devel is available
   package:

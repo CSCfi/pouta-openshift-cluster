@@ -16,3 +16,9 @@
   path: roles
   name: ansible-role-sudo
   version: "c829754f44e75b25b46b0663f223d51c2b6324ce"
+
+- src: https://github.com/fgci-org/ansible-role-cuda
+  scm: git
+  path: roles
+  name: ansible-role-cuda
+  version: e788807bf183ee16aa559310191c3638e8f17bac

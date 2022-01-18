@@ -111,16 +111,20 @@ objects:
       - type: "Pod"
         max:
           cpu: "{{ default_project_pod_cpu_max_limit | default('2') }}"
+          nvidia.com/gpu: "{{ default_project_pod_gpu_max_limit | default('0') }}"
           memory: "{{ default_project_pod_mem_max_limit | default('8Gi') }}"
         min:
           cpu: "{{ default_project_pod_cpu_min_limit | default('50m') }}"
+          nvidia.com/gpu: "{{ default_project_pod_gpu_max_limit | default('0') }}"
           memory: "{{ default_project_pod_mem_min_limit | default('6Mi') }}"
       - type: "Container"
         max:
           cpu: "{{ default_project_container_cpu_max_limit | default('2') }}"
+          nvidia.com/gpu: "{{ default_project_pod_gpu_max_limit | default('0') }}"
           memory: "{{ default_project_container_mem_max_limit | default('8Gi') }}"
         min:
           cpu: "{{ default_project_container_cpu_min_limit | default('50m') }}"
+          nvidia.com/gpu: "{{ default_project_pod_gpu_max_limit | default('0') }}"
           memory: "{{ default_project_container_mem_min_limit | default('4Mi') }}"
         defaultRequest:
           cpu: "{{ default_project_default_container_cpu_request | default('50m') }}"
