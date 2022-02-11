@@ -21,4 +21,4 @@
   scm: git
   path: roles
   name: ansible-role-cuda
-  version: e788807bf183ee16aa559310191c3638e8f17bac
+  version: d2300ce0fb2b12a21bfa758353a03e7217a4551f
