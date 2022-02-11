@@ -1,4 +1,4 @@
-FROM centos:8
+FROM rockylinux:latest
 
 LABEL maintainer="CSC Rahti Team <rahti-team@postit.csc.fi>"
 
