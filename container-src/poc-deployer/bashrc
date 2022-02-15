@@ -34,10 +34,7 @@ YELLOW="$(tput setaf 3)"
 GREEN="$(tput setaf 2)"
 RESET="$(tput sgr0)"
 
-export CLICOLOR=1
-
-# Colorise`ls' output:
-export LSCOLORS=ExFxBxDxCxegedabagacad
+# Useful shorthand aliases
 alias ls='ls -GFh'
 alias ll='ls -l'
 
