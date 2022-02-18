@@ -1,4 +1,4 @@
-FROM rockylinux:latest
+FROM rockylinux:8
 
 LABEL maintainer="CSC Rahti Team <rahti-team@postit.csc.fi>"
 
