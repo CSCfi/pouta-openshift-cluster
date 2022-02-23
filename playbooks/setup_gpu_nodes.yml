@@ -40,7 +40,7 @@
                 nodeSelector:
                   type: gpu
                 containers:
-                  - image: nvidia/k8s-device-plugin:v0.9.0-centos7
+                  - image: nvidia/k8s-device-plugin:v0.10.0
                     name: nvidia-device-plugin-ctr
                     securityContext:
                       allowPrivilegeEscalation: false
