@@ -29,6 +29,21 @@ branch-info() {
 # https://unix.stackexchange.com/questions/105958/terminal-prompt-not-wrapping-correctly
 export PS1='\[${YELLOW}\]${ENV_NAME}\[${RESET}\] $(short_cwd) \[${GREEN}\]($(parse_git_branch))\[${RESET}\] > '
 
+# Define colour macros and utility functions for our custom bash prompt
+YELLOW="$(tput setaf 3)"
+GREEN="$(tput setaf 2)"
+RESET="$(tput sgr0)"
+
+# Useful shorthand aliases
+alias ls='ls -GFh'
+alias ll='ls -l'
+
+# Aliases to avoid making mistakes:
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+
+
 source init_env.bash
 
 echo
