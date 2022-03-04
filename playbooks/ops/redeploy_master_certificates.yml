@@ -228,7 +228,7 @@
       when: item.0 != openshift_ca_host
       delegate_to: "{{ openshift_ca_host }}"
       run_once: true
-    
+
     - name: Generating API Server keys
       oc_adm_ca_server_cert:
         cert: "/etc/origin/service-catalog/apiserver.crt"
@@ -237,7 +237,9 @@
         signer_cert: "/etc/origin/service-catalog/ca.crt"
         signer_key: "/etc/origin/service-catalog/ca.key"
         signer_serial: "/etc/origin/service-catalog/apiserver.serial.txt"
-    
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
     - name: Create apiserver-ssl secret
       oc_secret:
         state: present
@@ -248,7 +250,8 @@
           path: "/etc/origin/service-catalog/apiserver.crt"
         - name: tls.key
           path: "/etc/origin/service-catalog/apiserver.key"
-
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
 
     - name: make a tarball with the generated config
       archive:
