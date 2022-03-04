@@ -228,6 +228,27 @@
       when: item.0 != openshift_ca_host
       delegate_to: "{{ openshift_ca_host }}"
       run_once: true
+    
+    - name: Generating API Server keys
+      oc_adm_ca_server_cert:
+        cert: "/etc/origin/service-catalog/apiserver.crt"
+        key: "/etc/origin/service-catalog/apiserver.key"
+        hostnames: "apiserver.kube-service-catalog.svc,apiserver.kube-service-catalog.svc.cluster.local,apiserver.kube-service-catalog"
+        signer_cert: "/etc/origin/service-catalog/ca.crt"
+        signer_key: "/etc/origin/service-catalog/ca.key"
+        signer_serial: "/etc/origin/service-catalog/apiserver.serial.txt"
+    
+    - name: Create apiserver-ssl secret
+      oc_secret:
+        state: present
+        name: apiserver-ssl
+        namespace: kube-service-catalog
+        files:
+        - name: tls.crt
+          path: "/etc/origin/service-catalog/apiserver.crt"
+        - name: tls.key
+          path: "/etc/origin/service-catalog/apiserver.key"
+
 
     - name: make a tarball with the generated config
       archive:
