@@ -229,6 +229,16 @@
       delegate_to: "{{ openshift_ca_host }}"
       run_once: true
 
+    - name: Remove old API Server keys
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items: 
+        - "/etc/origin/service-catalog/apiserver.crt"
+        - "/etc/origin/service-catalog/apiserver.key"
+      delegate_to: "{{ openshift_ca_host }}"
+      run_once: true
+
     - name: Generating API Server keys
       oc_adm_ca_server_cert:
         cert: "/etc/origin/service-catalog/apiserver.crt"
