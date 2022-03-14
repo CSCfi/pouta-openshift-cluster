@@ -9,7 +9,7 @@ metadata:
     tags: python,jupyter,jupyterhub
     description: |-
 
-      Deploys JupyterHub with GitHub OAuth as the authentication method. For more information on the use of this template, see https://github.com/CSCfi/jupyterhub-template.
+      Deploys JupyterHub with GitHub OAuth as the authentication method. For more information on the use of this template, see https://github.com/CSCfi/jupyterhub-template. By default, the template uses our prebuild JupyterHub and Notebook docker images. However, if you plan to customize the JupyterHub and Notebook docker images, you can find the how-to instructions in the README found at  https://github.com/CSCfi/jupyterhub-quickstart.
 
       The default notebook image only allows using Python in notebooks.
 
