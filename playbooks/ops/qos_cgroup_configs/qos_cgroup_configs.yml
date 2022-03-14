@@ -1,0 +1,20 @@
+---
+# Patch node config and restart service if config changes
+# Patch file should be in the same folder than this playbook
+- name: Patch node cgroups configs
+  hosts: ssd
+
+  tasks:
+    - name: Patch config
+      patch:
+        src: qos_cgroup_configs.patch
+        dest: /etc/origin/node/node-config.yaml
+        backup: yes
+      notify: Restart origin service
+
+  handlers:
+    - name: Restart origin service
+      service:
+        name: origin-node
+        state: restarted
+

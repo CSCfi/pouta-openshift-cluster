@@ -1,0 +1,13 @@
+--- node-config.yaml	2022-03-14 07:56:01.112696484 +0000
++++ node-config.yaml	2022-03-14 07:19:47.374736753 +0000
+@@ -36,6 +36,10 @@
+   - /etc/origin/node/pods
+   rotate-certificates:
+   - 'true'
++  runtime-cgroups:
++  - /systemd/system.slice
++  kubelet-cgroups:
++  - /systemd/system.slice
+ masterClientConnectionOverrides:
+   acceptContentTypes: application/vnd.kubernetes.protobuf,application/json
+   burst: 40
