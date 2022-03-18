@@ -69,6 +69,36 @@ processes, change the labels on the mounted directories:
 cd ~/git
 chcon -Rt svirt_sandbox_file_t poc openshift-ansible openshift-environments
 ```
+__Note on RHEL 8__: RHEL 8 comes with Podman instead of Docker.
+
+If you're using RHEL8, easiest way to run the docker-wrapping scripts meantioned on this page (`build.bash`, `dcterm.sh`, and `run_deployment_container.bash`) is to create a global BASH function that returns `podman` every time `docker` is called.
+
+For example:
+
+1. Create a file in /etc/profile.d/ directory:
+
+```$ touch podmanAlias.sh```
+
+2. Edit the file, defining the function to be returned: 
+
+```
+docker() {
+    /usr/bin/podman "$@"
+}
+export -f docker
+```
+3. Take new the global function into effect by exiting your terminal and launching a new one, or by sourcing the the new file:
+
+```
+$ source /etc/profile/podmanAlias.sh
+```
+
+4. Test the new function: 
+```
+$ docker --version
+podman version 3.3.1
+```
+
 
 ### Environment specific data
 
@@ -160,7 +190,7 @@ sudo scripts/run_deployment_container.bash \
   -p /dev/shm/secret/vaultpass
 ```
 
-On mac, the required secret file is located in different path
+On MacOS, the required secret file is located in different path (`/Volumes/rRAMDisk/secret/vaultpass`).
 
 ```bash
 # Mac version
@@ -187,7 +217,7 @@ sudo scripts/run_deployment_container.bash -e oso-devel-singlemaster -p /dev/shm
 If you run the above from terminal locally while developing, add '-i' option to attach the terminal
 to the process for the color coding and ctrl+c to work.
 
-On mac, correct location for vaultpass file is `/Volumes/rRAMDisk/secret/vaultpass`.
+
 
 ### Usage in a GitLab pipeline
 
