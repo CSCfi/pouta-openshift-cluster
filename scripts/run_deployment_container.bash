@@ -6,6 +6,10 @@
 #
 #  docker exec -it [environment_name]-deployer bash
 
+# Source local variables
+shopt -s expand_aliases
+source $HOME/.bashrc
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 print_usage_and_exit()
