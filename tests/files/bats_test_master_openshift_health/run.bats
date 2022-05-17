@@ -53,10 +53,6 @@ check_namespace_pod_health() {
     check_namespace_pod_health default
 }
 
-@test "test default-www namespace pod health" {
-    check_namespace_pod_health default-www
-}
-
 @test "test glusterfs namespace pod health" {
     check_namespace_pod_health glusterfs
 }
@@ -119,6 +115,10 @@ check_namespace_pod_health() {
 
 @test "test csi-cinder namespace pod health" {
     check_namespace_pod_health csi-cinder
+}
+
+@test "test default-www namespace pod health" {
+    check_namespace_pod_health default-www
 }
 
 @test "test connectivity to registry URL" {
