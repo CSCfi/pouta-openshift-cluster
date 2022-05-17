@@ -117,10 +117,6 @@ check_namespace_pod_health() {
     check_namespace_pod_health csi-cinder
 }
 
-@test "test default-www namespace pod health" {
-    check_namespace_pod_health default-www
-}
-
 @test "test connectivity to registry URL" {
     run check_route_url default docker-registry-reencrypt
 
