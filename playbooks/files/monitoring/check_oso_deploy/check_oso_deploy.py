@@ -89,6 +89,7 @@ def create_nginx(dyn_client, namespace='nrpe-check', use_pvc=False, pvc_delay=5,
         }
     }
 
+    # Explicitly set resource limits=requests for guaranteed QoS
     deploymentconfig_data = {
         'kind': 'DeploymentConfig',
         'apiVersion': 'apps.openshift.io/v1',
@@ -97,6 +98,17 @@ def create_nginx(dyn_client, namespace='nrpe-check', use_pvc=False, pvc_delay=5,
         },
         'spec': {
             'replicas': 1,
+            'strategy': {
+                'type': 'Recreate',
+                'resources': {
+                    'limits': {
+                        'cpu': '200m'
+                    },
+                    'requests': {
+                        'cpu': '200m'
+                    }
+                }
+            },
             'template': {
                 'spec': {
                     'containers': [
