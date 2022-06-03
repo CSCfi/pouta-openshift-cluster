@@ -1,6 +1,6 @@
 ---
 - name: Setup the GPU nodes
-  hosts: gpu
+  hosts: gpu, ssd
   roles:
     - openshift_gpu_node
 
@@ -84,4 +84,3 @@
               type: gpu_container_t
       with_items:
         - restricted
-        - privileged
