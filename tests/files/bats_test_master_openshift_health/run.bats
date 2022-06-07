@@ -53,10 +53,6 @@ check_namespace_pod_health() {
     check_namespace_pod_health default
 }
 
-@test "test default-www namespace pod health" {
-    check_namespace_pod_health default-www
-}
-
 @test "test glusterfs namespace pod health" {
     check_namespace_pod_health glusterfs
 }

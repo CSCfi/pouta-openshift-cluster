@@ -12,10 +12,8 @@ import requests
 import sys
 import random
 
-from openshift import client as oso_client
-from openshift import config as oso_config
-from kubernetes import client as kube_client
-from kubernetes import config as kube_config
+from kubernetes import client, config
+from openshift.dynamic import DynamicClient
 
 NAGIOS_STATE_OK = 0
 NAGIOS_STATE_WARNING = 1
@@ -24,7 +22,9 @@ NAGIOS_STATE_UNKNOWN = 3
 
 CHECK_TEXT = 'Now witness the power of this fully armed and operational battle station.'
 
-IMAGE = 'quay.io/bitnami/nginx:1.19'
+# Quay.io had some trouble, switched to docker hub
+#IMAGE = 'quay.io/bitnami/nginx:1.19'
+IMAGE = 'docker.io/bitnami/nginx:1.19'
 HTML_DIR_ON_IMAGE = '/opt/bitnami/nginx/html'
 
 
@@ -42,13 +42,13 @@ class PollTimeoutException(OsoCheckException):
     msg = 'Timeout while polling the created service.'
 
 
-def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_delay=5, storage_class=None):
+def create_nginx(dyn_client, namespace='nrpe-check', use_pvc=False, pvc_delay=5, storage_class=None):
     """
     Create a minimal deployment of nginx. Optionally attach a persistent volume
     and write some data to it.
     """
     project_data = {
-        'apiVersion': 'v1',
+        'apiVersion': 'project.openshift.io/v1',
         'kind': 'ProjectRequest',
         'metadata': {
             'name': namespace
@@ -89,14 +89,26 @@ def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_d
         }
     }
 
+    # Explicitly set resource limits=requests for guaranteed QoS
     deploymentconfig_data = {
         'kind': 'DeploymentConfig',
-        'apiVersion': 'v1',
+        'apiVersion': 'apps.openshift.io/v1',
         'metadata': {
             'name': 'nrpe-check-deployment'
         },
         'spec': {
             'replicas': 1,
+            'strategy': {
+                'type': 'Recreate',
+                'resources': {
+                    'limits': {
+                        'cpu': '200m'
+                    },
+                    'requests': {
+                        'cpu': '200m'
+                    }
+                }
+            },
             'template': {
                 'spec': {
                     'containers': [
@@ -121,8 +133,9 @@ def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_d
         }
     }
 
-    oso_api.create_project_request(body=project_data)
-    time.sleep(5)
+    v1_projectrequests = dyn_client.resources.get(api_version='project.openshift.io/v1', kind='ProjectRequest')
+    v1_projectrequests.create(body=project_data)
+
     if use_pvc:
         pvc_data = {
             'kind': 'PersistentVolumeClaim',
@@ -132,7 +145,7 @@ def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_d
                 ],
                 'resources': {
                     'requests': {
-                        'storage': '1Gi'
+                        'storage': '50Mi'
                     }
                 }
             },
@@ -145,7 +158,9 @@ def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_d
         if storage_class != None:
             pvc_data['spec']['storageClassName'] = storage_class
 
-        kube_api.create_namespaced_persistent_volume_claim(namespace=namespace, body=pvc_data)
+        v1_pvc = dyn_client.resources.get(api_version='v1', kind='PersistentVolumeClaim')
+        v1_pvc.create(body=pvc_data, namespace=namespace)
+
         time.sleep(pvc_delay)
 
         init_container_data = [
@@ -182,16 +197,19 @@ def create_nginx(oso_api, kube_api, namespace='nrpe-check', use_pvc=False, pvc_d
         deploymentconfig_data['spec']['template']['spec']['containers'][0]['volumeMounts'] = container_volumemount_data
         deploymentconfig_data['spec']['template']['spec']['volumes'] = volume_data
 
-    oso_api.create_namespaced_deployment_config(namespace=namespace, body=deploymentconfig_data)
+    v1_deploymentconfig = dyn_client.resources.get(api_version='apps.openshift.io/v1', kind='DeploymentConfig')
+    v1_deploymentconfig.create(body=deploymentconfig_data, namespace=namespace)
 
-    kube_api.create_namespaced_service(namespace=namespace, body=service_data)
+    v1_service = dyn_client.resources.get(api_version='v1', kind='Service')
+    v1_service.create(body=service_data, namespace=namespace)
 
-    route_resp = oso_api.create_namespaced_route(namespace=namespace, body=route_data)
+    v1_route = dyn_client.resources.get(api_version='v1', kind='Route')
+    route_resp = v1_route.create(body=route_data, namespace=namespace)
 
-    return 'http://' + route_resp.spec.host
+    return "http://" + route_resp.spec.host
 
 
-def poll_nginx(route_url, string_to_grep, timeout=300):
+def poll_nginx(route_url, string_to_grep, timeout=150):
     """
     Poll the create nginx service until the expected string is returned or
     a timeout is reached. If a timeout is reached, raise a PollTimeoutException.
@@ -202,7 +220,7 @@ def poll_nginx(route_url, string_to_grep, timeout=300):
 
     while time_now < end_by:
         req = requests.get(route_url)
-        if string_to_grep in req.content:
+        if string_to_grep in req.text:
             return
 
         time.sleep(1)
@@ -211,13 +229,13 @@ def poll_nginx(route_url, string_to_grep, timeout=300):
     raise PollTimeoutException()
 
 
-def cleanup(oso_api, namespace):
+def cleanup(dyn_client, namespace):
     try:
-        projects = oso_api.list_project()
-        project_to_delete = list(filter(lambda x: x.metadata.name == namespace, projects.items))
+        v1_project = dyn_client.resources.get(api_version='project.openshift.io/v1', kind='Project')
+        project_to_delete = list(filter(lambda x: x.metadata.name == namespace, v1_project.get().items))
         if len(project_to_delete) == 1:
-            oso_api.delete_project(namespace)
-    except kube_client.rest.ApiException as e:
+            v1_project.delete(name=namespace)
+    except Exception as e:
         print(e)
         exit_with_stats(NAGIOS_STATE_CRITICAL)
 
@@ -277,16 +295,16 @@ def main():
     if args.use_pvc:
         string_to_grep = CHECK_TEXT
     else:
-        string_to_grep = 'Welcome to nginx!'
+        string_to_grep = "Welcome to nginx!"
 
     timeout = int(args.timeout)
     pvc_delay = int(args.pvc_delay)
 
     try:
-        oso_config.load_kube_config()
-        kube_config.load_kube_config()
-        oso_api = oso_client.OapiApi()
-        kube_api = kube_client.CoreV1Api()
+        # read config from kubeconfig that is set up in bash wrapper
+        k8s_client = config.new_client_from_config()
+        dyn_client = DynamicClient(k8s_client)
+
         rnd = random.randint(0, 999)
         namespace = 'nrpe-check-{}-{}'.format(datetime.datetime.now().strftime('%y-%m-%d-%H-%M-%S'), rnd)
     except:
@@ -294,25 +312,13 @@ def main():
         exit_with_stats(NAGIOS_STATE_CRITICAL)
 
     try:
-        route_url = create_nginx(oso_api, kube_api, namespace, args.use_pvc, pvc_delay, args.storage_class)
+        route_url = create_nginx(dyn_client, namespace, args.use_pvc, pvc_delay, args.storage_class)
         poll_nginx(route_url, string_to_grep, timeout)
-    except kube_client.rest.ApiException as e:
-        print(e)
-        exit_with_stats(NAGIOS_STATE_CRITICAL)
-    except PollTimeoutException as e:
-        print(e)
-        exit_with_stats(NAGIOS_STATE_CRITICAL)
-    except requests.exceptions.ConnectionError as e:
-        print(e)
-        exit_with_stats(NAGIOS_STATE_CRITICAL)
     except:
         print('Unexpected error: ', sys.exc_info()[0])
         exit_with_stats(NAGIOS_STATE_CRITICAL)
     finally:
-        # Cleanup is more reliable if we sleep few seconds here (with openshift 3.11)
-        # Increased sleep time from 5 > 15 > 25 for avoiding nrpe namespace stuck
-        time.sleep(25)
-        cleanup(oso_api, namespace)
+        cleanup(dyn_client, namespace)
 
     exit_with_stats(NAGIOS_STATE_OK)
 
