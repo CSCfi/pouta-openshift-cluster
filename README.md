@@ -59,6 +59,13 @@ cd ~/git/poc/container-src/poc-deployer
 sudo ./build.bash
 ```
 
+If you're using Buildah, you can also use:
+```bash
+cd ~/git/poc/container-src/poc-deployer
+sudo ./buildah_build.bash
+```
+
+
 If Docker containers can be launched without 'sudo', that can be left out in the commands above.
 
 __Note on SELinux__: If you are running under SELinux enforcing mode, the container processes
