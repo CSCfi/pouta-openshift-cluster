@@ -9,9 +9,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export KUBECONFIG=$(mktemp)
 
 if [[ ! -d $HOME/check_oso_deploy ]]; then
-  virtualenv $HOME/check_oso_deploy &> /dev/null
+  python3 -m venv $HOME/check_oso_deploy &> /dev/null
   source $HOME/check_oso_deploy/bin/activate
-  pip install -r $SCRIPT_DIR/requirements.txt &> /dev/null
+  pip3 install -r $SCRIPT_DIR/requirements.txt &> /dev/null
 else
   source $HOME/check_oso_deploy/bin/activate
 fi
@@ -23,7 +23,16 @@ fi
 
 IFS='|' read -r api_url username password < /dev/shm/secret/testuser_credentials
 oc login $api_url --username $username --password $password &> /dev/null
-python $SCRIPT_DIR/check_oso_deploy.py $@
+
+# Set temporary kubeconfig for python libraries
+token=$(oc whoami -t)
+oc config set-cluster rahti-target &> /dev/null
+oc config set-cluster rahti-target --server $api_url &> /dev/null
+oc config set-credentials $username --token $token &> /dev/null
+oc config set-context rahti-target --cluster rahti-target --user $username &> /dev/null
+oc config use-context rahti-target &> /dev/null
+
+python3 $SCRIPT_DIR/check_oso_deploy.py $@
 ret=$?
 
 deactivate
