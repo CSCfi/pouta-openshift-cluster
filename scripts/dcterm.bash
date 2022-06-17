@@ -9,6 +9,10 @@
 # If you are using mac then you can use greadlink through: brew install coreutils
 # or use inline function to emulate same behavior.
 
+# Source local variables
+shopt -s expand_aliases
+source $HOME/.bashrc
+
 # Give basic usage info if no arguments given
 if (( $# < 1 )); then
    echo "Usage: dcterm.bash [environment-name]"
