@@ -1,6 +1,6 @@
 ---
 - name: Setup the GPU nodes
-  hosts: gpu, ssd
+  hosts: gpu, ssd, lb
   roles:
     - openshift_gpu_node
 
