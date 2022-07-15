@@ -13,7 +13,7 @@
 - name: Get context for current environment
   include_vars:
     dir: "{{ os_env_path }}/group_vars/{{ cluster_name }}"
-  no_log: False
+  no_log: True
 
 - name: Get context based on install type
   include_vars:
