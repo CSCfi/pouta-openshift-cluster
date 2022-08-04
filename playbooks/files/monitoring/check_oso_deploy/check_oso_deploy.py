@@ -230,11 +230,20 @@ def poll_nginx(route_url, string_to_grep, timeout=150):
 
 
 def cleanup(dyn_client, namespace):
+
     try:
-        v1_project = dyn_client.resources.get(api_version='project.openshift.io/v1', kind='Project')
-        project_to_delete = list(filter(lambda x: x.metadata.name == namespace, v1_project.get().items))
-        if len(project_to_delete) == 1:
-            v1_project.delete(name=namespace)
+        nb_project_to_delete = 0
+        # Sometimes the project is not available even after the deployment is created.
+        # Wait until the project is available.
+        while nb_project_to_delete != 1:
+
+           v1_project = dyn_client.resources.get(api_version='project.openshift.io/v1', kind='Project')
+           project_to_delete = list(filter(lambda x: x.metadata.name == namespace, v1_project.get().items))
+           nb_project_to_delete = len(project_to_delete)
+           time.sleep(0.5)
+
+        v1_project.delete(name=namespace)
+
     except Exception as e:
         print(e)
         exit_with_stats(NAGIOS_STATE_CRITICAL)
