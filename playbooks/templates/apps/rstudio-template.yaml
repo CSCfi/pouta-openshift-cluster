@@ -49,7 +49,7 @@ objects:
     path: /
     to:
       kind: Service
-      name: nginx-okd
+      name: shiny-server
     tls:
       insecureEdgeTerminationPolicy: Redirect
       termination: edge
@@ -65,23 +65,6 @@ objects:
           auth_basic \"Rstudio\";
           auth_basic_user_file /etc/nginx/secret/htpasswd;
           proxy_pass http://rstudio:8787/;
-          proxy_set_header Host $http_host;
-        }
-
-        error_page   500 502 503 504  /50x.html;
-        location = /50x.html {
-          root   /usr/share/nginx/html;
-        }
-      }
-      server {
-        listen 8081;
-        server_name ${NAME}-shiny.${APPLICATION_DOMAIN_SUFFIX};
-        location / {
-          root   /usr/share/nginx/html;
-          index  index.html index.htm;
-          auth_basic \"Rstudio\";
-          auth_basic_user_file /etc/nginx/secret/htpasswd;
-          proxy_pass http://shiny-server:3838/;
           proxy_set_header Host $http_host;
         }
 
@@ -223,11 +206,23 @@ objects:
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /srv/shiny-server
+              name: shiny-server
+            - mountPath: /home
+              name: rstudio-home
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        volumes:
+          - name: shiny-server
+            persistentVolumeClaim:
+              claimName: shiny-server
+          - name: rstudio-home
+            persistentVolumeClaim:
+              claimName: rstudio-home
     test: false
     triggers:
     - type: ConfigChange
@@ -267,16 +262,9 @@ objects:
           app: shiny-server
           deploymentconfig: shiny-server
       spec:
-        initContainers:
-        - name: init-index
-          image: alpine:latest
-          command: ['sh', '-c', '! test -f /srv/shiny-server/index.html && echo This file is in the /srv/shiny-server folder.>/srv/shiny-server/index.html || echo "index.html exists"']
-          volumeMounts:
-          - mountPath: /srv/shiny-server
-            name: shiny-server
         containers:
         - command:
-          - /init.sh
+          - /start.sh
           - shiny-server
           image: rstudio:latest
           imagePullPolicy: Always
@@ -290,6 +278,8 @@ objects:
           volumeMounts:
           - mountPath: /srv/shiny-server
             name: shiny-server
+          - mountPath: /home
+            name: rstudio-home
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
@@ -299,6 +289,9 @@ objects:
         - name: shiny-server
           persistentVolumeClaim:
             claimName: shiny-server
+        - name: rstudio-home
+          persistentVolumeClaim:
+            claimName: rstudio-home
     test: false
     triggers:
     - type: ConfigChange
@@ -375,8 +368,7 @@ objects:
     source:
       type: Git
       git:
-        uri: https://github.com/lvarin/rstudio-openshift.git
-        ref: fix
+        uri: https://github.com/CSCfi/rstudio-openshift.git
       contextDir: server
     strategy:
       dockerStrategy:
@@ -462,7 +454,21 @@ objects:
     resources:
       requests:
         storage: ${STORAGE_SIZE}
+    storageClassName: glusterfs-storage
   status: {}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: rstudio-home
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${STORAGE_SIZE_TMP}
+    storageClassName: glusterfs-storage
+  status: {}
+
 
 ####################
 
@@ -485,6 +491,11 @@ parameters:
 - description: Persistent Storage Size
   displayName: Storage Size for Shiny
   name: STORAGE_SIZE
+  required: true
+  value: 1Gi
+- description: Persistent Storage Size
+  displayName: Storage Size for Rstudio work folder
+  name: STORAGE_SIZE_TMP
   required: true
   value: 1Gi
 - description: The exposed hostname suffix that will be used to create routes for app
