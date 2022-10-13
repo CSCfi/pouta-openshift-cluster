@@ -1,10 +1,10 @@
-- name: add the glusterfs41 repo
+- name: add the glusterfs9 repo
   retries: 3
   delay: 20
   register: yumresult
   until: yumresult.failed is false
   yum:
-    pkg: centos-release-gluster41
+    pkg: centos-release-gluster9
     state: present
   when: "not poc_installed|default(False)"
 

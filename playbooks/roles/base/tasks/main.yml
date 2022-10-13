@@ -13,13 +13,13 @@
   register: templatize_base_repo_config_file
   when: not lock_os_minor_version
 
-- name: add the glusterfs41 repo
+- name: add the glusterfs9 repo
   retries: 3
   delay: 20
   register: yumresult
   until: yumresult.failed is false
   yum:
-    pkg: centos-release-gluster41
+    pkg: centos-release-gluster9
     state: present
     lock_timeout: 120
   when: "not poc_installed|default(False)"
