@@ -1,5 +1,5 @@
 # Ansible version used in container
-ansible==2.9.27
+ansible==7.0.0
 ansible-lint
 
 # Dynamic inventory script
