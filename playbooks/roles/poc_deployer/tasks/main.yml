@@ -58,3 +58,8 @@
       export OPENSHIFT_RELEASE="{{ openshift_release }}"
       export OPENSHIFT_ANSIBLE_REPO="{{ openshift_ansible_repo|default('https://github.com/CSCfi/openshift-ansible') }}"
       export OPENSHIFT_ANSIBLE_BRANCH="{{ openshift_ansible_branch|default('release-3.11.1-csc') }}"
+      export PRODUCTION_MICROSERVICE_TOKEN="{{ production_microservice_token }}"
+      export PRODUCTION_MICROSERVICE_URL="{{ production_microservice_url }}"
+      export TEST_MICROSERVICE_TOKEN="{{ test_microservice_token }}"
+      export TEST_MICROSERVICE_URL="{{ test_microservice_url }}"
+
