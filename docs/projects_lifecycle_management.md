@@ -18,7 +18,11 @@ First, you need to copy the KubeConfig file from the master host to the deployme
 
 `$ ansible-playbook copy_kubeconfig.yaml`
 
-`$ cd ../scripts/projects-lcm`
+`$ cd ../scripts/`
+
+Print a summary of projects in the data deletion process:
+
+`$ python3 projects_lcm.py --mode MANUAL --action LIST-CLOSED-PROJECTS`
 
 Running the script with __AUTO__ mode:
 
@@ -36,10 +40,6 @@ Manually unsuspending a CSC project in Rahti:
 Manually deleting a CSC project from Rahti:
 
 `$ python3 projects_lcm.py --mode MANUAL --action DELETE --csc-project <csc-project-number>`
-
-Print a summary of projects in the data deletion process:
-
-`$ python3 projects_lcm.py --mode MANUAL --action LIST-CLOSED-PROJECTS`
 
 You can also use `--test true` parameter to use the test microservice instead of the production microservice.
 
