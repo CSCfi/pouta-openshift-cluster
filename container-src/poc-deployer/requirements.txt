@@ -27,3 +27,9 @@ python-keystoneclient==3.18.0
 python-novaclient==17.1.0
 python-openstackclient==3.19.0
 python-swiftclient==3.10.0
+
+# packages for openshift client
+kubernetes==24.2.0
+openshift==0.13.1
+
+
