@@ -330,8 +330,9 @@ def report_project_deletion(project_id, service_url, service_token, dry_run=True
         time.sleep(REQUESTS_INTERVAL)
         response = requests.post(url)
         if response.status_code == 200:
-            logging.info("Data deletion for project %s reported successfully" % project_id)
             workflow_id = response.json()['workflow']
+            logging.info("Data deletion for project %s reported successfully, triggered workflow ID is %s" % (project_id, workflow_id))
+
             return workflow_id
         else:
             return None
