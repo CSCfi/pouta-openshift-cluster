@@ -2,6 +2,7 @@
 
 # This script implements the data deletion process as described in :
 # https://wiki.eduuni.fi/pages/viewpage.action?spaceKey=CscABCD&title=Data+Deletion+Process+Integration+Instructions+for+Services
+import time
 
 import requests
 import logging
@@ -19,6 +20,7 @@ logging.basicConfig(stream=sys.stdout,
 
 PROJECT_GRACE_PERIOD = 90
 PVS_GRACE_PERIOD = 30
+REQUESTS_INTERVAL = 8
 
 
 def suspend_project(dyn_client, csc_project_id):
@@ -325,8 +327,10 @@ def report_project_deletion(project_id, service_url, service_token, dry_run=True
     else:
         url = service_url + '/report?service=RAHTI&project=' + project_id + '&action=datadeleted&token=' + service_token
     try:
+        time.sleep(REQUESTS_INTERVAL)
         response = requests.post(url)
         if response.status_code == 200:
+            logging.info("Data deletion for project %s reported successfully" % project_id)
             workflow_id = response.json()['workflow']
             return workflow_id
         else:
