@@ -20,7 +20,8 @@ logging.basicConfig(stream=sys.stdout,
 
 PROJECT_GRACE_PERIOD = 90
 PVS_GRACE_PERIOD = 30
-REQUESTS_INTERVAL = 8
+REQUESTS_INTERVAL_INCREMENT = 5
+REQUESTS_RETRIES_NUMBER = 5
 
 
 def suspend_project(dyn_client, csc_project_id):
@@ -327,14 +328,22 @@ def report_project_deletion(project_id, service_url, service_token, dry_run=True
     else:
         url = service_url + '/report?service=RAHTI&project=' + project_id + '&action=datadeleted&token=' + service_token
     try:
-        time.sleep(REQUESTS_INTERVAL)
+        retry_count = 1
+        sleep_time = 0
         response = requests.post(url)
+        while response.status_code != 200 and retry_count < REQUESTS_RETRIES_NUMBER:
+            sleep_time += REQUESTS_INTERVAL_INCREMENT
+            logging.error("Not able to report data deletion for project %s, trying again in %s s" % project_id, sleep_time)
+            time.sleep(sleep_time)
+            response = requests.post(url)
+            retry_count += 1
+
         if response.status_code == 200:
             workflow_id = response.json()['workflow']
             logging.info("Data deletion for project %s reported successfully, triggered workflow ID is %s" % (project_id, workflow_id))
-
             return workflow_id
         else:
+            logging.error("Failed to report data deletion for project %s, not trying again" % project_id)
             return None
     except Exception as e:
         logging.error(e)
