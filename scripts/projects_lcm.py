@@ -333,7 +333,7 @@ def report_project_deletion(project_id, service_url, service_token, dry_run=True
         response = requests.post(url)
         while response.status_code != 200 and retry_count < REQUESTS_RETRIES_NUMBER:
             sleep_time += REQUESTS_INTERVAL_INCREMENT
-            logging.error("Not able to report data deletion for project %s, trying again in %s s" % project_id, sleep_time)
+            logging.error("Not able to report data deletion for project %s, trying again in %s s" % (project_id, sleep_time))
             time.sleep(sleep_time)
             response = requests.post(url)
             retry_count += 1
