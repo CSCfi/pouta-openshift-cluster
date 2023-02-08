@@ -7,7 +7,7 @@ decorator==4.4.2
 
 # Newer versions require rust compiler. Let's stick to this one for a while.
 # https://cryptography.io/en/latest/faq.html#installing-cryptography-fails-with-error-can-not-find-rust-compiler
-cryptography==3.3.2
+cryptography==39.0.1
 
 # packages for ansible openstack dynamic inventory
 openstacksdk==0.36.3
