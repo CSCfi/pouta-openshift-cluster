@@ -44,6 +44,7 @@ WORKDIR /opt/deployment
 COPY init_env.bash init_env.bash
 COPY run_playbook.bash run_playbook.bash
 COPY run_backup.bash run_backup.bash
+COPY project_lcm_wrapper.bash project_lcm_wrapper.bash
 COPY cinder_csi_restart.bash cinder_csi_restart.bash
 COPY bashrc .bashrc
 

@@ -3,7 +3,7 @@
 # Ansible. If you update the deployment container image, remember to update the
 # version number here.
 image:
-  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer-3.11:0.9
+  name: docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:1.2
 
 variables:
   DOCKER_DRIVER: overlay
@@ -46,6 +46,7 @@ stages:
   - prod_deploy
   - scheduled_backups
   - cinder_csi_restarts
+  - scheduled_data_deletion
 
 deploy_ci_openshift_job:
   stage: ci_env_deploy
@@ -335,3 +336,17 @@ cinder_csi_restarts_valinor_job:
   tags:
     - valinor
   resource_group: valinor
+
+data_deletion_job:
+  stage: scheduled_data_deletion
+  variables:
+    ENV_NAME: rahti
+  script:
+    - ./run_playbook.bash copy_kubeconfig.yaml -e @/tmp/gitlab_pipeline_context.yml
+    - ./project_lcm_wrapper.bash
+  only:
+    variables:
+      - $SCHEDULED_JOB_NAME == "data_deletion" && $CI_PIPELINE_SOURCE == "schedule"
+  tags:
+    - rahti
+  resource_group: rahti
