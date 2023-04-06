@@ -76,8 +76,8 @@ done
 shift "$((OPTIND-1))"
 
 docker run --rm \
-    -v $SCRIPT_DIR/../../openshift-environments:/opt/deployment/openshift-environments:ro \
-    -v $SCRIPT_DIR/../../poc:/opt/deployment/poc:ro \
+    -v $SCRIPT_DIR/../../openshift-environments:/opt/deployment/openshift-environments:ro,Z \
+    -v $SCRIPT_DIR/../../poc:/opt/deployment/poc:ro,Z \
     --name ${env_name}-deployer \
     $docker_opts \
     $container_image $*
