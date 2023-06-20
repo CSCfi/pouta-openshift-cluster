@@ -62,4 +62,6 @@
       export PRODUCTION_MICROSERVICE_URL="{{ production_microservice_url }}"
       export TEST_MICROSERVICE_TOKEN="{{ test_microservice_token }}"
       export TEST_MICROSERVICE_URL="{{ test_microservice_url }}"
+      export NEW_CLUSTER_VERSION_URL="{{ new_cluster_version_url | default('no new version') }}"
+      export NEW_CLUSTER_VERSION_TOKEN="{{ new_cluster_version_token | default('no new version') }}"
 
