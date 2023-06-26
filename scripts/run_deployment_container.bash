@@ -30,7 +30,7 @@ print_usage_and_exit()
 }
 
 docker_opts='-it'
-container_image='cscfi/poc-deployer'
+container_image='docker-registry.rahti.csc.fi/rahti-docker-prod/poc-deployer:1.2'
 
 while getopts "p:P:e:o:c:sh" opt; do
     case $opt in
