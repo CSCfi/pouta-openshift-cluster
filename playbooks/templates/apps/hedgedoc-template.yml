@@ -236,7 +236,7 @@ objects:
     resources:
       requests:
         storage: ${DB_STORAGE}
-    storageClassName: glusterfs-storage
+    storageClassName: standard-rwo
   status: {}
 
 - apiVersion: v1
@@ -253,7 +253,7 @@ objects:
     resources:
       requests:
         storage: ${UPLOADS_STORAGE}
-    storageClassName: glusterfs-storage
+    storageClassName: standard-rwo
   status: {}
 
 - apiVersion: v1
