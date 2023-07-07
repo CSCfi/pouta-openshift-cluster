@@ -68,6 +68,7 @@ objects:
     resources:
       requests:
         storage: ${VOLUME_CAPACITY}
+    storageClassName: standard-rwo
 
 # DeploymentConfig
 - apiVersion: v1
