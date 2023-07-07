@@ -1,0 +1,387 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+labels:
+  app: ${MATOMO_APP_NAME}
+  template: ${MATOMO_APP_NAME}-template
+message: |-
+  Matomo Server has been scheduled for creation in your project, and should be soon available at: https://${MATOMO_APP_NAME}.${APPLICATION_DOMAIN_SUFFIX}
+  N:B This Matomo template is valnilla template which needs settings for GDPR-compliant analytics of your needs.
+
+  * Username: ${MYSQL_USER}
+  * Password: ${MYSQL_PASSWORD}
+  * Database Name: ${MYSQL_DATABASE}
+  * Connection URL: mysql://${DATABASE_SERVICE_NAME}:3306/
+  
+  Building images takes some minutes to complete, so please be patient. You can follow progress on your projects overview page.
+metadata:
+  annotations:
+    description: This template deploys Matomo Server with Mariadb.
+    iconClass: fa fa-bar-chart
+    openshift.io/display-name: ${MATOMO_APP_NAME}-matomo-application
+    openshift.io/documentation-url: https://gitlab.ci.csc.fi/compen/css/matomo-openshift-v2-template
+    openshift.io/support-url: https://www.csc.fi/contact-info
+    openshift.io/long-description: ""
+    openshift.io/provider-display-name: CSC
+    tags: ${MATOMO_APP_NAME},mariadb,matomo
+    template.openshift.io/bindable: "false"
+  name: ${MATOMO_APP_NAME}
+objects:
+# Existing MariaDB objects
+# Secret
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    annotations:
+      template.openshift.io/expose-database_name: '{.data[''database-name'']}'
+      template.openshift.io/expose-password: '{.data[''database-password'']}'
+      template.openshift.io/expose-root_password: '{.data[''database-root-password'']}'
+      template.openshift.io/expose-username: '{.data[''database-user'']}'
+    name: ${DATABASE_SERVICE_NAME}
+  stringData:
+    database-name: ${MYSQL_DATABASE}
+    database-password: ${MYSQL_PASSWORD}
+    database-root-password: ${MYSQL_ROOT_PASSWORD}
+    database-user: ${MYSQL_USER}
+
+# Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      template.openshift.io/expose-uri: mysql://{.spec.clusterIP}:{.spec.ports[?(.name=="mariadb")].port}
+    name: ${DATABASE_SERVICE_NAME}
+  spec:
+    ports:
+    - name: mariadb
+      port: 3306
+    selector:
+      name: ${DATABASE_SERVICE_NAME}
+
+# PersistentVolumeClaim
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${DATABASE_SERVICE_NAME}
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${VOLUME_CAPACITY}
+
+# DeploymentConfig
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: "true"
+    name: ${DATABASE_SERVICE_NAME}
+  spec:
+    replicas: 1
+    selector:
+      name: ${DATABASE_SERVICE_NAME}
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          name: ${DATABASE_SERVICE_NAME}
+      spec:
+        containers:
+        - env:
+          - name: MYSQL_USER
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: ${DATABASE_SERVICE_NAME}
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: ${DATABASE_SERVICE_NAME}
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-root-password
+                name: ${DATABASE_SERVICE_NAME}
+          - name: MYSQL_DATABASE
+            valueFrom:
+              secretKeyRef:
+                key: database-name
+                name: ${DATABASE_SERVICE_NAME}
+          image: ' '
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            initialDelaySeconds: 30
+            tcpSocket:
+              port: 3306
+            timeoutSeconds: 1
+          name: mariadb
+          ports:
+          - containerPort: 3306
+          readinessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -i
+              - -c
+              - MYSQL_PWD="$MYSQL_PASSWORD" mysql -h 127.0.0.1 -u $MYSQL_USER -D $MYSQL_DATABASE
+                -e 'SELECT 1'
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: ${MEMORY_LIMIT}
+          volumeMounts:
+          - mountPath: /var/lib/mysql/data
+            name: ${DATABASE_SERVICE_NAME}-data
+        volumes:
+        - name: ${DATABASE_SERVICE_NAME}-data
+          persistentVolumeClaim:
+            claimName: ${DATABASE_SERVICE_NAME}
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - mariadb
+        from:
+          kind: ImageStreamTag
+          name: mariadb:${MARIADB_VERSION}
+          namespace: ${NAMESPACE}
+      type: ImageChange
+    - type: ConfigChange
+   
+# Matomo objects
+
+# DeploymentConfig
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app:  ${MATOMO_APP_NAME}
+      template: ${MATOMO_APP_NAME}-template
+    name: ${MATOMO_APP_NAME}
+  spec:
+    replicas: 1
+    selector:
+      app: ${MATOMO_APP_NAME}
+      deploymentconfig: ${MATOMO_APP_NAME}
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app:  ${MATOMO_APP_NAME}
+          deploymentconfig:  ${MATOMO_APP_NAME}
+      spec:
+        containers:
+        - env:
+            - name: MATOMO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: matomo-username
+                  name: ${MATOMO_APP_NAME}-secret
+            - name: MATOMO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: matomo-password
+                  name: ${MATOMO_APP_NAME}-secret
+            - name: MATOMO_DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  key: matomo-db-user
+                  name: ${MATOMO_APP_NAME}-secret
+            - name: MATOMO_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: matomo-db-password
+                  name: ${MATOMO_APP_NAME}-secret
+            - name: MATOMO_DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: matomo-db-name
+                  name: ${MATOMO_APP_NAME}-secret
+          image: bitnami/matomo:latest
+          imagePullPolicy: Always
+          name: matomo
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8443
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - name: ${MATOMO_APP_NAME}-data
+            mountPath: "/etc/matomopass"
+            readOnly: true
+        volumes:
+        - name: ${MATOMO_APP_NAME}-data
+          secret:
+            defaultMode: 420
+            secretName: ${MATOMO_APP_NAME}-secret
+
+#Secret
+- apiVersion: v1
+  stringData:
+    matomo-username: ${MATOMO_USERNAME}
+    matomo-password: ${MATOMO_PASSWORD}
+    matomo-db-user: ${MATOMO_DATABASE_USER}
+    matomo-db-password: ${MATOMO_DATABASE_PASSWORD}
+    matomo-db-name: ${MATOMO_DATABASE_NAME}
+  kind: Secret
+  metadata:
+    name: ${MATOMO_APP_NAME}-secret
+  type: Opaque
+
+# Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: ${MATOMO_APP_NAME}
+    name: ${MATOMO_APP_NAME}-svc
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: 8443-tcp
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+    selector:
+      deploymentconfig: ${MATOMO_APP_NAME}
+    type: ClusterIP
+
+# Route
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    labels:
+      app: ${MATOMO_APP_NAME}
+    name: ${MATOMO_APP_NAME}
+  spec:
+    host: ${MATOMO_APP_NAME}.${APPLICATION_DOMAIN_SUFFIX}
+    port:
+      targetPort: 8080-tcp
+    tls:
+      insecureEdgeTerminationPolicy: Redirect
+      termination: edge
+    to:
+      kind: Service
+      name: ${MATOMO_APP_NAME}-svc
+      weight: 100
+
+parameters:
+# MariaDB parameters
+- description: Maximum amount of memory the container can use.
+  displayName: Memory Limit
+  name: MEMORY_LIMIT
+  required: true
+  value: 512Mi
+- description: The OpenShift Namespace where the ImageStream resides.
+  displayName: Namespace
+  name: NAMESPACE
+  value: openshift
+- name: DATABASE_SERVICE_NAME
+  value: mariadb
+- description: Username for MariaDB user that will be used for accessing the database.
+  displayName: MariaDB Connection Username
+  from: user[A-Z0-9]{3}
+  generate: expression
+  name: MYSQL_USER
+  required: true
+- description: Password for the MariaDB connection user.
+  displayName: MariaDB Connection Password
+  from: '[a-zA-Z0-9]{16}'
+  generate: expression
+  name: MYSQL_PASSWORD
+  required: true
+- description: Password for the MariaDB root user.
+  displayName: MariaDB root Password
+  from: '[a-zA-Z0-9]{16}'
+  generate: expression
+  name: MYSQL_ROOT_PASSWORD
+  required: true
+- description: Name of the MariaDB database accessed.
+  displayName: MariaDB Database Name
+  name: MYSQL_DATABASE
+  required: true
+  value: matomodb
+- description: Volume space available for data, e.g. 512Mi, 2Gi.
+  displayName: Volume Capacity
+  name: VOLUME_CAPACITY
+  required: true
+  value: 1Gi
+- description: Version of MariaDB image to be used (10.1, 10.2 or latest).
+  displayName: Version of MariaDB Image
+  name: MARIADB_VERSION
+  required: true
+  value: "10.2"
+
+# Matomo parameters
+- description: Unique identifier for your application. Recommended value - your username
+  displayName: Application Name
+  name: MATOMO_APP_NAME
+  required: true
+  value: matomo-app
+- description: Username for logging into Matomo
+  displayName: Username
+  name: MATOMO_USERNAME
+  required: true
+- description: Password for logging into Matomo
+  displayName: Pasword
+  name: MATOMO_PASSWORD
+  required: true
+  generate: expression
+  from: "[a-zA-Z0-9]{12}"
+- description: The exposed hostname suffix that will be used to create routes for app
+  displayName: Application Hostname Suffix
+  name: APPLICATION_DOMAIN_SUFFIX
+  required: true
+  value: rahtiapp.fi
+- description: Username for Matomo database user that will be used for accessing the database.
+  displayName: Matomo MariaDB Connection Username
+  from: user[A-Z0-9]{3}
+  generate: expression
+  name: MATOMO_DATABASE_USER
+  required: true
+- description: Password for the matomo MariaDB connection user.
+  displayName: Matomo MariaDB Connection Password
+  from: '[a-zA-Z0-9]{16}'
+  generate: expression
+  name: MATOMO_DATABASE_PASSWORD
+  required: true
+- description: Name of the matomo MariaDB database accessed.
+  displayName: Matomo MariaDB Database Name
+  name: MATOMO_DATABASE_NAME
+  required: true
+- description: Mariadb port number.
+  displayName: Mariadb port number
+  name: MARIADB_PORT_NUMBER
+  required: true
+  value: "3306"
+- description: Mariadb host name.
+  displayName: Mariadb host name
+  name: MARIADB_HOST
+  required: true
+  value: mariadb
+
+- description: Matomo proxy client header.
+  displayName: Matomo proxy client header
+  name: MATOMO_PROXY_CLIENT_HEADER
+  required: true
+  value: HTTP_X_FORWARDED_FOR
+
+
+
