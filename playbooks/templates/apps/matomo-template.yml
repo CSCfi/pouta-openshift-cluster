@@ -17,7 +17,7 @@ metadata:
     description: This template deploys Matomo Server with Mariadb.
     iconClass: fa fa-bar-chart
     openshift.io/display-name: Matomo
-    openshift.io/documentation-url: https://gitlab.ci.csc.fi/compen/css/matomo-openshift-v2-template
+    openshift.io/documentation-url: https://github.com/CSCfi/matomo-openshift-template
     openshift.io/support-url: https://www.csc.fi/contact-info
     openshift.io/long-description: ""
     openshift.io/provider-display-name: CSC
