@@ -5,7 +5,7 @@ labels:
   template: matomo
 message: |-
   Matomo Server has been scheduled for creation in your project, and should be soon available at: https://${MATOMO_APP_NAME}.${APPLICATION_DOMAIN_SUFFIX}
-  N:B This Matomo template is valnilla template which needs settings for GDPR-compliant analytics of your needs.
+  N:B This Matomo template is vanilla template(non GDP compliant) which needs settings for GDPR-compliant analytics of your needs.
 
   * Username: ${MYSQL_USER}
   * Database Name: ${MYSQL_DATABASE}
