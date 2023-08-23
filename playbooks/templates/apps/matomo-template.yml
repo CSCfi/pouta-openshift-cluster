@@ -297,20 +297,15 @@ parameters:
   value: mariadb
 - description: Username for MariaDB user that will be used for accessing the database.
   displayName: MariaDB Connection Username
-  from: user[A-Z0-9]{3}
-  generate: expression
   name: MYSQL_USER
   required: true
+  value: matomouser
 - description: Password for the MariaDB connection user.
   displayName: MariaDB Connection Password
-  from: '[a-zA-Z0-9]{16}'
-  generate: expression
   name: MYSQL_PASSWORD
   required: true
 - description: Password for the MariaDB root user.
   displayName: MariaDB root Password
-  from: '[a-zA-Z0-9]{16}'
-  generate: expression
   name: MYSQL_ROOT_PASSWORD
   required: true
 - description: Name of the MariaDB database accessed.
@@ -343,8 +338,6 @@ parameters:
   displayName: Pasword
   name: MATOMO_PASSWORD
   required: true
-  generate: expression
-  from: "[a-zA-Z0-9]{12}"
 - description: The exposed hostname suffix that will be used to create routes for app
   displayName: Application Hostname Suffix
   name: APPLICATION_DOMAIN_SUFFIX
@@ -352,20 +345,18 @@ parameters:
   value: rahtiapp.fi
 - description: Username for Matomo database user that will be used for accessing the database.
   displayName: Matomo MariaDB Connection Username
-  from: user[A-Z0-9]{3}
-  generate: expression
   name: MATOMO_DATABASE_USER
+  value: matomouser
   required: true
 - description: Password for the matomo MariaDB connection user.
   displayName: Matomo MariaDB Connection Password
-  from: '[a-zA-Z0-9]{16}'
-  generate: expression
   name: MATOMO_DATABASE_PASSWORD
   required: true
 - description: Name of the matomo MariaDB database accessed.
   displayName: Matomo MariaDB Database Name
   name: MATOMO_DATABASE_NAME
   required: true
+  value: matomodb
 - description: Mariadb port number.
   displayName: Mariadb port number
   name: MARIADB_PORT_NUMBER
