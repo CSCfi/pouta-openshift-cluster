@@ -4,7 +4,7 @@ labels:
   app: matomo
   template: matomo
 message: |-
-  Matomo Server has been scheduled for creation in your project, and should be soon available at: https://${MATOMO_APP_NAME}.${APPLICATION_DOMAIN_SUFFIX}
+  Matomo Server has been scheduled for creation in your project, and should be soon.
   N:B This Matomo template is vanilla template(non GDP compliant) which needs settings for GDPR-compliant analytics of your needs.
 
   * Username: ${MYSQL_USER}
@@ -269,9 +269,8 @@ objects:
   metadata:
     labels:
       app: ${MATOMO_APP_NAME}
-    name: ${MATOMO_APP_NAME}
+    name: ${MATOMO_APP_NAME}-app
   spec:
-    host: ${MATOMO_APP_NAME}.${APPLICATION_DOMAIN_SUFFIX}
     port:
       targetPort: 8080-tcp
     tls:
@@ -338,11 +337,6 @@ parameters:
   displayName: Pasword
   name: MATOMO_PASSWORD
   required: true
-- description: The exposed hostname suffix that will be used to create routes for app
-  displayName: Application Hostname Suffix
-  name: APPLICATION_DOMAIN_SUFFIX
-  required: true
-  value: rahtiapp.fi
 - description: Username for Matomo database user that will be used for accessing the database.
   displayName: Matomo MariaDB Connection Username
   name: MATOMO_DATABASE_USER
