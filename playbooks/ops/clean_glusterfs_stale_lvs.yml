@@ -19,7 +19,7 @@
         - "{{ pv_list.module_results.results[0]['items'] }}"
       when:
         - item.spec.storageClassName == 'glusterfs-storage'
-        - item.status.phase == 'Bound'
+        - (item.status.phase == 'Bound') or (item.status.phase == 'Released')
 
     - name: Add the heketidbstorage volume to the list
       set_fact:
